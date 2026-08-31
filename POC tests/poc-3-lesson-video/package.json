@@ -1,0 +1,28 @@
+{
+  "name": "ai-teacher-poc-3-lesson-video",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "tsx scripts/generateLessonPlan.ts",
+    "render": "tsx scripts/renderVideo.ts",
+    "preview": "remotion preview src/index.ts",
+    "test:all": "tsx scripts/runFullPipeline.ts"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.267",
+    "@remotion/cli": "^4.0.267",
+    "@remotion/renderer": "^4.0.267",
+    "dotenv": "^16.4.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.267",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.12",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
