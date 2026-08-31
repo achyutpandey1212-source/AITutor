@@ -1,0 +1,25 @@
+﻿{
+  "name": "ai-tutor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Tutor Monorepo",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "build": "npm run build --workspace=shared && npm run build --workspace=server && npm run build --workspace=client",
+    "build:shared": "npm run build --workspace=shared",
+    "build:server": "npm run build --workspace=server",
+    "build:client": "npm run build --workspace=client",
+    "typecheck": "npm run typecheck --workspace=shared && npm run typecheck --workspace=server && npm run typecheck --workspace=client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  }
+}
