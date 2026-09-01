@@ -7,7 +7,7 @@ import {
   type User as FirebaseUser
 } from 'firebase/auth';
 import { auth } from './config/firebase';
-import type { ApiResponse, HealthStatus, User as AppUser } from '@ai-tutor/shared';
+import type { ApiResponse, HealthStatus, User as AppUser, AITestResponse } from '@ai-tutor/shared';
 
 export const App: React.FC = () => {
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -20,6 +20,12 @@ export const App: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+
+  // AI Test State
+  const [aiPrompt, setAiPrompt] = useState<string>('Explain quantum computing in one sentence.');
+  const [aiResult, setAiResult] = useState<AITestResponse | null>(null);
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [aiStreamText, setAiStreamText] = useState<string>('');
 
   // Check health
   useEffect(() => {
@@ -46,6 +52,7 @@ export const App: React.FC = () => {
       } else {
         setIdToken('');
         setSyncedUser(null);
+        setAiResult(null);
       }
     });
     return () => unsubscribe();
@@ -68,7 +75,7 @@ export const App: React.FC = () => {
       const data: ApiResponse<AppUser> = await res.json();
       if (res.ok && data.success && data.data) {
         setSyncedUser(data.data);
-        setStatusMessage('Successfully fetched /api/auth/me');
+        setStatusMessage('Successfully authenticated and synchronized with MongoDB');
       } else {
         setErrorMessage(data.error?.message || `Error status: ${res.status}`);
       }
@@ -76,6 +83,90 @@ export const App: React.FC = () => {
       setErrorMessage(err.message || 'Failed to fetch /api/auth/me');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTestAi = async () => {
+    if (!idToken) {
+      setErrorMessage('Please sign in first to test protected AI endpoints');
+      return;
+    }
+    setAiLoading(true);
+    setErrorMessage('');
+    setAiStreamText('');
+    try {
+      const res = await fetch('/api/ai/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+      const data: ApiResponse<AITestResponse> = await res.json();
+      if (res.ok && data.success && data.data) {
+        setAiResult(data.data);
+      } else {
+        setErrorMessage(data.error?.message || 'AI request failed');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Error calling /api/ai/test');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleTestStream = async () => {
+    if (!idToken) {
+      setErrorMessage('Please sign in first to test streaming AI endpoints');
+      return;
+    }
+    setAiLoading(true);
+    setErrorMessage('');
+    setAiStreamText('');
+    setAiResult(null);
+
+    try {
+      const res = await fetch('/api/ai/test/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error(`Streaming failed: HTTP ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullStream = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const textChunk = decoder.decode(value);
+        const lines = textChunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const parsed = JSON.parse(line.replace('data: ', ''));
+              if (parsed.chunk) {
+                fullStream += parsed.chunk;
+                setAiStreamText(fullStream);
+              }
+            } catch {
+              // ignore SSE formatting lines
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Stream read error');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -121,16 +212,15 @@ export const App: React.FC = () => {
   };
 
   return (
-    <main style={{ fontFamily: 'system-ui, -apple-system, sans-serif', padding: '2rem', maxWidth: '640px', margin: '0 auto' }}>
-      <h1>AI Tutor - Auth & Database Foundation</h1>
+    <main style={{ fontFamily: 'system-ui, -apple-system, sans-serif', padding: '2rem', maxWidth: '680px', margin: '0 auto' }}>
+      <h1>AI Tutor - Milestone 3: AI Provider Layer</h1>
       
       <section style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-        <h3>Server & Database Status</h3>
+        <h3>Server Status</h3>
         {health ? (
           <div>
             <p><strong>Status:</strong> {health.status}</p>
             <p><strong>Database:</strong> {health.database || 'unknown'}</p>
-            <p><strong>Environment:</strong> {health.environment}</p>
           </div>
         ) : (
           <p>Connecting to backend...</p>
@@ -141,27 +231,20 @@ export const App: React.FC = () => {
       {errorMessage && <div style={{ padding: '0.75rem', marginBottom: '1rem', background: '#fff5f5', color: '#c53030', borderRadius: '6px' }}>{errorMessage}</div>}
 
       <section style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-        <h3>Authentication Verification</h3>
+        <h3>Authentication & User Record</h3>
         
         {currentUser ? (
           <div>
-            <p><strong>Firebase UID:</strong> {currentUser.uid}</p>
-            <p><strong>Firebase Email:</strong> {currentUser.email}</p>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-              <button onClick={() => fetchMe()} disabled={loading} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>
-                {loading ? 'Fetching...' : 'Re-fetch /api/auth/me'}
-              </button>
-              <button onClick={handleSignOut} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>
-                Sign Out
-              </button>
-            </div>
-
+            <p><strong>Authenticated UID:</strong> {currentUser.uid}</p>
+            <p><strong>Email:</strong> {currentUser.email}</p>
             {syncedUser && (
-              <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f7fafc', borderRadius: '6px' }}>
-                <h4>MongoDB User Record:</h4>
-                <pre style={{ fontSize: '0.85rem' }}>{JSON.stringify(syncedUser, null, 2)}</pre>
+              <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f1f5f9', borderRadius: '4px', fontSize: '0.85rem' }}>
+                <strong>MongoDB Sync:</strong> ID: {syncedUser.id} | Email: {syncedUser.email}
               </div>
             )}
+            <button onClick={handleSignOut} style={{ padding: '0.5rem 1rem', cursor: 'pointer', marginTop: '0.5rem' }}>
+              Sign Out
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -196,6 +279,55 @@ export const App: React.FC = () => {
           </form>
         )}
       </section>
+
+      {currentUser && (
+        <section style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>
+          <h3>AI Provider Verification (Gemini Primary / Groq Fallback)</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <label>Prompt:</label>
+            <textarea
+              rows={3}
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={handleTestAi}
+                disabled={aiLoading}
+                style={{ padding: '0.5rem 1rem', cursor: 'pointer', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px' }}
+              >
+                {aiLoading ? 'Generating...' : 'Generate Text (POST /api/ai/test)'}
+              </button>
+              <button
+                onClick={handleTestStream}
+                disabled={aiLoading}
+                style={{ padding: '0.5rem 1rem', cursor: 'pointer', background: '#059669', color: '#fff', border: 'none', borderRadius: '4px' }}
+              >
+                {aiLoading ? 'Streaming...' : 'Stream Text (POST /api/ai/test/stream)'}
+              </button>
+            </div>
+          </div>
+
+          {aiResult && (
+            <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
+              <h4>AI Response:</h4>
+              <p style={{ whiteSpace: 'pre-wrap' }}>{aiResult.response}</p>
+              <hr style={{ margin: '1rem 0', borderColor: '#e2e8f0' }} />
+              <p style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                <strong>Provider:</strong> {aiResult.provider} | <strong>Model:</strong> {aiResult.model} | <strong>Fallback Used:</strong> {aiResult.fallbackUsed ? 'Yes' : 'No'}
+              </p>
+            </div>
+          )}
+
+          {aiStreamText && (
+            <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
+              <h4>Streaming Response:</h4>
+              <p style={{ whiteSpace: 'pre-wrap' }}>{aiStreamText}</p>
+            </div>
+          )}
+        </section>
+      )}
     </main>
   );
 };

@@ -6,19 +6,37 @@ Clean, production-ready TypeScript monorepo for the AI Tutor project.
 
 ```text
 ai-tutor/
-├── client/     # React + TypeScript + Vite frontend (Firebase Auth client)
-├── server/     # Node.js + Express + TypeScript backend (Firebase Admin + MongoDB / Mongoose)
-├── shared/     # Shared TypeScript contracts, DTOs & schemas
+├── client/     # React + TypeScript + Vite frontend
+├── server/     # Node.js + Express + TypeScript backend (Firebase Admin, MongoDB, AI Provider Layer)
+├── shared/     # Shared TypeScript contracts, DTOs & AI abstractions
 ├── package.json # Root monorepo workspace configuration
 └── tsconfig.base.json
 ```
 
-## Prerequisites
+## AI Provider Architecture
 
-- Node.js >= 18.x
-- npm >= 9.x
-- MongoDB (local running instance or MongoDB Atlas URI)
-- Firebase Project with Authentication (Email/Password provider enabled)
+```text
+               Client Request (/api/ai/test, /api/ai/test/stream)
+                                  │
+                            Auth Middleware
+                                  │
+                             AIService
+                                  │
+               ┌──────────────────┴──────────────────┐
+               ▼ (Primary)                           ▼ (Fallback)
+         GeminiProvider                        GroqProvider
+        (gemini-2.5-flash)              (llama-3.3-70b-versatile)
+               │                                     │
+       [KeyPool: Gemini]                     [KeyPool: Groq]
+   (Round-robin key rotation)            (Round-robin key rotation)
+```
+
+The AI layer exposes a clean contract (`generateText`, `generateStructured`, `streamText`) via `AIService` and `IAIProvider`. The rest of the application never directly imports or couples to Gemini or Groq SDKs.
+
+- **Primary Provider:** Google Gemini (`@google/genai`)
+- **Fallback Provider:** Groq (`groq-sdk`)
+- **Key Pools:** Each provider maintains an isolated in-memory `KeyPool` that round-robins across configured keys.
+- **Failover & Cooldown:** When a key hits a 429/quota/rate-limit error, it is temporarily marked unavailable for a cooldown period (default: 60s, configurable via `AI_KEY_COOLDOWN_MS`) and the next key in the pool is tried. If all keys in the primary pool are exhausted, `AIService` automatically falls back to Groq.
 
 ---
 
@@ -26,7 +44,7 @@ ai-tutor/
 
 ### 1. Backend (`server/.env`)
 
-Copy `server/.env.example` to `server/.env` and supply:
+Copy `server/.env.example` to `server/.env`:
 
 ```env
 PORT=4000
@@ -39,11 +57,23 @@ MONGODB_URI=mongodb://localhost:27017/ai-tutor
 FIREBASE_PROJECT_ID=your-firebase-project-id
 FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxx@your-project-id.iam.gserviceaccount.com
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_KEY_HERE\n-----END PRIVATE KEY-----\n"
+
+# AI Providers Key Pooling (Server only - NEVER expose to React)
+# Comma-separated keys for pool rotation:
+GEMINI_API_KEYS=key1,key2,key3
+GROQ_API_KEYS=key1,key2
+
+# (Optional) Singular key backward-compatibility:
+# GEMINI_API_KEY=your-gemini-api-key
+# GROQ_API_KEY=your-groq-api-key
+
+# Key Cooldown (in ms, default: 60000 = 60s)
+AI_KEY_COOLDOWN_MS=60000
 ```
 
 ### 2. Frontend (`client/.env`)
 
-Copy `client/.env.example` to `client/.env` and supply:
+Copy `client/.env.example` to `client/.env`:
 
 ```env
 VITE_FIREBASE_API_KEY=your-api-key
@@ -73,13 +103,5 @@ npm run dev
 - **Frontend:** [http://localhost:3000](http://localhost:3000)
 - **Backend:** [http://localhost:4000](http://localhost:4000)
 - **Health Check:** [http://localhost:4000/api/health](http://localhost:4000/api/health)
-
----
-
-## Authentication & Database Workflow
-
-1. The frontend authenticates directly against **Firebase Auth**.
-2. On successful login, the frontend receives a Firebase ID Token.
-3. The frontend passes this token via the `Authorization: Bearer <ID_TOKEN>` header.
-4. The backend `requireAuth` middleware validates the token with **Firebase Admin SDK** to extract the verified `uid` and profile info.
-5. `GET /api/auth/me` synchronizes or retrieves the user document in **MongoDB** (`UserModel`) using the indexed `firebaseUid`.
+- **AI Test Endpoint:** `POST /api/ai/test` (Protected)
+- **AI Streaming Endpoint:** `POST /api/ai/test/stream` (Protected)

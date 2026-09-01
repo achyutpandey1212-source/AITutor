@@ -32,3 +32,40 @@ export interface AuthContextType {
   loading: boolean;
   error: string | null;
 }
+
+// AI Layer Types
+export type AIProviderName = 'gemini' | 'groq';
+
+export interface AIMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface AIGenerateOptions {
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  systemInstruction?: string;
+}
+
+export interface AITextResponse {
+  text: string;
+  provider: AIProviderName;
+  model: string;
+  fallbackUsed?: boolean;
+}
+
+export interface AIStructuredResponse<T = unknown> {
+  data: T;
+  provider: AIProviderName;
+  model: string;
+  fallbackUsed?: boolean;
+}
+
+export interface AITestResponse {
+  prompt: string;
+  response: string;
+  provider: AIProviderName;
+  model: string;
+  fallbackUsed: boolean;
+}
