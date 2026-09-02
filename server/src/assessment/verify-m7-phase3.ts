@@ -382,7 +382,7 @@ async function runM7Phase3Verification() {
     evaluatedAt: new Date().toISOString(),
   };
 
-  const updatedArithmetic = updater.computeUpdatedConceptMastery(updatedHighConf, sampleQuestion, arithmeticErrorEval);
+  const updatedArithmetic = updater.computeUpdatedConceptMastery(initialMastery, sampleQuestion, arithmeticErrorEval);
   assert(
     (updatedArithmetic.skills.method_selection || 0) >= 0.70,
     `Method selection remains high (${updatedArithmetic.skills.method_selection}) despite arithmetic error`

@@ -774,6 +774,8 @@ export const AssessmentSubmissionSchema = z.object({
   imageReference: z.string().optional(),
   status: AssessmentSubmissionStatusSchema.default('SUBMITTED'),
   submittedAt: z.string(),
+  questionStartedAt: z.string().optional(),
+  timeTakenMs: z.number().int().min(0).optional(),
   score: z.number().min(0).optional(),
   feedback: z.string().optional(),
   evaluation: EvaluationResultSchema.optional(),
@@ -842,9 +844,153 @@ export const CreateAssessmentRequestSchema = z.object({
 });
 export type CreateAssessmentRequest = z.infer<typeof CreateAssessmentRequestSchema>;
 
+// ==========================================
+// M7 Phase 4: Sessions, Bookmarks, Wrong Questions & Analytics
+// ==========================================
+
+export const AssessmentSessionStatusSchema = z.enum([
+  'CREATED',
+  'IN_PROGRESS',
+  'PAUSED',
+  'COMPLETED',
+  'ABANDONED',
+]);
+export type AssessmentSessionStatus = z.infer<typeof AssessmentSessionStatusSchema>;
+
+export const AssessmentSessionSchema = z.object({
+  id: z.string().min(1),
+  userId: z.string().min(1),
+  subject: z.string().min(1),
+  grade: z.string().optional(),
+  topic: z.string().optional(),
+  concepts: z.array(z.string()).default([]),
+  goal: z.string().default('practice'),
+  mode: z.string().default('adaptive'),
+  startingDifficulty: AssessmentDifficultySchema.default('medium'),
+  currentQuestionId: z.string().optional(),
+  questionIds: z.array(z.string()).default([]),
+  attemptedQuestionCount: z.number().int().min(0).default(0),
+  correctCount: z.number().int().min(0).default(0),
+  totalMarks: z.number().min(0).default(0),
+  earnedMarks: z.number().min(0).default(0),
+  accuracy: z.number().min(0).max(100).default(0),
+  status: AssessmentSessionStatusSchema.default('CREATED'),
+  startedAt: z.string(),
+  lastActivityAt: z.string(),
+  completedAt: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+export type AssessmentSession = z.infer<typeof AssessmentSessionSchema>;
+
+export const CreateAssessmentSessionRequestSchema = z.object({
+  subject: z.string().min(1, 'subject is required'),
+  grade: z.string().optional(),
+  topic: z.string().optional(),
+  concepts: z.array(z.string()).default([]),
+  goal: z.string().optional(),
+  mode: z.string().optional(),
+  startingDifficulty: AssessmentDifficultySchema.optional(),
+  totalQuestionGoal: z.number().int().positive().optional(),
+});
+export type CreateAssessmentSessionRequest = z.infer<typeof CreateAssessmentSessionRequestSchema>;
+
+// Bookmark / Saved Question
+export const AssessmentBookmarkSchema = z.object({
+  id: z.string().min(1),
+  userId: z.string().min(1),
+  questionId: z.string().min(1),
+  savedAt: z.string(),
+  notes: z.string().optional(),
+  question: AssessmentQuestionSchema.optional(),
+});
+export type AssessmentBookmark = z.infer<typeof AssessmentBookmarkSchema>;
+
+// Wrong Question Collection & Spaced Reattempt Review
+export const WrongQuestionReviewStatusSchema = z.enum([
+  'ACTIVE',
+  'SCHEDULED',
+  'MASTERED',
+  'DISMISSED',
+]);
+export type WrongQuestionReviewStatus = z.infer<typeof WrongQuestionReviewStatusSchema>;
+
+export const WrongAssessmentQuestionSchema = z.object({
+  id: z.string().min(1),
+  userId: z.string().min(1),
+  questionId: z.string().min(1),
+  submissionId: z.string().min(1),
+  subject: z.string().min(1),
+  concept: z.string().min(1),
+  difficulty: AssessmentDifficultySchema,
+  questionType: AssessmentQuestionTypeSchema,
+  score: z.number().min(0),
+  maxScore: z.number().min(0),
+  percentage: z.number().min(0).max(100),
+  misconceptions: z.array(z.string()).default([]),
+  weakSkills: z.array(z.string()).default([]),
+  attemptCount: z.number().int().min(1).default(1),
+  firstFailedAt: z.string(),
+  lastAttemptedAt: z.string(),
+  nextReviewAt: z.string().optional(),
+  reviewStatus: WrongQuestionReviewStatusSchema.default('ACTIVE'),
+  question: AssessmentQuestionSchema.optional(),
+});
+export type WrongAssessmentQuestion = z.infer<typeof WrongAssessmentQuestionSchema>;
+
+// Assessment Analytics
+export const AssessmentAnalyticsSchema = z.object({
+  totalAttempts: z.number().int().min(0),
+  totalQuestions: z.number().int().min(0),
+  overallAccuracy: z.number().min(0).max(100),
+  averageScore: z.number().min(0),
+  totalTimeSpentMs: z.number().min(0),
+  averageTimePerQuestionMs: z.number().min(0),
+  bySubject: z.record(
+    z.object({
+      attempted: z.number().int().min(0),
+      correct: z.number().int().min(0),
+      accuracy: z.number().min(0).max(100),
+      avgScore: z.number().min(0),
+    })
+  ),
+  byConcept: z.record(
+    z.object({
+      attempted: z.number().int().min(0),
+      correct: z.number().int().min(0),
+      accuracy: z.number().min(0).max(100),
+      mastery: z.number().min(0).max(1),
+    })
+  ),
+  byDifficulty: z.record(
+    z.object({
+      attempted: z.number().int().min(0),
+      correct: z.number().int().min(0),
+      accuracy: z.number().min(0).max(100),
+    })
+  ),
+  byQuestionType: z.record(
+    z.object({
+      attempted: z.number().int().min(0),
+      correct: z.number().int().min(0),
+      accuracy: z.number().min(0).max(100),
+    })
+  ),
+  skillBreakdown: z.record(z.number().min(0).max(1)),
+  commonMisconceptions: z.array(
+    z.object({
+      misconception: z.string(),
+      count: z.number().int().min(1),
+    })
+  ),
+});
+export type AssessmentAnalytics = z.infer<typeof AssessmentAnalyticsSchema>;
+
 export type AssessmentSubmissionResponse = ApiResponse<AssessmentSubmission>;
 export type AssessmentQuestionResponse = ApiResponse<ClientAssessmentQuestion>;
 export type EvaluationResultResponse = ApiResponse<EvaluationResult>;
-
-
-
+export type AssessmentSessionResponse = ApiResponse<AssessmentSession>;
+export type AssessmentSessionListResponse = ApiResponse<AssessmentSession[]>;
+export type AssessmentBookmarkResponse = ApiResponse<AssessmentBookmark>;
+export type AssessmentBookmarkListResponse = ApiResponse<AssessmentBookmark[]>;
+export type WrongQuestionListResponse = ApiResponse<WrongAssessmentQuestion[]>;
+export type AssessmentAnalyticsResponse = ApiResponse<AssessmentAnalytics>;

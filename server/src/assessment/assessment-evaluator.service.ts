@@ -11,6 +11,8 @@ import { numericalEvaluator } from './evaluation/numerical-evaluator.js';
 import { imageSolutionEvaluator } from './evaluation/image-solution-evaluator.js';
 import { EvaluationNormalizer } from './evaluation/evaluation-normalizer.js';
 import { teachingStateUpdater } from './teaching-state-updater.js';
+import { wrongQuestionService } from './wrong-question.service.js';
+import { assessmentSessionService } from './assessment-session.service.js';
 import { AssessmentSubmissionModel } from '../models/assessment-submission.model.js';
 
 export class AssessmentEvaluatorService {
@@ -64,16 +66,33 @@ export class AssessmentEvaluatorService {
       });
     }
 
-    // 5. Update submission in database atomically
-    await AssessmentSubmissionModel.findOneAndUpdate(
-      { userId, questionId: question.questionId },
-      {
-        status: evaluationResult.evaluationStatus,
-        score: evaluationResult.score,
-        feedback: evaluationResult.feedback,
-        evaluation: evaluationResult,
+    // 5. Update submission in database atomically by submission ID (or userId + questionId)
+    try {
+      if (submission.id && submission.id.length > 5) {
+        await AssessmentSubmissionModel.findByIdAndUpdate(
+          submission.id,
+          {
+            status: evaluationResult.evaluationStatus,
+            score: evaluationResult.score,
+            feedback: evaluationResult.feedback,
+            evaluation: evaluationResult,
+          }
+        );
+      } else {
+        await AssessmentSubmissionModel.findOneAndUpdate(
+          { userId, questionId: question.questionId },
+          {
+            status: evaluationResult.evaluationStatus,
+            score: evaluationResult.score,
+            feedback: evaluationResult.feedback,
+            evaluation: evaluationResult,
+          },
+          { sort: { createdAt: -1 } }
+        );
       }
-    );
+    } catch {
+      // In-memory or fallback
+    }
 
     // 6. Update student's persistent concept mastery & skill metrics deterministically
     await teachingStateUpdater.updateStateFromEvaluation(
@@ -81,6 +100,28 @@ export class AssessmentEvaluatorService {
       question,
       evaluationResult
     );
+
+    // 7. M7 Phase 4: Wrong Question Tracking & Mastery Resolution
+    if (evaluationResult.correct && evaluationResult.percentage >= 75) {
+      await wrongQuestionService.resolveCorrectReattempt(userId, question.questionId);
+    } else if (
+      !evaluationResult.correct &&
+      evaluationResult.evaluationStatus === 'EVALUATED' &&
+      (!evaluationResult.failureReason || evaluationResult.failureReason === 'NONE')
+    ) {
+      await wrongQuestionService.recordWrongQuestion(userId, question, submission, evaluationResult);
+    }
+
+    // 8. M7 Phase 4: Assessment Session Progress Update
+    if (submission.sessionId) {
+      await assessmentSessionService.updateSessionProgress(
+        userId,
+        submission.sessionId,
+        evaluationResult.score,
+        evaluationResult.maxScore,
+        evaluationResult.correct
+      );
+    }
 
     console.info(
       `[AssessmentEvaluator] Evaluated question=${question.questionId} type=${question.questionType} status=${

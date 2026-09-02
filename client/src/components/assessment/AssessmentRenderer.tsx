@@ -11,6 +11,8 @@ export interface AssessmentRendererProps {
   idToken: string;
   onSubmitted?: (submission: AssessmentSubmission) => void;
   initialSubmission?: AssessmentSubmission | null;
+  sessionId?: string;
+  questionStartedAt?: string;
 }
 
 /**
@@ -23,6 +25,8 @@ export const AssessmentRenderer: React.FC<AssessmentRendererProps> = ({
   idToken,
   onSubmitted,
   initialSubmission,
+  sessionId: _sessionId,
+  questionStartedAt: _questionStartedAt,
 }) => {
   // If evaluationMode is IMAGE_SOLUTION (e.g. 5-mark Numerical or ImageSolution), route to ImageSolutionQuestion
   if (question.evaluationMode === 'IMAGE_SOLUTION' || question.questionType === 'IMAGE_SOLUTION') {

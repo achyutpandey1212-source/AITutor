@@ -1,63 +1,85 @@
+import mongoose from 'mongoose';
 import type {
   AssessmentQuestion,
   EvaluationResult,
   LearnerAssessmentState,
   LearnerConceptMastery,
   LearnerConceptSkills,
-  RecentPerformanceItem,
 } from '@ai-tutor/shared';
 import { LearnerAssessmentStateSchema } from '@ai-tutor/shared';
 import { LearnerAssessmentStateModel } from '../models/learner-assessment-state.model.js';
 
 export interface MasteryPolicyConfig {
-  previousWeight: number; // default: 0.75
-  currentWeight: number; // default: 0.25
-  highConfidenceThreshold: number; // default: 0.75
-  mediumConfidenceThreshold: number; // default: 0.50
-  maxHistoryLength: number; // default: 5
+  learningRate: number; // EMA alpha weight for recent performance (e.g. 0.35)
+  understandingWeight: number;
+  methodSelectionWeight: number;
+  minConfidenceThreshold: number; // Minimum confidence to accept evaluation updates
+  currentWeight?: number;
+  previousWeight?: number;
+  highConfidenceThreshold?: number;
+  mediumConfidenceThreshold?: number;
+  maxHistoryLength?: number;
 }
 
 export const DEFAULT_MASTERY_POLICY: MasteryPolicyConfig = {
-  previousWeight: 0.75,
-  currentWeight: 0.25,
-  highConfidenceThreshold: 0.75,
-  mediumConfidenceThreshold: 0.50,
-  maxHistoryLength: 5,
+  learningRate: 0.35,
+  understandingWeight: 0.4,
+  methodSelectionWeight: 0.3,
+  minConfidenceThreshold: 0.5,
 };
 
 export class TeachingStateUpdater {
   private policy: MasteryPolicyConfig;
+  private inMemoryStates = new Map<string, LearnerAssessmentState>();
 
-  constructor(customPolicy?: Partial<MasteryPolicyConfig>) {
-    this.policy = { ...DEFAULT_MASTERY_POLICY, ...customPolicy };
+  constructor(customPolicy?: Partial<MasteryPolicyConfig> & { currentWeight?: number; previousWeight?: number }) {
+    const learningRate = customPolicy?.learningRate ?? customPolicy?.currentWeight ?? DEFAULT_MASTERY_POLICY.learningRate;
+    this.policy = { ...DEFAULT_MASTERY_POLICY, ...customPolicy, learningRate };
+  }
+
+  private isMongoConnected(): boolean {
+    return mongoose.connection.readyState === 1;
   }
 
   /**
    * Retrieves the current LearnerAssessmentState for a user, or initializes an empty state.
    */
   async getLearnerState(userId: string): Promise<LearnerAssessmentState> {
-    const doc = await LearnerAssessmentStateModel.findOne({ userId });
-    if (!doc) {
-      return {
-        userId,
-        concepts: {},
-        updatedAt: new Date().toISOString(),
-      };
-    }
+    if (this.isMongoConnected()) {
+      try {
+        const doc = await LearnerAssessmentStateModel.findOne({ userId });
+        if (doc) {
+          const conceptsObj: Record<string, LearnerConceptMastery> = {};
+          if (doc.concepts) {
+            if (doc.concepts instanceof Map || typeof (doc.concepts as any).entries === 'function') {
+              for (const [key, value] of (doc.concepts as any).entries()) {
+                conceptsObj[key] = value;
+              }
+            } else {
+              Object.assign(conceptsObj, doc.concepts);
+            }
+          }
 
-    const conceptsObj: Record<string, LearnerConceptMastery> = {};
-    if (doc.concepts) {
-      for (const [key, value] of (doc.concepts as any).entries()) {
-        conceptsObj[key] = value;
+          return LearnerAssessmentStateSchema.parse({
+            userId: doc.userId,
+            concepts: conceptsObj,
+            overallMastery: doc.overallMastery,
+            updatedAt: doc.updatedAt ? doc.updatedAt.toISOString() : new Date().toISOString(),
+          });
+        }
+      } catch {
+        // fallback
       }
     }
 
-    return LearnerAssessmentStateSchema.parse({
-      userId: doc.userId,
-      concepts: conceptsObj,
-      overallMastery: doc.overallMastery,
-      updatedAt: doc.updatedAt.toISOString(),
-    });
+    const inMem = this.inMemoryStates.get(userId);
+    if (inMem) return inMem;
+
+    return {
+      userId,
+      concepts: {},
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   /**
@@ -100,16 +122,23 @@ export class TeachingStateUpdater {
       conceptValues.length > 0 ? Number((totalMastery / conceptValues.length).toFixed(2)) : 0.5;
     currentState.updatedAt = new Date().toISOString();
 
-    // Persist to MongoDB
-    await LearnerAssessmentStateModel.findOneAndUpdate(
-      { userId },
-      {
-        userId,
-        concepts: currentState.concepts,
-        overallMastery: currentState.overallMastery,
-      },
-      { upsert: true, new: true }
-    );
+    if (this.isMongoConnected()) {
+      try {
+        await LearnerAssessmentStateModel.findOneAndUpdate(
+          { userId },
+          {
+            userId,
+            concepts: currentState.concepts,
+            overallMastery: currentState.overallMastery,
+          },
+          { upsert: true, new: true }
+        );
+      } catch {
+        this.inMemoryStates.set(userId, currentState);
+      }
+    } else {
+      this.inMemoryStates.set(userId, currentState);
+    }
 
     return currentState;
   }
@@ -118,134 +147,116 @@ export class TeachingStateUpdater {
    * Pure deterministic calculation of updated concept mastery according to confidence gate and skill breakdown.
    */
   public computeUpdatedConceptMastery(
-    previous: LearnerConceptMastery,
+    current: LearnerConceptMastery,
     question: AssessmentQuestion,
     evaluation: EvaluationResult
   ): LearnerConceptMastery {
-    const confidence = typeof evaluation.confidence === 'number' ? evaluation.confidence : 1.0;
-    const scoreFrac = Math.max(0, Math.min(1.0, evaluation.percentage / 100));
-
-    // 1. Confidence & Failure Safeguard Check:
-    // If evaluation has low confidence (< 0.5), is marked NEEDS_REVIEW, or encountered a provider/image failure, DO NOT penalize mastery!
+    // 1. Confidence Safeguard:
+    // If evaluation failed or has low confidence, do NOT penalize or update learner state!
     if (
-      confidence < this.policy.mediumConfidenceThreshold ||
+      evaluation.confidence < this.policy.minConfidenceThreshold ||
       evaluation.evaluationStatus === 'NEEDS_REVIEW' ||
       (evaluation.failureReason && evaluation.failureReason !== 'NONE')
     ) {
-      console.info(
-        `[TeachingStateUpdater] Low confidence or review-needed evaluation (${confidence.toFixed(
-          2
-        )}, reason=${evaluation.failureReason || 'NONE'}). Skipping mastery update to protect student profile.`
+      console.warn(
+        `[TeachingStateUpdater] Evaluation confidence low (${evaluation.confidence}) or NEEDS_REVIEW or failureReason=${evaluation.failureReason} on question ${question.questionId}. Skipping mastery degradation.`
       );
       return {
-        ...previous,
-        confidence: Number(
-          (previous.confidence * 0.8 + confidence * 0.2).toFixed(2)
-        ),
-        lastEvaluatedAt: evaluation.evaluatedAt,
+        ...current,
+        confidence: Number((current.confidence * 0.9).toFixed(2)),
       };
     }
 
-    // 2. Determine effective weight based on confidence:
-    let effectiveCurrentWeight = this.policy.currentWeight;
-    if (confidence < this.policy.highConfidenceThreshold) {
-      // Medium confidence: apply cautious / dampened update
-      effectiveCurrentWeight = this.policy.currentWeight * 0.5;
-    }
-    const effectivePrevWeight = 1.0 - effectiveCurrentWeight;
+    // 2. Score Normalization
+    const scoreFraction = Math.max(0, Math.min(1, evaluation.score / evaluation.maxScore));
 
-    // 3. Compute new mastery (bounded between 0.0 and 1.0)
-    const newMastery = Number(
-      Math.max(0, Math.min(1.0, previous.mastery * effectivePrevWeight + scoreFrac * effectiveCurrentWeight)).toFixed(
-        2
-      )
-    );
+    // 3. Update Skills Breakdown
+    const updatedSkills: LearnerConceptSkills = { ...current.skills };
+    if (evaluation.conceptAssessment) {
+      const ca = evaluation.conceptAssessment;
 
-    // 4. Update Skills Breakdown
-    const updatedSkills: LearnerConceptSkills = { ...previous.skills };
-    const conceptAssess = evaluation.conceptAssessment || { understanding: 'moderate' };
-
-    // Understanding
-    if (conceptAssess.understanding === 'strong') {
-      updatedSkills.understanding = Number(
-        Math.min(1.0, (updatedSkills.understanding || 0.5) * 0.7 + 1.0 * 0.3).toFixed(2)
-      );
-    } else if (conceptAssess.understanding === 'weak') {
-      updatedSkills.understanding = Number(
-        Math.max(0.0, (updatedSkills.understanding || 0.5) * 0.7 + 0.2 * 0.3).toFixed(2)
-      );
-    } else {
-      updatedSkills.understanding = Number(
-        ((updatedSkills.understanding || 0.5) * 0.7 + 0.6 * 0.3).toFixed(2)
-      );
-    }
-
-    // Method Selection
-    if (conceptAssess.methodSelection === 'strong') {
-      updatedSkills.method_selection = Number(
-        Math.min(1.0, (updatedSkills.method_selection || 0.5) * 0.7 + 1.0 * 0.3).toFixed(2)
-      );
-    } else if (conceptAssess.methodSelection === 'weak') {
-      updatedSkills.method_selection = Number(
-        Math.max(0.0, (updatedSkills.method_selection || 0.5) * 0.7 + 0.2 * 0.3).toFixed(2)
-      );
-    }
-
-    // Calculation (for numerical / image math)
-    if (question.questionType === 'NUMERICAL' || question.evaluationMode === 'IMAGE_SOLUTION') {
-      const isCalcWeak =
-        conceptAssess.calculation === 'weak' ||
-        (evaluation.stepEvaluation &&
-          evaluation.stepEvaluation.some(
-            (s) => s.status === 'incorrect' && (s.feedback.toLowerCase().includes('arithmetic') || s.feedback.toLowerCase().includes('calculation'))
-          ));
-
-      const calcCurrent = updatedSkills.calculation ?? 0.5;
-      if (isCalcWeak) {
-        updatedSkills.calculation = Number(Math.max(0.1, calcCurrent * 0.5 + 0.15 * 0.5).toFixed(2));
-      } else if (evaluation.correct) {
-        updatedSkills.calculation = Number(Math.min(1.0, calcCurrent * 0.7 + 1.0 * 0.3).toFixed(2));
+      if (ca.understanding) {
+        updatedSkills.understanding = this.updateSkillEMA(
+          updatedSkills.understanding,
+          ca.understanding
+        );
+      }
+      if (ca.methodSelection) {
+        updatedSkills.method_selection = this.updateSkillEMA(
+          updatedSkills.method_selection,
+          ca.methodSelection
+        );
+      }
+      if (ca.calculation) {
+        updatedSkills.calculation = this.updateSkillEMA(
+          updatedSkills.calculation || 0.5,
+          ca.calculation
+        );
+      }
+      if (ca.reasoning) {
+        updatedSkills.reasoning = this.updateSkillEMA(
+          updatedSkills.reasoning || 0.5,
+          ca.reasoning
+        );
+      }
+      if (ca.completeness) {
+        updatedSkills.completeness = this.updateSkillEMA(
+          updatedSkills.completeness || 0.5,
+          ca.completeness
+        );
       }
     }
 
-    // 5. Update Misconceptions List
-    const misconceptionsSet = new Set(previous.misconceptions || []);
-    if (evaluation.misconceptions && evaluation.misconceptions.length > 0) {
-      for (const m of evaluation.misconceptions) {
-        misconceptionsSet.add(m);
-      }
-    }
-    // If student achieved 100% on a hard/medium problem, clear older misconceptions
-    if (evaluation.percentage === 100 && (question.difficulty === 'medium' || question.difficulty === 'hard')) {
-      misconceptionsSet.clear();
-    }
+    // 4. Update Overall Mastery via Exponential Moving Average (EMA)
+    // Difficulty weighting: solving a hard problem gives higher weight than an easy problem
+    const difficultyMultiplier =
+      question.difficulty === 'hard' ? 1.15 : question.difficulty === 'easy' ? 0.85 : 1.0;
+    const adjustedPerformance = Math.min(1.0, scoreFraction * difficultyMultiplier);
 
-    // 6. Update Recent Performance Rolling History
-    const historyItem: RecentPerformanceItem = {
+    const newMastery =
+      (1 - this.policy.learningRate) * current.mastery +
+      this.policy.learningRate * adjustedPerformance;
+
+    // 5. Update Misconceptions (deduplicate, max 10 recent)
+    const existingMisconceptions = current.misconceptions || [];
+    const newMisconceptions = evaluation.misconceptions || [];
+    const combinedMisconceptions = [
+      ...new Set([...newMisconceptions, ...existingMisconceptions]),
+    ].slice(0, 10);
+
+    // 6. Update Recent Performance History (FIFO max 5 items)
+    const recentItem = {
       questionId: question.questionId,
       difficulty: question.difficulty,
       scorePercentage: evaluation.percentage,
       evaluatedAt: evaluation.evaluatedAt,
       questionType: question.questionType,
     };
+    const updatedRecent = [recentItem, ...(current.recentPerformance || [])].slice(0, 5);
 
-    const newHistory = [historyItem, ...(previous.recentPerformance || [])].slice(
-      0,
-      this.policy.maxHistoryLength
-    );
+    // 7. Confidence Calculation based on number of evaluated questions
+    const evaluationCount = updatedRecent.length;
+    const newConfidence = Math.min(1.0, Number((0.4 + evaluationCount * 0.12).toFixed(2)));
 
     return {
-      concept: previous.concept,
-      subject: question.subject || previous.subject,
-      mastery: newMastery,
-      confidence: Number(
-        Math.max(0.1, Math.min(1.0, previous.confidence * 0.7 + confidence * 0.3)).toFixed(2)
-      ),
+      concept: question.concept,
+      subject: question.subject,
+      mastery: Number(newMastery.toFixed(2)),
+      confidence: newConfidence,
       skills: updatedSkills,
-      recentPerformance: newHistory,
-      misconceptions: Array.from(misconceptionsSet),
+      recentPerformance: updatedRecent,
+      misconceptions: combinedMisconceptions,
       lastEvaluatedAt: evaluation.evaluatedAt,
     };
+  }
+
+  /**
+   * Helper to update a skill score between 0 and 1 based on qualitative level.
+   */
+  private updateSkillEMA(currentVal: number, level: 'strong' | 'moderate' | 'weak' | 'unclear' | string): number {
+    const target = level === 'strong' ? 1.0 : level === 'moderate' ? 0.6 : level === 'weak' ? 0.15 : 0.5;
+    const updated = (1 - this.policy.learningRate) * currentVal + this.policy.learningRate * target;
+    return Number(updated.toFixed(2));
   }
 }
 

@@ -10,6 +10,7 @@ export interface IAssessmentSubmissionDocument extends Document {
   questionId: string;
   assessmentId?: string;
   sessionId?: string;
+  attemptNumber?: number;
   questionType: AssessmentQuestionType;
   evaluationMode: AssessmentEvaluationMode;
   selectedOption?: string;
@@ -17,6 +18,8 @@ export interface IAssessmentSubmissionDocument extends Document {
   imageReference?: string;
   status: AssessmentSubmissionStatus;
   submittedAt: Date;
+  questionStartedAt?: Date;
+  timeTakenMs?: number;
   score?: number;
   feedback?: string;
   evaluation?: Record<string, any>;
@@ -44,6 +47,10 @@ const AssessmentSubmissionMongooseSchema = new Schema<IAssessmentSubmissionDocum
     sessionId: {
       type: String,
       index: true,
+    },
+    attemptNumber: {
+      type: Number,
+      default: 1,
     },
     questionType: {
       type: String,
@@ -74,6 +81,13 @@ const AssessmentSubmissionMongooseSchema = new Schema<IAssessmentSubmissionDocum
       type: Date,
       default: Date.now,
     },
+    questionStartedAt: {
+      type: Date,
+    },
+    timeTakenMs: {
+      type: Number,
+      min: 0,
+    },
     score: {
       type: Number,
     },
@@ -92,8 +106,8 @@ const AssessmentSubmissionMongooseSchema = new Schema<IAssessmentSubmissionDocum
   }
 );
 
-// Compound unique index to prevent duplicate submissions per user and question
-AssessmentSubmissionMongooseSchema.index({ userId: 1, questionId: 1 }, { unique: true });
+// Compound non-unique index to support multiple attempts history per user and question
+AssessmentSubmissionMongooseSchema.index({ userId: 1, questionId: 1, createdAt: -1 });
 
 export const AssessmentSubmissionModel = mongoose.model<IAssessmentSubmissionDocument>(
   'AssessmentSubmission',

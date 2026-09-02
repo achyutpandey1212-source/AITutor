@@ -261,17 +261,19 @@ async function runM7Phase2Verification() {
   assert(Boolean(correctMCQSub.feedback?.includes('Correct')), 'Positive feedback awarded');
 
   // ----------------------------------------------------
-  // 5. DUPLICATE SUBMISSION PROTECTION
+  // 5. MULTI-ATTEMPT SUBMISSION & REATTEMPT SUPPORT (PHASE 4)
   // ----------------------------------------------------
-  console.log('\n--- 5. Duplicate Submission Protection ---');
-  const duplicateSub = await submissionService.submitAnswer('user_student_1', 'q_mcq_100', {
+  console.log('\n--- 5. Multi-Attempt Submission & Reattempt Support ---');
+  const reattemptSub = await submissionService.submitAnswer('user_student_1', 'q_mcq_100', {
     questionId: 'q_mcq_100',
     questionType: 'MCQ',
     selectedOption: 'A', // Different option on second try
   });
 
-  assert(duplicateSub.id === correctMCQSub.id, 'Duplicate submission returns existing submission record');
-  assert(duplicateSub.selectedOption === 'B', 'Original answer remains protected from duplicate overwrite');
+  assert(reattemptSub.id !== correctMCQSub.id, 'Reattempt creates distinct submission record');
+  assert(reattemptSub.selectedOption === 'A', 'New attempt records option A');
+  const history = await submissionService.getSubmissionHistory('user_student_1', 'q_mcq_100');
+  assert(history.length === 2, 'History maintains both attempts without collision');
 
   // ----------------------------------------------------
   // 6. TENANT ISOLATION & AUTHORIZATION

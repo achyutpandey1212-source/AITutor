@@ -240,6 +240,180 @@ export class LiveTutorApiClient {
 
     return json.data;
   }
+
+  // ==========================================
+  // M7 Phase 4: Sessions, Bookmarks, Mistakes & Analytics
+  // ==========================================
+
+  async createAssessmentSession(
+    idToken: string,
+    req: import('@ai-tutor/shared').CreateAssessmentSessionRequest
+  ): Promise<import('@ai-tutor/shared').AssessmentSession> {
+    const res = await fetch('/api/assessments/sessions', {
+      method: 'POST',
+      headers: this.getHeaders(idToken),
+      body: JSON.stringify(req),
+    });
+
+    const json: import('@ai-tutor/shared').AssessmentSessionResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Failed to create session (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
+
+  async listAssessmentSessions(
+    idToken: string
+  ): Promise<import('@ai-tutor/shared').AssessmentSession[]> {
+    const res = await fetch('/api/assessments/sessions', {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: import('@ai-tutor/shared').AssessmentSessionListResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return [];
+    }
+
+    return json.data;
+  }
+
+  async getAssessmentSession(
+    idToken: string,
+    sessionId: string
+  ): Promise<import('@ai-tutor/shared').AssessmentSession | null> {
+    const res = await fetch(`/api/assessments/sessions/${sessionId}`, {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: import('@ai-tutor/shared').AssessmentSessionResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return null;
+    }
+
+    return json.data;
+  }
+
+  async completeAssessmentSession(
+    idToken: string,
+    sessionId: string
+  ): Promise<import('@ai-tutor/shared').AssessmentSession> {
+    const res = await fetch(`/api/assessments/sessions/${sessionId}/complete`, {
+      method: 'POST',
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: import('@ai-tutor/shared').AssessmentSessionResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Failed to complete session (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
+
+  async bookmarkQuestion(
+    idToken: string,
+    questionId: string,
+    notes?: string
+  ): Promise<import('@ai-tutor/shared').AssessmentBookmark> {
+    const res = await fetch(`/api/assessments/questions/${questionId}/bookmark`, {
+      method: 'POST',
+      headers: this.getHeaders(idToken),
+      body: JSON.stringify({ notes }),
+    });
+
+    const json: import('@ai-tutor/shared').AssessmentBookmarkResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Failed to bookmark question (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
+
+  async unbookmarkQuestion(
+    idToken: string,
+    questionId: string
+  ): Promise<boolean> {
+    const res = await fetch(`/api/assessments/questions/${questionId}/bookmark`, {
+      method: 'DELETE',
+      headers: this.getHeaders(idToken),
+    });
+
+    const json = await res.json();
+    return Boolean(json.success);
+  }
+
+  async getBookmarks(
+    idToken: string
+  ): Promise<import('@ai-tutor/shared').AssessmentBookmark[]> {
+    const res = await fetch('/api/assessments/bookmarks', {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: import('@ai-tutor/shared').AssessmentBookmarkListResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return [];
+    }
+
+    return json.data;
+  }
+
+  async isQuestionBookmarked(
+    idToken: string,
+    questionId: string
+  ): Promise<boolean> {
+    const res = await fetch(`/api/assessments/questions/${questionId}/bookmark`, {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json = await res.json();
+    return Boolean(json.data?.bookmarked);
+  }
+
+  async getWrongQuestions(
+    idToken: string
+  ): Promise<import('@ai-tutor/shared').WrongAssessmentQuestion[]> {
+    const res = await fetch('/api/assessments/wrong', {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: import('@ai-tutor/shared').WrongQuestionListResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return [];
+    }
+
+    return json.data;
+  }
+
+  async getDueReviews(
+    idToken: string
+  ): Promise<import('@ai-tutor/shared').WrongAssessmentQuestion[]> {
+    const res = await fetch('/api/assessments/reviews/due', {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: import('@ai-tutor/shared').WrongQuestionListResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return [];
+    }
+
+    return json.data;
+  }
+
+  async getAssessmentAnalytics(
+    idToken: string
+  ): Promise<import('@ai-tutor/shared').AssessmentAnalytics | null> {
+    const res = await fetch('/api/assessments/analytics', {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: import('@ai-tutor/shared').AssessmentAnalyticsResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return null;
+    }
+
+    return json.data;
+  }
 }
 
 export const liveTutorApiClient = new LiveTutorApiClient();
