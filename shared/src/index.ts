@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 // ==========================================
 // 1. Core Health & Response Contracts
@@ -82,7 +82,7 @@ export interface AITestResponse {
 }
 
 // ==========================================
-// 4. Milestone 4: Teacher Engine & Contracts (Zod Runtime Validated)
+// 4. Teacher Engine Contracts (Zod Runtime Validated)
 // ==========================================
 
 // A. Learner Profile
@@ -171,7 +171,7 @@ export const TeacherResponseSchema = z.object({
 });
 export type TeacherResponse = z.infer<typeof TeacherResponseSchema>;
 
-// E. Knowledge Context (Placeholder contract for future RAG)
+// E. Knowledge Context (Contract for future RAG)
 export const KnowledgeChunkSchema = z.object({
   text: z.string(),
   source: z.string().optional(),
@@ -248,6 +248,36 @@ export const LessonPlanSchema = z.object({
 });
 export type LessonPlan = z.infer<typeof LessonPlanSchema>;
 
+// ==========================================
+// 5. Milestone 5: Voice Interaction & Latency Contracts
+// ==========================================
+
+export const VoiceInteractionRequestSchema = z.object({
+  transcript: z.string().min(1, 'Transcript is required'),
+  language: z.enum(['english', 'hindi', 'hinglish']).default('english'),
+  knowledgeContext: KnowledgeContextSchema.optional(),
+});
+export type VoiceInteractionRequest = z.infer<typeof VoiceInteractionRequestSchema>;
+
+export const LatencyMetricsSchema = z.object({
+  speechDurationMs: z.number().optional(),
+  sttFinalizationMs: z.number().optional(),
+  backendDurationMs: z.number().optional(),
+  aiGenerationMs: z.number().optional(),
+  ttsDurationMs: z.number().optional(),
+  totalPerceivedLatencyMs: z.number().optional(),
+});
+export type LatencyMetrics = z.infer<typeof LatencyMetricsSchema>;
+
+export const VoiceInteractionResponseSchema = z.object({
+  transcript: z.string(),
+  teacherResponse: TeacherResponseSchema,
+  teachingState: TeachingStateSchema,
+  normalizedSpeechText: z.string(),
+  latency: LatencyMetricsSchema.optional(),
+});
+export type VoiceInteractionResponse = z.infer<typeof VoiceInteractionResponseSchema>;
+
 // DTO Schemas for API Requests
 export const CreateSessionRequestSchema = z.object({
   topic: z.string().min(1, 'Topic is required'),
@@ -268,3 +298,54 @@ export const CreateLessonPlanRequestSchema = z.object({
   knowledgeContext: KnowledgeContextSchema.optional(),
 });
 export type CreateLessonPlanRequest = z.infer<typeof CreateLessonPlanRequestSchema>;
+
+// ==========================================
+// 6. Speech Text Normalization (Deterministic, Shared & Reusable)
+// ==========================================
+
+/**
+ * Deterministically strips Markdown syntax and normalizes mathematical/presentation
+ * characters so that Speech Synthesis (TTS) produces clean, natural pronunciation.
+ */
+export function normalizeTextForSpeech(text: string): string {
+  if (!text) return '';
+
+  let sanitized = text;
+
+  // 1. Remove code blocks (```...```) and inline code (`...`)
+  sanitized = sanitized.replace(/```[\s\S]*?```/g, ' ');
+  sanitized = sanitized.replace(/`([^`]+)`/g, '$1');
+
+  // 2. Remove markdown images and links: ![alt](url) -> "" and [text](url) -> text
+  sanitized = sanitized.replace(/!\[([^\]]*)\]\([^)]*\)/g, '');
+  sanitized = sanitized.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+
+  // 3. Remove Markdown headers (#, ##, etc.)
+  sanitized = sanitized.replace(/^#{1,6}\s+/gm, '');
+
+  // 4. Remove bold / italic markers (**text**, *text*, __text__, _text_)
+  sanitized = sanitized.replace(/(\*\*|__)(.*?)\1/g, '$2');
+  sanitized = sanitized.replace(/(\*|_)(.*?)\1/g, '$2');
+
+  // 5. Remove blockquotes, horizontal rules, and bullet points
+  sanitized = sanitized.replace(/^\s*>\s*/gm, '');
+  sanitized = sanitized.replace(/^[-*_]{3,}\s*$/gm, '');
+  sanitized = sanitized.replace(/^\s*[-*+]\s+/gm, '');
+  sanitized = sanitized.replace(/^\s*\d+\.\s+/gm, '');
+
+  // 6. Normalize common math symbols and equations for speech
+  // F = ma -> F equals m times a
+  sanitized = sanitized.replace(/(\b[A-Za-z0-9]+)\s*=\s*([A-Za-z0-9]+)\s*[×*]\s*([A-Za-z0-9]+)/g, '$1 equals $2 times $3');
+  sanitized = sanitized.replace(/(\b[A-Za-z0-9]+)\s*=\s*([A-Za-z0-9]+)/g, '$1 equals $2');
+  sanitized = sanitized.replace(/×/g, ' times ');
+  sanitized = sanitized.replace(/÷/g, ' divided by ');
+  sanitized = sanitized.replace(/≠/g, ' is not equal to ');
+  sanitized = sanitized.replace(/≤/g, ' is less than or equal to ');
+  sanitized = sanitized.replace(/≥/g, ' is greater than or equal to ');
+  sanitized = sanitized.replace(/\$/g, ''); // strip KaTeX / math dollar signs
+
+  // 7. Normalize whitespace and trim
+  sanitized = sanitized.replace(/\s+/g, ' ').trim();
+
+  return sanitized;
+}

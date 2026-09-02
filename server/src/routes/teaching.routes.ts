@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import type { Request, Response } from 'express';
 import type {
   ApiResponse,
@@ -6,12 +6,15 @@ import type {
   TeacherResponse,
   TeachingSession,
   TeachingState,
+  VoiceInteractionResponse,
 } from '@ai-tutor/shared';
 import {
   CreateLessonPlanRequestSchema,
   CreateSessionRequestSchema,
   RespondSessionRequestSchema,
   TeachingStateSchema,
+  VoiceInteractionRequestSchema,
+  normalizeTextForSpeech,
 } from '@ai-tutor/shared';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { TeachingSessionModel } from '../models/teaching-session.model.js';
@@ -210,7 +213,127 @@ teachingRouter.post(
   }
 );
 
-// 3. POST /api/teaching/lesson-plan - Generates a structured lesson plan
+// 3. POST /api/teaching/sessions/:sessionId/voice - Voice pipeline interaction endpoint
+teachingRouter.post(
+  '/sessions/:sessionId/voice',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<VoiceInteractionResponse>>): Promise<void> => {
+    const startTime = Date.now();
+    try {
+      const userId = req.user?.uid;
+      const { sessionId } = req.params;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: { message: 'Unauthorized', code: 'AUTH_REQUIRED' },
+        });
+        return;
+      }
+
+      const bodyParse = VoiceInteractionRequestSchema.safeParse(req.body);
+      if (!bodyParse.success) {
+        res.status(400).json({
+          success: false,
+          error: {
+            message: 'Invalid voice request payload',
+            code: 'VALIDATION_ERROR',
+            details: bodyParse.error.format(),
+          },
+        });
+        return;
+      }
+
+      const sessionDoc = await TeachingSessionModel.findById(sessionId);
+      if (!sessionDoc) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Teaching session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
+      if (sessionDoc.userId !== userId) {
+        res.status(403).json({
+          success: false,
+          error: { message: 'Forbidden: You do not own this teaching session', code: 'FORBIDDEN' },
+        });
+        return;
+      }
+
+      const { transcript, language, knowledgeContext } = bodyParse.data;
+
+      // Allow voice request to dynamically set or respect session language
+      const targetLanguage = language || sessionDoc.language || 'english';
+
+      const session: TeachingSession = {
+        id: sessionDoc._id.toString(),
+        userId: sessionDoc.userId,
+        topic: sessionDoc.topic,
+        learnerProfile: {
+          ...sessionDoc.learnerProfile,
+          preferredLanguage: targetLanguage,
+        },
+        status: sessionDoc.status,
+        currentConcept: sessionDoc.currentConcept,
+        language: targetLanguage,
+        teachingState: sessionDoc.teachingState,
+        startedAt: sessionDoc.createdAt.toISOString(),
+        updatedAt: sessionDoc.updatedAt.toISOString(),
+      };
+
+      const aiStart = Date.now();
+      const teacherResponse = await teacherEngine.generateTeacherResponse(
+        session.learnerProfile,
+        session,
+        session.teachingState,
+        transcript,
+        knowledgeContext
+      );
+      const aiGenerationMs = Date.now() - aiStart;
+
+      // Merge state deterministically
+      const updatedState = teacherEngine.mergeTeachingState(
+        session.teachingState,
+        teacherResponse.stateUpdate
+      );
+
+      // Persist to MongoDB
+      sessionDoc.teachingState = updatedState;
+      if (updatedState.currentConcept) {
+        sessionDoc.currentConcept = updatedState.currentConcept;
+      }
+      sessionDoc.language = targetLanguage;
+      await sessionDoc.save();
+
+      // Normalize teacher response for speech synthesis
+      const normalizedSpeechText = normalizeTextForSpeech(teacherResponse.responseText);
+      const backendDurationMs = Date.now() - startTime;
+
+      res.status(200).json({
+        success: true,
+        data: {
+          transcript,
+          teacherResponse,
+          teachingState: updatedState,
+          normalizedSpeechText,
+          latency: {
+            backendDurationMs,
+            aiGenerationMs,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error('Error in voice session response:', error);
+      res.status(500).json({
+        success: false,
+        error: { message: error.message || 'Voice pipeline processing failed', code: 'VOICE_PIPELINE_ERROR' },
+      });
+    }
+  }
+);
+
+// 4. POST /api/teaching/lesson-plan - Generates a structured lesson plan
 teachingRouter.post(
   '/lesson-plan',
   requireAuth,

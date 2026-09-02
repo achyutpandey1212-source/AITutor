@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -8,6 +8,7 @@ import {
 } from 'firebase/auth';
 import { auth } from './config/firebase';
 import type { ApiResponse, HealthStatus, User as AppUser, AITestResponse } from '@ai-tutor/shared';
+import { LiveTutorScreen } from './components/LiveTutorScreen';
 
 export const App: React.FC = () => {
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -21,7 +22,7 @@ export const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
-  // AI Test State
+  // AI Provider Test State
   const [aiPrompt, setAiPrompt] = useState<string>('Explain quantum computing in one sentence.');
   const [aiResult, setAiResult] = useState<AITestResponse | null>(null);
   const [aiLoading, setAiLoading] = useState<boolean>(false);
@@ -212,15 +213,14 @@ export const App: React.FC = () => {
   };
 
   return (
-    <main style={{ fontFamily: 'system-ui, -apple-system, sans-serif', padding: '2rem', maxWidth: '680px', margin: '0 auto' }}>
-      <h1>AI Tutor - Milestone 3: AI Provider Layer</h1>
+    <main style={{ fontFamily: 'system-ui, -apple-system, sans-serif', padding: '2rem', maxWidth: '720px', margin: '0 auto' }}>
+      <h1>🎓 AI Tutor Production</h1>
       
       <section style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-        <h3>Server Status</h3>
+        <h3>Backend & Database Health</h3>
         {health ? (
           <div>
-            <p><strong>Status:</strong> {health.status}</p>
-            <p><strong>Database:</strong> {health.database || 'unknown'}</p>
+            <p><strong>Status:</strong> {health.status} | <strong>Database:</strong> {health.database || 'unknown'} | <strong>Environment:</strong> {health.environment}</p>
           </div>
         ) : (
           <p>Connecting to backend...</p>
@@ -231,12 +231,11 @@ export const App: React.FC = () => {
       {errorMessage && <div style={{ padding: '0.75rem', marginBottom: '1rem', background: '#fff5f5', color: '#c53030', borderRadius: '6px' }}>{errorMessage}</div>}
 
       <section style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-        <h3>Authentication & User Record</h3>
+        <h3>Authentication</h3>
         
         {currentUser ? (
           <div>
-            <p><strong>Authenticated UID:</strong> {currentUser.uid}</p>
-            <p><strong>Email:</strong> {currentUser.email}</p>
+            <p><strong>Firebase UID:</strong> {currentUser.uid} | <strong>Email:</strong> {currentUser.email}</p>
             {syncedUser && (
               <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f1f5f9', borderRadius: '4px', fontSize: '0.85rem' }}>
                 <strong>MongoDB Sync:</strong> ID: {syncedUser.id} | Email: {syncedUser.email}
@@ -280,13 +279,19 @@ export const App: React.FC = () => {
         )}
       </section>
 
+      {/* Milestone 5: Live Tutor Screen */}
       {currentUser && (
-        <section style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>
-          <h3>AI Provider Verification (Gemini Primary / Groq Fallback)</h3>
+        <LiveTutorScreen idToken={idToken} />
+      )}
+
+      {/* Raw AI Provider Debug Verification */}
+      {currentUser && (
+        <section style={{ marginTop: '1.5rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#ffffff' }}>
+          <h3>🔧 AI Provider Verification Tool</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <label>Prompt:</label>
             <textarea
-              rows={3}
+              rows={2}
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
               style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
@@ -310,20 +315,18 @@ export const App: React.FC = () => {
           </div>
 
           {aiResult && (
-            <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
-              <h4>AI Response:</h4>
-              <p style={{ whiteSpace: 'pre-wrap' }}>{aiResult.response}</p>
-              <hr style={{ margin: '1rem 0', borderColor: '#e2e8f0' }} />
-              <p style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                <strong>Provider:</strong> {aiResult.provider} | <strong>Model:</strong> {aiResult.model} | <strong>Fallback Used:</strong> {aiResult.fallbackUsed ? 'Yes' : 'No'}
+            <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
+              <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{aiResult.response}</p>
+              <hr style={{ margin: '0.5rem 0', borderColor: '#e2e8f0' }} />
+              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
+                <strong>Provider:</strong> {aiResult.provider} | <strong>Model:</strong> {aiResult.model} | <strong>Fallback:</strong> {aiResult.fallbackUsed ? 'Yes' : 'No'}
               </p>
             </div>
           )}
 
           {aiStreamText && (
-            <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
-              <h4>Streaming Response:</h4>
-              <p style={{ whiteSpace: 'pre-wrap' }}>{aiStreamText}</p>
+            <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
+              <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{aiStreamText}</p>
             </div>
           )}
         </section>
