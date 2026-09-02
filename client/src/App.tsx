@@ -10,6 +10,7 @@ import { auth } from './config/firebase';
 import type { ApiResponse, HealthStatus, User as AppUser, AITestResponse } from '@ai-tutor/shared';
 import { LiveTutorScreen } from './components/LiveTutorScreen';
 import { DocumentManager } from './components/DocumentManager';
+import { AssessmentPracticeScreen } from './components/assessment/AssessmentPracticeScreen';
 
 export const App: React.FC = () => {
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -294,6 +295,11 @@ export const App: React.FC = () => {
       {/* Milestone 5: Live Tutor Screen */}
       {currentUser && (
         <LiveTutorScreen idToken={idToken} readyDocsCount={readyDocsCount} />
+      )}
+
+      {/* Milestone 7: Adaptive Assessment & Practice Screen */}
+      {currentUser && (
+        <AssessmentPracticeScreen idToken={idToken} readyDocsCount={readyDocsCount} />
       )}
 
       {/* Raw AI Provider Debug Verification */}

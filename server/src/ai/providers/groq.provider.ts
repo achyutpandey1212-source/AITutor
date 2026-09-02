@@ -1,13 +1,15 @@
-﻿import Groq from 'groq-sdk';
+import Groq from 'groq-sdk';
 import type { AIGenerateOptions, AIMessage, AIProviderName } from '@ai-tutor/shared';
 import type { IAIProvider } from '../ai-provider.interface.js';
 import { KeyPool } from '../key-pool.js';
 
 export class GroqProvider implements IAIProvider {
   public readonly name: AIProviderName = 'groq';
-  public readonly defaultModel = 'llama-3.3-70b-versatile';
+  public readonly defaultModel = 'qwen/qwen3.6-27b';
   private keyPool: KeyPool | null = null;
   private clients = new Map<string, Groq>();
+
+
 
   constructor(keys?: string[]) {
     if (keys && keys.length > 0) {

@@ -604,4 +604,107 @@ export function sanitizeQuestionForClient(question: AssessmentQuestion): ClientA
   });
 }
 
+// ==========================================
+// 9. Milestone 7 Phase 2: Assessment Submission Contracts
+// ==========================================
+
+export const AssessmentSubmissionStatusSchema = z.enum([
+  'SUBMITTED',
+  'EVALUATING',
+  'EVALUATED',
+  'FAILED',
+]);
+export type AssessmentSubmissionStatus = z.infer<typeof AssessmentSubmissionStatusSchema>;
+
+// Student submission payload
+export const AssessmentSubmissionRequestSchema = z
+  .object({
+    questionId: z.string().min(1, 'questionId is required'),
+    questionType: AssessmentQuestionTypeSchema,
+    selectedOption: z.string().optional(),
+    answer: z.string().optional(),
+    imageReference: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.questionType === 'MCQ') {
+        return typeof data.selectedOption === 'string' && data.selectedOption.trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message: "MCQ submission requires 'selectedOption'",
+      path: ['selectedOption'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (
+        data.questionType === 'SHORT_ANSWER' ||
+        data.questionType === 'LONG_ANSWER' ||
+        data.questionType === 'NUMERICAL'
+      ) {
+        return typeof data.answer === 'string' && data.answer.trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message: "Text/Numerical submission requires non-empty 'answer'",
+      path: ['answer'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.questionType === 'IMAGE_SOLUTION') {
+        return (
+          typeof data.imageReference === 'string' && data.imageReference.trim().length > 0
+        );
+      }
+      return true;
+    },
+    {
+      message: "Image Solution submission requires 'imageReference'",
+      path: ['imageReference'],
+    }
+  );
+export type AssessmentSubmissionRequest = z.infer<typeof AssessmentSubmissionRequestSchema>;
+
+// Persisted Submission Entity
+export const AssessmentSubmissionSchema = z.object({
+  id: z.string().min(1),
+  userId: z.string().min(1),
+  assessmentId: z.string().optional(),
+  sessionId: z.string().optional(),
+  questionId: z.string().min(1),
+  questionType: AssessmentQuestionTypeSchema,
+  evaluationMode: AssessmentEvaluationModeSchema,
+  selectedOption: z.string().optional(),
+  answer: z.string().optional(),
+  imageReference: z.string().optional(),
+  status: AssessmentSubmissionStatusSchema.default('SUBMITTED'),
+  submittedAt: z.string(),
+  score: z.number().min(0).optional(),
+  feedback: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+export type AssessmentSubmission = z.infer<typeof AssessmentSubmissionSchema>;
+
+// Assessment Generation Request DTO
+export const CreateAssessmentRequestSchema = z.object({
+  concept: z.string().min(1, 'concept is required'),
+  subject: z.string().min(1, 'subject is required'),
+  grade: z.string().optional(),
+  difficulty: AssessmentDifficultySchema.optional(),
+  questionType: AssessmentQuestionTypeSchema.optional(),
+  evaluationMode: AssessmentEvaluationModeSchema.optional(),
+  marks: z.number().int().positive().optional(),
+  goal: AssessmentGoalSchema.optional(),
+  sessionId: z.string().optional(),
+});
+export type CreateAssessmentRequest = z.infer<typeof CreateAssessmentRequestSchema>;
+
+export type AssessmentSubmissionResponse = ApiResponse<AssessmentSubmission>;
+export type AssessmentQuestionResponse = ApiResponse<ClientAssessmentQuestion>;
+
+
 

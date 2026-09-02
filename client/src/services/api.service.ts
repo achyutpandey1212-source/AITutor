@@ -138,6 +138,92 @@ export class LiveTutorApiClient {
 
     return json.data;
   }
+
+  // ==========================================
+  // Milestone 7: Assessment & Submission API Methods
+  // ==========================================
+
+  async generateAssessmentQuestion(
+    idToken: string,
+    request: import('@ai-tutor/shared').CreateAssessmentRequest
+  ): Promise<import('@ai-tutor/shared').ClientAssessmentQuestion> {
+    const res = await fetch('/api/assessments/generate', {
+      method: 'POST',
+      headers: this.getHeaders(idToken),
+      body: JSON.stringify(request),
+    });
+
+    const json: import('@ai-tutor/shared').AssessmentQuestionResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Failed to generate question (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
+
+  async submitAssessmentAnswer(
+    idToken: string,
+    questionId: string,
+    request: import('@ai-tutor/shared').AssessmentSubmissionRequest
+  ): Promise<import('@ai-tutor/shared').AssessmentSubmission> {
+    const res = await fetch(`/api/assessments/questions/${questionId}/submit`, {
+      method: 'POST',
+      headers: this.getHeaders(idToken),
+      body: JSON.stringify(request),
+    });
+
+    const json: import('@ai-tutor/shared').AssessmentSubmissionResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Submission failed (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
+
+  async submitAssessmentImage(
+    idToken: string,
+    questionId: string,
+    file: File
+  ): Promise<import('@ai-tutor/shared').AssessmentSubmission> {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const res = await fetch(`/api/assessments/questions/${questionId}/submit-image`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: formData,
+    });
+
+    const json: import('@ai-tutor/shared').AssessmentSubmissionResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Image submission failed (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
+
+  async getAssessmentSubmission(
+    idToken: string,
+    questionId: string
+  ): Promise<import('@ai-tutor/shared').AssessmentSubmission | null> {
+    const res = await fetch(`/api/assessments/questions/${questionId}/submission`, {
+      headers: this.getHeaders(idToken),
+    });
+
+    if (res.status === 404) {
+      return null;
+    }
+
+    const json: import('@ai-tutor/shared').AssessmentSubmissionResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return null;
+    }
+
+    return json.data;
+  }
 }
 
 export const liveTutorApiClient = new LiveTutorApiClient();
+

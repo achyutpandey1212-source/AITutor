@@ -5,9 +5,10 @@ import { KeyPool } from '../key-pool.js';
 
 export class GeminiProvider implements IAIProvider {
   public readonly name: AIProviderName = 'gemini';
-  public readonly defaultModel = 'gemini-3.6-flash';
+  public readonly defaultModel = 'gemini-3.5-flash';
   private keyPool: KeyPool | null = null;
   private clients = new Map<string, GoogleGenAI>();
+
 
   constructor(keys?: string[]) {
     if (keys && keys.length > 0) {

@@ -5,6 +5,7 @@ import { authRouter } from './routes/auth.routes.js';
 import { aiRouter } from './routes/ai.routes.js';
 import { teachingRouter } from './routes/teaching.routes.js';
 import { knowledgeRouter } from './routes/knowledge.routes.js';
+import { assessmentRouter } from './routes/assessment.routes.js';
 
 export const createApp = () => {
   const app = express();
@@ -19,7 +20,9 @@ export const createApp = () => {
   app.use('/api/ai', aiRouter);
   app.use('/api/teaching', teachingRouter);
   app.use('/api/knowledge', knowledgeRouter);
+  app.use('/api/assessments', assessmentRouter);
 
   return app;
 };
+
 
