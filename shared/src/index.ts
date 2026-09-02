@@ -450,3 +450,158 @@ export type RAGSearchResponse = ApiResponse<RAGSearchResult>;
 export type DocumentListResponse = ApiResponse<Document[]>;
 export type DocumentUploadResponse = ApiResponse<Document>;
 
+// ==========================================
+// 8. Milestone 7: Assessment Intelligence & Question Contracts
+// ==========================================
+
+export const AssessmentQuestionTypeSchema = z.enum([
+  'MCQ',
+  'SHORT_ANSWER',
+  'LONG_ANSWER',
+  'NUMERICAL',
+  'IMAGE_SOLUTION',
+]);
+export type AssessmentQuestionType = z.infer<typeof AssessmentQuestionTypeSchema>;
+
+export const AssessmentEvaluationModeSchema = z.enum([
+  'MCQ',
+  'TEXT',
+  'NUMERICAL',
+  'IMAGE_SOLUTION',
+]);
+export type AssessmentEvaluationMode = z.infer<typeof AssessmentEvaluationModeSchema>;
+
+export const AssessmentDifficultySchema = z.enum(['easy', 'medium', 'hard']);
+export type AssessmentDifficulty = z.infer<typeof AssessmentDifficultySchema>;
+
+export const AssessmentGoalSchema = z.enum([
+  'concept_check',
+  'practice',
+  'diagnostic',
+  'mastery_verification',
+]);
+export type AssessmentGoal = z.infer<typeof AssessmentGoalSchema>;
+
+// MCQ Option
+export const MCQOptionSchema = z.object({
+  id: z.string().min(1),
+  text: z.string().min(1),
+});
+export type MCQOption = z.infer<typeof MCQOptionSchema>;
+
+// Question Rubric (Method, steps, calculation, evaluation criteria, final answer)
+export const QuestionRubricSchema = z.object({
+  method: z.string().optional(),
+  steps: z.array(z.string()).optional(),
+  calculation: z.string().optional(),
+  criteria: z.array(z.string()).optional(),
+  finalAnswer: z.string().optional(),
+});
+export type QuestionRubric = z.infer<typeof QuestionRubricSchema>;
+
+// Standard student-facing cleanliness guidance for image uploads
+export const DEFAULT_IMAGE_SUBMISSION_GUIDANCE =
+  'Before uploading your solution: Make sure the full page is visible, your writing is readable, and your steps are written clearly and in order. The tutor evaluates your working as well as your final answer.';
+
+// Full Server-Side Assessment Question Contract (Contains answer key & rubric for evaluation)
+export const AssessmentQuestionSchema = z.object({
+  questionId: z.string().min(1),
+  concept: z.string().min(1),
+  subject: z.string().min(1),
+  grade: z.string().optional(),
+  difficulty: AssessmentDifficultySchema,
+  questionType: AssessmentQuestionTypeSchema,
+  evaluationMode: AssessmentEvaluationModeSchema,
+  marks: z.number().int().positive(),
+  question: z.string().min(1),
+  context: z.string().optional(),
+  options: z.array(MCQOptionSchema).optional(),
+  correctOptionId: z.string().optional(),
+  expectedAnswer: z.string().optional(),
+  rubric: QuestionRubricSchema.optional(),
+  submissionGuidance: z.string().optional(),
+  requiresImageUpload: z.boolean().default(false),
+  ragGrounded: z.boolean().default(false),
+  groundingSources: z.array(z.string()).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+export type AssessmentQuestion = z.infer<typeof AssessmentQuestionSchema>;
+
+// Client-Facing Sanitized Question (Omits correctOptionId, expectedAnswer, and internal rubric)
+export const ClientAssessmentQuestionSchema = z.object({
+  questionId: z.string().min(1),
+  concept: z.string().min(1),
+  subject: z.string().min(1),
+  grade: z.string().optional(),
+  difficulty: AssessmentDifficultySchema,
+  questionType: AssessmentQuestionTypeSchema,
+  evaluationMode: AssessmentEvaluationModeSchema,
+  marks: z.number().int().positive(),
+  question: z.string().min(1),
+  context: z.string().optional(),
+  options: z.array(MCQOptionSchema).optional(),
+  submissionGuidance: z.string().optional(),
+  requiresImageUpload: z.boolean(),
+  ragGrounded: z.boolean(),
+  groundingSources: z.array(z.string()).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+export type ClientAssessmentQuestion = z.infer<typeof ClientAssessmentQuestionSchema>;
+
+// Assessment Strategy Decision (Deterministic plan per question/step)
+export const AssessmentStrategyDecisionSchema = z.object({
+  concept: z.string().min(1),
+  subject: z.string().min(1),
+  grade: z.string().optional(),
+  difficulty: AssessmentDifficultySchema,
+  questionType: AssessmentQuestionTypeSchema,
+  evaluationMode: AssessmentEvaluationModeSchema,
+  marks: z.number().int().positive(),
+  questionCount: z.number().int().positive().default(1),
+  assessmentGoal: AssessmentGoalSchema.default('concept_check'),
+  targetMisconceptions: z.array(z.string()).optional(),
+  rationale: z.string().optional(),
+  submissionGuidance: z.string().optional(),
+});
+export type AssessmentStrategyDecision = z.infer<typeof AssessmentStrategyDecisionSchema>;
+
+// Assessment Plan (Encompassing session assessment specification)
+export const AssessmentPlanSchema = z.object({
+  id: z.string().min(1),
+  topic: z.string().min(1),
+  subject: z.string().min(1),
+  grade: z.string().optional(),
+  goal: AssessmentGoalSchema,
+  totalMarks: z.number().int().positive(),
+  totalQuestions: z.number().int().positive(),
+  strategies: z.array(AssessmentStrategyDecisionSchema).min(1),
+  createdAt: z.string(),
+});
+export type AssessmentPlan = z.infer<typeof AssessmentPlanSchema>;
+
+/**
+ * Sanitizes an AssessmentQuestion for safe transmission to the client frontend.
+ * Removes internal answer keys (correctOptionId), expected answers, and evaluation rubrics.
+ */
+export function sanitizeQuestionForClient(question: AssessmentQuestion): ClientAssessmentQuestion {
+  return ClientAssessmentQuestionSchema.parse({
+    questionId: question.questionId,
+    concept: question.concept,
+    subject: question.subject,
+    grade: question.grade,
+    difficulty: question.difficulty,
+    questionType: question.questionType,
+    evaluationMode: question.evaluationMode,
+    marks: question.marks,
+    question: question.question,
+    context: question.context,
+    options: question.options ? question.options.map((opt) => ({ id: opt.id, text: opt.text })) : undefined,
+    submissionGuidance: question.submissionGuidance,
+    requiresImageUpload: question.requiresImageUpload || question.evaluationMode === 'IMAGE_SOLUTION',
+    ragGrounded: question.ragGrounded || false,
+    groundingSources: question.groundingSources,
+    metadata: question.metadata,
+  });
+}
+
+

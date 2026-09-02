@@ -1,0 +1,47 @@
+import type {
+  AssessmentDifficulty,
+  AssessmentEvaluationMode,
+  AssessmentGoal,
+  AssessmentPlan,
+  AssessmentQuestion,
+  AssessmentQuestionType,
+  AssessmentStrategyDecision,
+  KnowledgeContext,
+  TeachingState,
+} from '@ai-tutor/shared';
+
+export interface AssessmentPlanInput {
+  topic?: string;
+  concept: string;
+  subject: string;
+  grade?: string;
+  teachingState?: Partial<TeachingState>;
+  goal?: AssessmentGoal;
+  targetMarks?: number;
+  targetQuestionCount?: number;
+  preferredQuestionType?: AssessmentQuestionType;
+  preferredEvaluationMode?: AssessmentEvaluationMode;
+  preferredDifficulty?: AssessmentDifficulty;
+}
+
+export interface GenerateQuestionInput {
+  strategy: AssessmentStrategyDecision;
+  teachingState?: Partial<TeachingState>;
+  knowledgeContext?: KnowledgeContext;
+  customInstructions?: string;
+}
+
+export interface GenerateAssessmentInput {
+  planInput: AssessmentPlanInput;
+  knowledgeContext?: KnowledgeContext;
+}
+
+export interface GeneratedAssessmentResult {
+  plan: AssessmentPlan;
+  questions: AssessmentQuestion[];
+}
+
+export interface AssessmentValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
