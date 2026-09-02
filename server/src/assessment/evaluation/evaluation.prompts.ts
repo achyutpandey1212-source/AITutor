@@ -23,7 +23,8 @@ Your responsibility:
 6. ENUM RESTRICTIONS:
    - status: "correct" | "partially_correct" | "incorrect" | "unclear"
    - understanding / methodSelection / calculation / completeness / reasoning: "strong" | "moderate" | "weak" | "unclear"
-   - recommendedAction: "CONTINUE" | "INCREASE_DIFFICULTY" | "TARGETED_PRACTICE" | "REMEDIAL_PRACTICE" | "RETRY" | "NEEDS_REVIEW"`;
+   - recommendedAction: "CONTINUE" | "INCREASE_DIFFICULTY" | "TARGETED_PRACTICE" | "REMEDIAL_PRACTICE" | "RETRY" | "NEEDS_REVIEW"
+   - failureReason: "IMAGE_UNREADABLE" | "IMAGE_INCOMPLETE" | "PROVIDER_UNAVAILABLE" | "MODEL_FAILURE" | "TIMEOUT" | "MALFORMED_OUTPUT" | "LOW_CONFIDENCE" | "NONE"`;
   }
 
   /**
@@ -55,6 +56,7 @@ Your responsibility:
   "strengths": ["string describing specific strength shown"],
   "weaknesses": ["string describing specific error or weakness"],
   "recommendedAction": "CONTINUE" | "INCREASE_DIFFICULTY" | "TARGETED_PRACTICE" | "REMEDIAL_PRACTICE" | "RETRY" | "NEEDS_REVIEW",
+  "failureReason": "IMAGE_UNREADABLE" | "IMAGE_INCOMPLETE" | "PROVIDER_UNAVAILABLE" | "MODEL_FAILURE" | "TIMEOUT" | "MALFORMED_OUTPUT" | "LOW_CONFIDENCE" | "NONE",
   "confidence": number, // 0.0 to 1.0 (confidence in reading/evaluating the answer)
   "feedback": "Clear, friendly student feedback with what was done well, what went wrong, and next step."
 }`;
@@ -207,16 +209,22 @@ EXPECTED FINAL ANSWER:
 STEP-BY-STEP RUBRIC:
 ${rubricStr || 'Show full mathematical steps, substitutions, calculations, and final answer.'}
 
-HANDWRITING & IMAGE INSPECTION RULES:
-1. LEGIBILITY & CONFIDENCE:
-   - If the handwriting is too blurry, cropped, dark, or illegible to grade with confidence, set "confidence" < 0.5, "evaluationStatus": "NEEDS_REVIEW", "recommendedAction": "NEEDS_REVIEW", and ask for a clearer photo in feedback.
-   - Do NOT invent or hallucinate unreadable steps.
-2. DISTINGUISH ROUGH WORK:
-   - Handwritten work often contains crossed-out calculations, margin rough work, or side notes. Look for the main logical sequence of working leading to the final answer.
-3. STEP-BY-STEP EVALUATION:
-   - Identify Step 1 (Formula / Setup), Step 2 (Substitution), Step 3 (Calculation), and Final Answer.
-   - Award partial credit for each correct step shown on paper.
-4. CALCULATION ERRORS VS CONCEPT:
-   - If formula and setup are correct on the paper but a calculation error occurred in intermediate steps, distinguish this in conceptAssessment (methodSelection: "strong", calculation: "weak").`;
+HANDWRITING & REAL NOTEBOOK WORK EVALUATION RULES:
+1. MESSY ≠ UNREADABLE:
+   - Real student notebook work contains uneven handwriting, crossed-out expressions, margin scratch work, arrows, corrections, cramped lines, overwritten numbers, minor shadows, or slightly tilted photographs.
+   - Do NOT reject or mark "NEEDS_REVIEW" simply because the work is informal or messy.
+   - Actively follow the student's mathematical logic trail and reconstruct their step-by-step reasoning.
+2. KEY REASONING ELEMENTS TO RECONSTRUCT:
+   - Identify: (a) Formula / method selected, (b) Equation setup, (c) Values substituted, (d) Intermediate calculations / transformations, (e) Units, (f) Final boxed / underlined answer.
+3. ISOLATING METHOD ERRORS VS ARITHMETIC SLIPS:
+   - If the student selects the correct algebraic method/formula and sets up equations accurately, but makes a minor arithmetic slip during simplification:
+     * Award partial credit for setup & substitution.
+     * Set methodSelection: "strong" and calculation: "weak".
+     * Explain the exact arithmetic slip constructively.
+   - If the conceptual method itself is wrong, set methodSelection: "weak".
+4. NO HALLUCINATION RULE:
+   - NEVER invent or fabricate unseen symbols or calculations.
+   - If a specific intermediate step is genuinely smudged or ambiguous, mark that specific step status as "unclear".
+   - Only return evaluationStatus: "NEEDS_REVIEW", confidence < 0.5, and failureReason: "IMAGE_UNREADABLE" (or "IMAGE_INCOMPLETE") if the image is so severely blurred, dark, or cropped that essential parts of the solution cannot be interpreted with reasonable confidence.`;
   }
 }

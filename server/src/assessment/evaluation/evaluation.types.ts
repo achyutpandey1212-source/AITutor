@@ -3,6 +3,7 @@ import type {
   AssessmentQuestion,
   AssessmentQuestionType,
   AssessmentSubmission,
+  EvaluationFailureReason,
   EvaluationResult,
   KnowledgeContext,
   TeachingState,
@@ -38,6 +39,7 @@ export interface RawAIEvaluationData {
   strengths?: string[];
   weaknesses?: string[];
   recommendedAction?: 'CONTINUE' | 'INCREASE_DIFFICULTY' | 'TARGETED_PRACTICE' | 'REMEDIAL_PRACTICE' | 'RETRY' | 'NEEDS_REVIEW';
+  failureReason?: EvaluationFailureReason;
   confidence?: number;
   feedback?: string;
 }

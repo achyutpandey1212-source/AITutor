@@ -2,6 +2,7 @@ import type {
   AssessmentEvaluationMode,
   AssessmentQuestion,
   AssessmentSubmission,
+  EvaluationFailureReason,
   EvaluationResult,
   RecommendedAction,
   StepEvaluation,
@@ -25,33 +26,63 @@ export class EvaluationNormalizer {
 
     // Determine status
     let evaluationStatus: 'EVALUATED' | 'NEEDS_REVIEW' | 'FAILED' = 'EVALUATED';
-    if (confidence < 0.5 || raw.recommendedAction === 'NEEDS_REVIEW') {
+    if (
+      confidence < 0.5 ||
+      raw.recommendedAction === 'NEEDS_REVIEW' ||
+      (raw.failureReason && raw.failureReason !== 'NONE')
+    ) {
       evaluationStatus = 'NEEDS_REVIEW';
     }
 
     const percentage = Math.round((score / maxScore) * 100);
     const correct = typeof raw.correct === 'boolean' ? raw.correct : percentage >= 80;
 
+    // Determine failureReason
+    let failureReason: EvaluationFailureReason = 'NONE';
+    if (evaluationStatus === 'NEEDS_REVIEW') {
+      if (
+        raw.failureReason &&
+        [
+          'IMAGE_UNREADABLE',
+          'IMAGE_INCOMPLETE',
+          'PROVIDER_UNAVAILABLE',
+          'MODEL_FAILURE',
+          'TIMEOUT',
+          'MALFORMED_OUTPUT',
+          'LOW_CONFIDENCE',
+          'NONE',
+        ].includes(raw.failureReason)
+      ) {
+        failureReason = raw.failureReason;
+      } else {
+        failureReason = 'LOW_CONFIDENCE';
+      }
+    }
+
     // Normalize recommendedAction
     let recommendedAction: RecommendedAction = 'CONTINUE';
     if (evaluationStatus === 'NEEDS_REVIEW') {
       recommendedAction = 'NEEDS_REVIEW';
-    } else if (raw.recommendedAction && [
-      'CONTINUE',
-      'INCREASE_DIFFICULTY',
-      'TARGETED_PRACTICE',
-      'REMEDIAL_PRACTICE',
-      'RETRY',
-      'NEEDS_REVIEW',
-    ].includes(raw.recommendedAction)) {
+    } else if (
+      raw.recommendedAction &&
+      [
+        'CONTINUE',
+        'INCREASE_DIFFICULTY',
+        'TARGETED_PRACTICE',
+        'REMEDIAL_PRACTICE',
+        'RETRY',
+        'NEEDS_REVIEW',
+      ].includes(raw.recommendedAction)
+    ) {
       recommendedAction = raw.recommendedAction as RecommendedAction;
     } else {
       if (percentage >= 85) {
         recommendedAction = 'INCREASE_DIFFICULTY';
       } else if (percentage <= 50) {
-        recommendedAction = raw.misconceptions && raw.misconceptions.length > 0
-          ? 'REMEDIAL_PRACTICE'
-          : 'TARGETED_PRACTICE';
+        recommendedAction =
+          raw.misconceptions && raw.misconceptions.length > 0
+            ? 'REMEDIAL_PRACTICE'
+            : 'TARGETED_PRACTICE';
       } else {
         recommendedAction = 'CONTINUE';
       }
@@ -86,8 +117,16 @@ export class EvaluationNormalizer {
     let feedback = (raw.feedback || '').trim();
     if (!feedback) {
       if (evaluationStatus === 'NEEDS_REVIEW') {
-        feedback =
-          'Your solution is partly difficult to read. Please upload a clear, well-lit photo of your notebook page with all steps visible.';
+        if (failureReason === 'TIMEOUT') {
+          feedback =
+            'Our evaluation service timed out while analyzing your handwritten solution. Your submission is saved securely. Please try checking again in a moment.';
+        } else if (failureReason === 'PROVIDER_UNAVAILABLE') {
+          feedback =
+            'Our AI evaluation provider is temporarily unavailable. Your solution is saved securely. Please check back shortly.';
+        } else {
+          feedback =
+            'Your solution is partly difficult to read. Please upload a clear, well-lit photo of your notebook page with all steps visible.';
+        }
       } else if (correct) {
         feedback = `Excellent job! You earned ${score}/${maxScore} marks. Your solution is correct and well explained.`;
       } else if (percentage >= 50) {
@@ -118,6 +157,7 @@ export class EvaluationNormalizer {
       strengths: Array.isArray(raw.strengths) ? raw.strengths.filter(Boolean) : [],
       weaknesses: Array.isArray(raw.weaknesses) ? raw.weaknesses.filter(Boolean) : [],
       recommendedAction,
+      failureReason,
       confidence,
       feedback,
       evaluatedAt: new Date().toISOString(),

@@ -1,9 +1,11 @@
-﻿import type { AIGenerateOptions, AIMessage, AIProviderName } from '@ai-tutor/shared';
+import type { AIGenerateOptions, AIMessage, AIProviderName } from '@ai-tutor/shared';
+import type { AICapability } from './ai.config.js';
 
 export interface IAIProvider {
   readonly name: AIProviderName;
   readonly defaultModel: string;
   isConfigured(): boolean;
+  supportsCapability(capability: AICapability): boolean;
 
   generateText(
     prompt: string | AIMessage[],

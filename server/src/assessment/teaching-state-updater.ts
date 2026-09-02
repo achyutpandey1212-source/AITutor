@@ -125,13 +125,17 @@ export class TeachingStateUpdater {
     const confidence = typeof evaluation.confidence === 'number' ? evaluation.confidence : 1.0;
     const scoreFrac = Math.max(0, Math.min(1.0, evaluation.percentage / 100));
 
-    // 1. Confidence Safeguard Check:
-    // If evaluation has low confidence (< 0.5) or is marked NEEDS_REVIEW, DO NOT penalize mastery!
-    if (confidence < this.policy.mediumConfidenceThreshold || evaluation.evaluationStatus === 'NEEDS_REVIEW') {
+    // 1. Confidence & Failure Safeguard Check:
+    // If evaluation has low confidence (< 0.5), is marked NEEDS_REVIEW, or encountered a provider/image failure, DO NOT penalize mastery!
+    if (
+      confidence < this.policy.mediumConfidenceThreshold ||
+      evaluation.evaluationStatus === 'NEEDS_REVIEW' ||
+      (evaluation.failureReason && evaluation.failureReason !== 'NONE')
+    ) {
       console.info(
-        `[TeachingStateUpdater] Low confidence evaluation (${confidence.toFixed(
+        `[TeachingStateUpdater] Low confidence or review-needed evaluation (${confidence.toFixed(
           2
-        )}). Skipping mastery update to protect student profile.`
+        )}, reason=${evaluation.failureReason || 'NONE'}). Skipping mastery update to protect student profile.`
       );
       return {
         ...previous,

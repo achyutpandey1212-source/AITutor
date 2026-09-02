@@ -34,6 +34,18 @@ export class GroqProvider implements IAIProvider {
     return this.getKeyPool().isConfigured();
   }
 
+  supportsCapability(capability: import('../ai.config.js').AICapability): boolean {
+    // Groq models (Qwen 3.8 / 3.6) support text, structured reasoning, generation, text evaluation, and lightweight.
+    // They do NOT support multimodal image evaluation or vision.
+    switch (capability) {
+      case 'MULTIMODAL_ASSESSMENT_EVALUATION':
+      case 'VISION':
+        return false;
+      default:
+        return true;
+    }
+  }
+
   private getClient(apiKey: string): Groq {
     let client = this.clients.get(apiKey);
     if (!client) {
@@ -45,16 +57,19 @@ export class GroqProvider implements IAIProvider {
 
   /**
    * Executes an operation across the Groq model chain and key pool with bounded attempts (max 2),
-   * strict 10s request timeouts, and instant fallback error signaling.
+   * strict request timeouts, and instant fallback error signaling.
    */
   private async executeWithKeyAndModelRotation<R>(
     preferredModel: string,
-    operation: (client: Groq, activeModel: string, keySlot: number) => Promise<R>
+    operation: (client: Groq, activeModel: string, keySlot: number) => Promise<R>,
+    options?: AIGenerateOptions
   ): Promise<{ result: R; model: string }> {
     const pool = this.getKeyPool();
     if (!pool.isConfigured()) {
       throw new Error('GROQ_API_KEYS or GROQ_API_KEY environment variable is not configured');
     }
+
+    const timeoutMs = options?.timeoutMs || AI_CONFIG.DEFAULT_TIMEOUT_MS;
 
     const modelChain: string[] = [preferredModel];
     for (const fallbackModel of GROQ_MODEL_CHAIN) {
@@ -86,8 +101,8 @@ export class GroqProvider implements IAIProvider {
 
         const timeoutPromise = new Promise<never>((_, reject) => {
           const timeoutId = setTimeout(() => {
-            reject(new Error(`Groq request timed out after ${AI_CONFIG.REQUEST_TIMEOUT_MS}ms`));
-          }, AI_CONFIG.REQUEST_TIMEOUT_MS);
+            reject(new Error(`Groq request timed out after ${timeoutMs}ms`));
+          }, timeoutMs);
           timeoutId.unref?.();
         });
 
@@ -173,7 +188,8 @@ export class GroqProvider implements IAIProvider {
         });
 
         return completion.choices[0]?.message?.content || '';
-      }
+      },
+      options
     );
 
     return { text: result, model };
@@ -211,7 +227,8 @@ export class GroqProvider implements IAIProvider {
           const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
           return JSON.parse(cleaned) as T;
         }
-      }
+      },
+      options
     );
 
     return { data: result, model };
@@ -238,15 +255,15 @@ export class GroqProvider implements IAIProvider {
 
         let fullText = '';
         for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content || '';
-          if (content) {
-            fullText += content;
-            onChunk(content);
+          const chunkText = chunk.choices[0]?.delta?.content || '';
+          if (chunkText) {
+            fullText += chunkText;
+            onChunk(chunkText);
           }
         }
-
         return fullText;
-      }
+      },
+      options
     );
 
     return { fullText: result, model };

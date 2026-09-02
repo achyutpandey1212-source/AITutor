@@ -134,6 +134,7 @@ async function runAIProviderVerification() {
     name: 'gemini',
     defaultModel: 'gemini-3.7-flash',
     isConfigured: () => true,
+    supportsCapability: () => true,
     async generateText() {
       throw { status: 503, message: 'Gemini service temporarily overloaded' };
     },
@@ -149,6 +150,7 @@ async function runAIProviderVerification() {
     name: 'groq',
     defaultModel: 'qwen/qwen3.8-27b',
     isConfigured: () => true,
+    supportsCapability: (cap) => cap !== 'MULTIMODAL_ASSESSMENT_EVALUATION' && cap !== 'VISION',
     async generateText() {
       return { text: 'Groq fallback response', model: 'qwen/qwen3.8-27b' };
     },
@@ -179,6 +181,7 @@ async function runAIProviderVerification() {
     name: 'gemini',
     defaultModel: 'invalid-model-id',
     isConfigured: () => true,
+    supportsCapability: () => true,
     async generateText() {
       modelCallCount++;
       throw { status: 404, message: 'Model invalid-model-id does not exist' };
@@ -204,6 +207,7 @@ async function runAIProviderVerification() {
     name: 'groq',
     defaultModel: 'qwen/qwen3.8-27b',
     isConfigured: () => true,
+    supportsCapability: (cap) => cap !== 'MULTIMODAL_ASSESSMENT_EVALUATION' && cap !== 'VISION',
     async generateText() {
       throw { status: 500, message: 'Groq internal error' };
     },

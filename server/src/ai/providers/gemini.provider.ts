@@ -34,6 +34,11 @@ export class GeminiProvider implements IAIProvider {
     return this.getKeyPool().isConfigured();
   }
 
+  supportsCapability(_capability: import('../ai.config.js').AICapability): boolean {
+    // Gemini supports all multimodal, text, structured, and reasoning capabilities
+    return true;
+  }
+
   private getClient(apiKey: string): GoogleGenAI {
     let client = this.clients.get(apiKey);
     if (!client) {
@@ -45,16 +50,19 @@ export class GeminiProvider implements IAIProvider {
 
   /**
    * Executes an operation across the model chain and key pool with bounded attempts (max 2 total),
-   * strict request timeouts (10s), and instant model/provider escalation.
+   * strict request timeouts, and instant model/provider escalation.
    */
   private async executeWithKeyAndModelRotation<R>(
     preferredModel: string,
-    operation: (client: GoogleGenAI, activeModel: string, keySlot: number) => Promise<R>
+    operation: (client: GoogleGenAI, activeModel: string, keySlot: number) => Promise<R>,
+    options?: AIGenerateOptions
   ): Promise<{ result: R; model: string }> {
     const pool = this.getKeyPool();
     if (!pool.isConfigured()) {
       throw new Error('GEMINI_API_KEYS or GEMINI_API_KEY environment variable is not configured');
     }
+
+    const timeoutMs = options?.timeoutMs || AI_CONFIG.DEFAULT_TIMEOUT_MS;
 
     // Determine model chain: preferred model first, then fallback chain
     const modelChain: string[] = [preferredModel];
@@ -85,11 +93,11 @@ export class GeminiProvider implements IAIProvider {
       try {
         const client = this.getClient(apiKey);
 
-        // Wrap with bounded 10s timeout
+        // Wrap with bounded timeout
         const timeoutPromise = new Promise<never>((_, reject) => {
           const timeoutId = setTimeout(() => {
-            reject(new Error(`Gemini request timed out after ${AI_CONFIG.REQUEST_TIMEOUT_MS}ms`));
-          }, AI_CONFIG.REQUEST_TIMEOUT_MS);
+            reject(new Error(`Gemini request timed out after ${timeoutMs}ms`));
+          }, timeoutMs);
           timeoutId.unref?.();
         });
 
@@ -226,7 +234,8 @@ export class GeminiProvider implements IAIProvider {
         });
 
         return response.text || '';
-      }
+      },
+      options
     );
 
     return { text: result, model };
@@ -277,7 +286,8 @@ export class GeminiProvider implements IAIProvider {
 
         const text = response.text || '{}';
         return this.cleanAndParseJson<T>(text);
-      }
+      },
+      options
     );
 
     return { data: result, model };
@@ -294,7 +304,7 @@ export class GeminiProvider implements IAIProvider {
     const { result, model } = await this.executeWithKeyAndModelRotation(
       preferredModel,
       async (ai, activeModel) => {
-        const responseStream = await ai.models.generateContentStream({
+        const stream = await ai.models.generateContentStream({
           model: activeModel,
           contents,
           config: {
@@ -305,16 +315,16 @@ export class GeminiProvider implements IAIProvider {
         });
 
         let fullText = '';
-        for await (const chunk of responseStream) {
+        for await (const chunk of stream) {
           const chunkText = chunk.text || '';
           if (chunkText) {
             fullText += chunkText;
             onChunk(chunkText);
           }
         }
-
         return fullText;
-      }
+      },
+      options
     );
 
     return { fullText: result, model };

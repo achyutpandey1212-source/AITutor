@@ -7,7 +7,12 @@ import type {
 import type { IAIProvider } from './ai-provider.interface.js';
 import { GeminiProvider } from './providers/gemini.provider.js';
 import { GroqProvider } from './providers/groq.provider.js';
-import { AITaskType, TASK_MODEL_MAPPINGS } from './ai.config.js';
+import {
+  AITaskType,
+  TASK_CAPABILITY_REQUIREMENTS,
+  TASK_MODEL_MAPPINGS,
+  TASK_TIMEOUTS,
+} from './ai.config.js';
 import { classifyAIError } from './ai.errors.js';
 
 export interface AIServiceGenerateOptions extends AIGenerateOptions {
@@ -32,7 +37,7 @@ export class AIService {
   }
 
   /**
-   * Resolves options based on explicit task type mapping.
+   * Resolves options based on explicit task type mapping & capability timeouts.
    */
   private resolveOptions(options?: AIServiceGenerateOptions): AIGenerateOptions {
     if (!options?.taskType) {
@@ -40,8 +45,13 @@ export class AIService {
     }
 
     const taskConfig = TASK_MODEL_MAPPINGS[options.taskType];
+    const timeoutMs = options.timeoutMs || taskConfig?.timeoutMs || TASK_TIMEOUTS[options.taskType];
+
     if (!taskConfig) {
-      return options;
+      return {
+        ...options,
+        timeoutMs,
+      };
     }
 
     return {
@@ -49,6 +59,7 @@ export class AIService {
       model: options.model || taskConfig.modelChain[0],
       temperature: options.temperature ?? taskConfig.temperature,
       maxTokens: options.maxTokens || taskConfig.maxTokens,
+      timeoutMs,
     };
   }
 
@@ -57,6 +68,9 @@ export class AIService {
     options?: AIServiceGenerateOptions
   ): Promise<AITextResponse> {
     const resolvedOpts = this.resolveOptions(options);
+    const taskType = options?.taskType || 'reasoning';
+    const requiredCapability = TASK_CAPABILITY_REQUIREMENTS[taskType] || 'TEXT_GENERATION';
+
     const primaryConfigured = this.primaryProvider.isConfigured();
     const fallbackConfigured = this.fallbackProvider.isConfigured();
 
@@ -80,7 +94,9 @@ export class AIService {
           classified.message
         );
 
-        if (classified.isProviderRecoverable && fallbackConfigured) {
+        const isFallbackCapable = this.fallbackProvider.supportsCapability(requiredCapability);
+
+        if (classified.isProviderRecoverable && fallbackConfigured && isFallbackCapable) {
           console.info(`[AIService] Routing to fallback provider (${this.fallbackProvider.name})...`);
           try {
             const fallbackOpts: AIServiceGenerateOptions = {
@@ -105,11 +121,22 @@ export class AIService {
               `AI generation failed on both primary (${classified.code}) and fallback (${fallbackClassified.code}) providers.`
             );
           }
+        } else if (!isFallbackCapable && classified.isProviderRecoverable) {
+          console.warn(
+            `[AIService] Fallback provider (${this.fallbackProvider.name}) does not support capability '${requiredCapability}' for task '${taskType}'. Skipping fallback.`
+          );
         }
 
         throw primaryError;
       }
     } else {
+      const isFallbackCapable = this.fallbackProvider.supportsCapability(requiredCapability);
+      if (!isFallbackCapable) {
+        throw new Error(
+          `Primary provider is not configured and fallback provider (${this.fallbackProvider.name}) does not support capability '${requiredCapability}' for task '${taskType}'.`
+        );
+      }
+
       console.info(
         `[AIService] Primary provider not configured. Routing directly to fallback (${this.fallbackProvider.name})...`
       );
@@ -129,6 +156,9 @@ export class AIService {
     options?: AIServiceGenerateOptions
   ): Promise<AIStructuredResponse<T>> {
     const resolvedOpts = this.resolveOptions(options);
+    const taskType = options?.taskType || 'structured_reasoning';
+    const requiredCapability = TASK_CAPABILITY_REQUIREMENTS[taskType] || 'STRUCTURED_REASONING';
+
     const primaryConfigured = this.primaryProvider.isConfigured();
     const fallbackConfigured = this.fallbackProvider.isConfigured();
 
@@ -156,7 +186,9 @@ export class AIService {
           classified.message
         );
 
-        if (classified.isProviderRecoverable && fallbackConfigured) {
+        const isFallbackCapable = this.fallbackProvider.supportsCapability(requiredCapability);
+
+        if (classified.isProviderRecoverable && fallbackConfigured && isFallbackCapable) {
           console.info(
             `[AIService] Routing structured request to fallback provider (${this.fallbackProvider.name})...`
           );
@@ -187,11 +219,22 @@ export class AIService {
               `Structured generation failed on both primary (${classified.code}) and fallback (${fallbackClassified.code}) providers.`
             );
           }
+        } else if (!isFallbackCapable && classified.isProviderRecoverable) {
+          console.warn(
+            `[AIService] Fallback provider (${this.fallbackProvider.name}) does not support capability '${requiredCapability}' for task '${taskType}'. Skipping fallback.`
+          );
         }
 
         throw primaryError;
       }
     } else {
+      const isFallbackCapable = this.fallbackProvider.supportsCapability(requiredCapability);
+      if (!isFallbackCapable) {
+        throw new Error(
+          `Primary provider is not configured and fallback provider (${this.fallbackProvider.name}) does not support capability '${requiredCapability}' for task '${taskType}'.`
+        );
+      }
+
       console.info(
         `[AIService] Primary provider not configured. Routing structured request directly to fallback (${this.fallbackProvider.name})...`
       );
@@ -215,6 +258,9 @@ export class AIService {
     options?: AIServiceGenerateOptions
   ): Promise<AITextResponse> {
     const resolvedOpts = this.resolveOptions(options);
+    const taskType = options?.taskType || 'reasoning';
+    const requiredCapability = TASK_CAPABILITY_REQUIREMENTS[taskType] || 'TEXT_GENERATION';
+
     const primaryConfigured = this.primaryProvider.isConfigured();
     const fallbackConfigured = this.fallbackProvider.isConfigured();
 
@@ -234,23 +280,21 @@ export class AIService {
       } catch (primaryError: any) {
         const classified = classifyAIError(primaryError);
         console.warn(
-          `[AIService] Primary stream failed with code ${classified.code}:`,
+          `[AIService] Primary provider streaming failed with code ${classified.code}:`,
           classified.message
         );
 
-        if (classified.isProviderRecoverable && fallbackConfigured) {
-          console.info(`[AIService] Routing stream to fallback provider (${this.fallbackProvider.name})...`);
+        const isFallbackCapable = this.fallbackProvider.supportsCapability(requiredCapability);
+
+        if (classified.isProviderRecoverable && fallbackConfigured && isFallbackCapable) {
+          console.info(`[AIService] Routing streaming request to fallback provider (${this.fallbackProvider.name})...`);
           try {
             const fallbackOpts: AIServiceGenerateOptions = {
               ...resolvedOpts,
               model: options?.model && !options.model.startsWith('gemini') ? options.model : undefined,
               taskType: 'fallback_reasoning',
             };
-            const fallbackResult = await this.fallbackProvider.streamText(
-              prompt,
-              onChunk,
-              fallbackOpts
-            );
+            const fallbackResult = await this.fallbackProvider.streamText(prompt, onChunk, fallbackOpts);
             return {
               text: fallbackResult.fullText,
               provider: this.fallbackProvider.name,
@@ -260,20 +304,31 @@ export class AIService {
           } catch (fallbackError: any) {
             const fallbackClassified = classifyAIError(fallbackError);
             console.error(
-              `[AIService] Fallback stream failed with code ${fallbackClassified.code}:`,
+              `[AIService] Fallback streaming failed with code ${fallbackClassified.code}:`,
               fallbackClassified.message
             );
             throw new Error(
-              `Streaming failed on both primary (${classified.code}) and fallback (${fallbackClassified.code}) providers.`
+              `Streaming generation failed on both primary (${classified.code}) and fallback (${fallbackClassified.code}) providers.`
             );
           }
+        } else if (!isFallbackCapable && classified.isProviderRecoverable) {
+          console.warn(
+            `[AIService] Fallback provider (${this.fallbackProvider.name}) does not support capability '${requiredCapability}' for task '${taskType}'. Skipping fallback.`
+          );
         }
 
         throw primaryError;
       }
     } else {
+      const isFallbackCapable = this.fallbackProvider.supportsCapability(requiredCapability);
+      if (!isFallbackCapable) {
+        throw new Error(
+          `Primary provider is not configured and fallback provider (${this.fallbackProvider.name}) does not support capability '${requiredCapability}' for task '${taskType}'.`
+        );
+      }
+
       console.info(
-        `[AIService] Primary provider not configured. Routing stream directly to fallback (${this.fallbackProvider.name})...`
+        `[AIService] Primary provider not configured. Routing streaming directly to fallback (${this.fallbackProvider.name})...`
       );
       const fallbackResult = await this.fallbackProvider.streamText(prompt, onChunk, resolvedOpts);
       return {

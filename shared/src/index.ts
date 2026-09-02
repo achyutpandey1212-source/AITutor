@@ -63,6 +63,7 @@ export interface AIGenerateOptions {
   maxTokens?: number;
   systemInstruction?: string;
   images?: AIImagePart[];
+  timeoutMs?: number;
 }
 
 export interface AITextResponse {
@@ -725,6 +726,18 @@ export const RecommendedActionSchema = z.enum([
 ]);
 export type RecommendedAction = z.infer<typeof RecommendedActionSchema>;
 
+export const EvaluationFailureReasonSchema = z.enum([
+  'IMAGE_UNREADABLE',
+  'IMAGE_INCOMPLETE',
+  'PROVIDER_UNAVAILABLE',
+  'MODEL_FAILURE',
+  'TIMEOUT',
+  'MALFORMED_OUTPUT',
+  'LOW_CONFIDENCE',
+  'NONE',
+]);
+export type EvaluationFailureReason = z.infer<typeof EvaluationFailureReasonSchema>;
+
 export const EvaluationResultSchema = z.object({
   questionId: z.string().min(1),
   submissionId: z.string().min(1),
@@ -740,6 +753,7 @@ export const EvaluationResultSchema = z.object({
   strengths: z.array(z.string()).default([]),
   weaknesses: z.array(z.string()).default([]),
   recommendedAction: RecommendedActionSchema,
+  failureReason: EvaluationFailureReasonSchema.default('NONE'),
   confidence: z.number().min(0).max(1).default(1.0),
   feedback: z.string().min(1),
   evaluatedAt: z.string(),
