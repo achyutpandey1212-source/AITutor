@@ -297,7 +297,7 @@ export const AssessmentPracticeScreen: React.FC<AssessmentPracticeScreenProps> =
             initialSubmission={latestSubmission}
           />
 
-          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', flexWrap: 'wrap' }}>
             <button
               onClick={handleGenerateQuestion}
               disabled={isLoading}
@@ -312,8 +312,28 @@ export const AssessmentPracticeScreen: React.FC<AssessmentPracticeScreenProps> =
                 fontSize: '0.85rem',
               }}
             >
-              🔄 Generate Another Question
+              🔄 Refresh / New Question
             </button>
+
+            {latestSubmission?.evaluation && (
+              <button
+                onClick={handleGenerateQuestion}
+                disabled={isLoading}
+                style={{
+                  padding: '0.5rem 1.25rem',
+                  background: '#2563eb',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                }}
+              >
+                🎯 Next Adaptive Question ({latestSubmission.evaluation.recommendedAction.replace('_', ' ')})
+              </button>
+            )}
           </div>
         </div>
       )}

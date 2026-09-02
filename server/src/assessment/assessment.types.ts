@@ -7,6 +7,7 @@ import type {
   AssessmentQuestionType,
   AssessmentStrategyDecision,
   KnowledgeContext,
+  LearnerAssessmentState,
   TeachingState,
 } from '@ai-tutor/shared';
 
@@ -16,17 +17,22 @@ export interface AssessmentPlanInput {
   subject: string;
   grade?: string;
   teachingState?: Partial<TeachingState>;
+  learnerState?: LearnerAssessmentState;
   goal?: AssessmentGoal;
   targetMarks?: number;
   targetQuestionCount?: number;
   preferredQuestionType?: AssessmentQuestionType;
   preferredEvaluationMode?: AssessmentEvaluationMode;
   preferredDifficulty?: AssessmentDifficulty;
+  targetSkill?: string;
+  targetMisconception?: string;
+  adaptiveContext?: Record<string, any>;
 }
 
 export interface GenerateQuestionInput {
   strategy: AssessmentStrategyDecision;
   teachingState?: Partial<TeachingState>;
+  learnerState?: LearnerAssessmentState;
   knowledgeContext?: KnowledgeContext;
   customInstructions?: string;
 }

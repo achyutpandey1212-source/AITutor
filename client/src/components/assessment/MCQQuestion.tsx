@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { ClientAssessmentQuestion, AssessmentSubmission } from '@ai-tutor/shared';
 import { liveTutorApiClient } from '../../services/api.service';
+import { EvaluationFeedbackCard } from './EvaluationFeedbackCard';
 
 export interface MCQQuestionProps {
   question: ClientAssessmentQuestion;
@@ -124,20 +125,19 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
             padding: '0.5rem 0.75rem',
             borderRadius: '6px',
             marginBottom: '0.75rem',
-            fontStyle: 'italic',
           }}
         >
           {question.context}
         </p>
       )}
 
-      <h3 style={{ fontSize: '1.05rem', color: '#1e293b', marginTop: 0, marginBottom: '1rem' }}>
+      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#0f172a', lineHeight: '1.4' }}>
         {question.question}
       </h3>
 
       {/* Options List */}
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
           {options.map((opt) => {
             const isSelected = selectedOption === opt.id;
             return (
@@ -148,7 +148,7 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
                   alignItems: 'center',
                   padding: '0.75rem 1rem',
                   borderRadius: '6px',
-                  border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                  border: `2px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}`,
                   background: isSelected ? '#eff6ff' : '#ffffff',
                   cursor: isSubmitted ? 'default' : 'pointer',
                   transition: 'all 0.15s ease-in-out',
@@ -159,14 +159,14 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
                   name={`mcq_${question.questionId}`}
                   value={opt.id}
                   checked={isSelected}
+                  onChange={() => !isSubmitted && setSelectedOption(opt.id)}
                   disabled={isSubmitted || isSubmitting}
-                  onChange={() => setSelectedOption(opt.id)}
                   style={{ marginRight: '0.75rem', cursor: isSubmitted ? 'default' : 'pointer' }}
                 />
                 <span style={{ fontWeight: 700, marginRight: '0.5rem', color: '#1e293b' }}>
                   {opt.id}.
                 </span>
-                <span style={{ color: '#334155', flex: 1 }}>{opt.text}</span>
+                <span style={{ color: '#334155', fontSize: '0.95rem' }}>{opt.text}</span>
               </label>
             );
           })}
@@ -185,27 +185,6 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
             }}
           >
             {error}
-          </div>
-        )}
-
-        {/* Submission Feedback */}
-        {submissionResult && (
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              marginBottom: '1rem',
-              borderRadius: '6px',
-              background: submissionResult.score && submissionResult.score > 0 ? '#f0fdf4' : '#fef2f2',
-              border: submissionResult.score && submissionResult.score > 0 ? '1px solid #bbf7d0' : '1px solid #fecaca',
-              color: submissionResult.score && submissionResult.score > 0 ? '#166534' : '#991b1b',
-              fontSize: '0.9rem',
-            }}
-          >
-            <strong>{submissionResult.score && submissionResult.score > 0 ? '✅ Correct!' : '❌ Incorrect'}</strong>
-            {typeof submissionResult.score === 'number' && (
-              <span> — Score: {submissionResult.score}/{question.marks}</span>
-            )}
-            {submissionResult.feedback && <p style={{ margin: '0.25rem 0 0 0' }}>{submissionResult.feedback}</p>}
           </div>
         )}
 
@@ -228,6 +207,14 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
           </button>
         )}
       </form>
+
+      {/* Evaluation Feedback Card */}
+      {submissionResult && (
+        <EvaluationFeedbackCard
+          evaluation={submissionResult.evaluation}
+          status={submissionResult.status}
+        />
+      )}
     </div>
   );
 };

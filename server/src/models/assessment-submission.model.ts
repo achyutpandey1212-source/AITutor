@@ -66,7 +66,7 @@ const AssessmentSubmissionMongooseSchema = new Schema<IAssessmentSubmissionDocum
     },
     status: {
       type: String,
-      enum: ['SUBMITTED', 'EVALUATING', 'EVALUATED', 'FAILED'],
+      enum: ['SUBMITTED', 'EVALUATING', 'EVALUATED', 'NEEDS_REVIEW', 'FAILED'],
       default: 'SUBMITTED',
       index: true,
     },

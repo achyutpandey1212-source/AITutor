@@ -3,6 +3,9 @@ import type {
   AssessmentSubmission,
   AssessmentSubmissionRequest,
   AssessmentSubmissionStatus,
+  EvaluationResult,
+  KnowledgeContext,
+  TeachingState,
 } from '@ai-tutor/shared';
 import {
   AssessmentQuestionSchema,
@@ -12,6 +15,7 @@ import {
 import { AssessmentQuestionModel } from '../models/assessment-question.model.js';
 import { AssessmentSubmissionModel } from '../models/assessment-submission.model.js';
 import { AssessmentValidator } from './assessment.validation.js';
+import { assessmentEvaluatorService } from './assessment-evaluator.service.js';
 
 export class AssessmentSubmissionService {
   /**
@@ -100,13 +104,18 @@ export class AssessmentSubmissionService {
   }
 
   /**
-   * Submits a student answer with strict validation, duplicate prevention, and tenant verification.
+   * Submits a student answer with strict validation, duplicate prevention, and non-blocking background AI evaluation.
    */
   async submitAnswer(
     userId: string,
     questionId: string,
     submissionReq: AssessmentSubmissionRequest,
-    options?: { assessmentId?: string; sessionId?: string }
+    options?: {
+      assessmentId?: string;
+      sessionId?: string;
+      knowledgeContext?: KnowledgeContext;
+      teachingState?: Partial<TeachingState>;
+    }
   ): Promise<AssessmentSubmission> {
     // 1. Validate submission contract via Zod
     const validatedRequest = AssessmentSubmissionRequestSchema.parse(submissionReq);
@@ -117,7 +126,7 @@ export class AssessmentSubmissionService {
       throw new Error('Question not found or unauthorized access');
     }
 
-    // 3. Question type integrity check (client cannot alter questionType to an incompatible type)
+    // 3. Question type integrity check
     const isMatchingType =
       validatedRequest.questionType === serverQuestion.questionType ||
       (serverQuestion.evaluationMode === 'IMAGE_SOLUTION' &&
@@ -140,30 +149,7 @@ export class AssessmentSubmissionService {
       return this.toSubmissionEntity(existingSubmission);
     }
 
-    // 5. Compute initial evaluation status and scoring
-    let status: AssessmentSubmissionStatus = 'SUBMITTED';
-    let score: number | undefined = undefined;
-    let feedback: string | undefined = undefined;
-
-    if (serverQuestion.questionType === 'MCQ') {
-      const selected = (validatedRequest.selectedOption || '').trim().toUpperCase();
-      const correct = (serverQuestion.correctOptionId || '').trim().toUpperCase();
-
-      if (selected && correct && selected === correct) {
-        score = serverQuestion.marks;
-        feedback = 'Correct! Great job.';
-        status = 'EVALUATED';
-      } else {
-        score = 0;
-        feedback = 'Incorrect option selected.';
-        status = 'EVALUATED';
-      }
-    } else {
-      // Text / Numerical / Image solution are marked SUBMITTED and handed off to Phase 3 evaluator boundary
-      status = 'SUBMITTED';
-    }
-
-    // 6. Persist submission
+    // 5. Initial creation
     const newDoc = await AssessmentSubmissionModel.create({
       userId,
       questionId,
@@ -174,13 +160,97 @@ export class AssessmentSubmissionService {
       selectedOption: validatedRequest.selectedOption,
       answer: validatedRequest.answer,
       imageReference: validatedRequest.imageReference,
-      status,
+      status: 'SUBMITTED',
       submittedAt: new Date(),
-      score,
-      feedback,
     });
 
-    return this.toSubmissionEntity(newDoc);
+    const initialEntity = this.toSubmissionEntity(newDoc);
+
+    // 6. Evaluation triggering:
+    if (serverQuestion.questionType === 'MCQ') {
+      // MCQ is deterministic and synchronous (0ms overhead)
+      await assessmentEvaluatorService.evaluateSubmission(
+        userId,
+        serverQuestion,
+        initialEntity,
+        options
+      );
+      const updated = await AssessmentSubmissionModel.findById(newDoc._id);
+      return this.toSubmissionEntity(updated);
+    } else {
+      // Non-blocking asynchronous background evaluation for Text, Numerical, and Image Solution
+      this.triggerEvaluation(userId, questionId, options).catch((err) => {
+        console.error(`[AssessmentSubmission] Background evaluation failed for question ${questionId}:`, err);
+      });
+      return initialEntity;
+    }
+  }
+
+  /**
+   * Triggers evaluation for a submission with atomic concurrency locking.
+   */
+  async triggerEvaluation(
+    userId: string,
+    questionId: string,
+    options?: {
+      knowledgeContext?: KnowledgeContext;
+      teachingState?: Partial<TeachingState>;
+    }
+  ): Promise<EvaluationResult> {
+    const serverQuestion = await this.getQuestion(questionId, userId);
+    if (!serverQuestion) {
+      throw new Error('Question not found or unauthorized access');
+    }
+
+    // Atomic lock: Transition SUBMITTED -> EVALUATING
+    const lockedDoc = await AssessmentSubmissionModel.findOneAndUpdate(
+      {
+        userId,
+        questionId,
+        status: { $in: ['SUBMITTED', 'FAILED', 'NEEDS_REVIEW'] },
+      },
+      {
+        status: 'EVALUATING',
+      },
+      { new: true }
+    );
+
+    let submissionDoc = lockedDoc;
+    if (!submissionDoc) {
+      submissionDoc = await AssessmentSubmissionModel.findOne({ userId, questionId });
+      if (!submissionDoc) {
+        throw new Error('No submission found to evaluate');
+      }
+      if (submissionDoc.status === 'EVALUATED' && submissionDoc.evaluation) {
+        return submissionDoc.evaluation as EvaluationResult;
+      }
+      if (submissionDoc.status === 'EVALUATING') {
+        console.info(`[AssessmentSubmission] Evaluation already in progress for question ${questionId}`);
+      }
+    }
+
+    const submissionEntity = this.toSubmissionEntity(submissionDoc);
+
+    try {
+      const evaluationResult = await assessmentEvaluatorService.evaluateSubmission(
+        userId,
+        serverQuestion,
+        submissionEntity,
+        options
+      );
+
+      return evaluationResult;
+    } catch (err: any) {
+      console.error(`[AssessmentSubmission] Evaluation processing error for question ${questionId}:`, err);
+      await AssessmentSubmissionModel.findOneAndUpdate(
+        { userId, questionId },
+        {
+          status: 'FAILED',
+          feedback: 'We could not evaluate this answer right now. Your submission is saved. Please try again.',
+        }
+      );
+      throw err;
+    }
   }
 
   /**
@@ -210,6 +280,7 @@ export class AssessmentSubmissionService {
       submittedAt: doc.submittedAt instanceof Date ? doc.submittedAt.toISOString() : String(doc.submittedAt),
       score: typeof doc.score === 'number' ? doc.score : undefined,
       feedback: doc.feedback,
+      evaluation: doc.evaluation || undefined,
       metadata: doc.metadata,
     });
   }

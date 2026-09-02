@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { ClientAssessmentQuestion, AssessmentSubmission } from '@ai-tutor/shared';
 import { liveTutorApiClient } from '../../services/api.service';
+import { EvaluationFeedbackCard } from './EvaluationFeedbackCard';
 
 export interface ImageSolutionQuestionProps {
   question: ClientAssessmentQuestion;
@@ -24,41 +25,62 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
   const [submissionResult, setSubmissionResult] = useState<AssessmentSubmission | null>(
     initialSubmission
   );
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const isSubmitted = Boolean(submissionResult);
 
+  // Poll evaluation status if SUBMITTED or EVALUATING
+  useEffect(() => {
+    if (!idToken || !submissionResult) return;
+    if (submissionResult.status !== 'SUBMITTED' && submissionResult.status !== 'EVALUATING') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const updated = await liveTutorApiClient.getAssessmentSubmission(
+          idToken,
+          question.questionId
+        );
+        if (updated && updated.status !== submissionResult.status) {
+          setSubmissionResult(updated);
+          if (onSubmitted) onSubmitted(updated);
+        }
+      } catch (err) {
+        console.warn('Error polling image evaluation status:', err);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [idToken, question.questionId, submissionResult, onSubmitted]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const file = files[0];
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-
-    if (!allowedTypes.includes(file.type.toLowerCase())) {
-      setError('Please select a valid JPEG, PNG, or WebP photo.');
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type.toLowerCase())) {
+      setError('Please upload a valid JPEG, PNG, or WebP photo.');
       return;
     }
 
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      setError('Image file is too large. Maximum size is 10MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Image file size exceeds 10MB limit.');
       return;
     }
 
     setSelectedFile(file);
+    setError(null);
 
-    // Create local object URL for preview
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleReplacePhoto = () => {
-    if (isSubmitted || isSubmitting) return;
     setSelectedFile(null);
     setPreviewUrl(null);
     setError(null);
+    setSubmissionResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -120,7 +142,7 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
               fontWeight: 600,
             }}
           >
-            📸 HANDWRITTEN WORKING REQUIRED
+            📸 HANDWRITTEN SOLUTION
           </span>
           <span
             style={{
@@ -146,7 +168,7 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
           )}
         </div>
         <span style={{ fontWeight: 700, color: '#0f172a' }}>
-          {question.marks} Marks
+          {question.marks} Marks (Multi-Step Working)
         </span>
       </div>
 
@@ -160,79 +182,79 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
             padding: '0.5rem 0.75rem',
             borderRadius: '6px',
             marginBottom: '0.75rem',
-            fontStyle: 'italic',
           }}
         >
           {question.context}
         </p>
       )}
 
-      <h3 style={{ fontSize: '1.05rem', color: '#1e293b', marginTop: 0, marginBottom: '0.75rem' }}>
+      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#0f172a', lineHeight: '1.4' }}>
         {question.question}
       </h3>
 
-      {/* Clean-Solution Guidance Card */}
+      {/* Cleanliness Guidance Card */}
       <div
         style={{
           padding: '0.75rem 1rem',
-          marginBottom: '1rem',
-          borderRadius: '6px',
           background: '#f0f9ff',
           border: '1px solid #bae6fd',
-          color: '#0369a1',
+          borderRadius: '6px',
+          marginBottom: '1.25rem',
           fontSize: '0.85rem',
+          color: '#0369a1',
         }}
       >
-        <strong style={{ display: 'block', marginBottom: '0.35rem' }}>
-          📸 Make your working easy to read:
-        </strong>
-        <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
-          <li>Solve the complete problem in your notebook showing each step.</li>
-          <li>Make sure the full page is visible, well-lit, and in order.</li>
-          <li>Avoid cutting off calculations, formulas, or your final answer.</li>
-        </ul>
+        <strong>📋 Notebook Solution Instructions:</strong>
+        <p style={{ margin: '0.25rem 0 0 0', lineHeight: '1.4' }}>
+          {question.submissionGuidance ||
+            'Write each mathematical step clearly in your notebook. Show your full working. Take a clear, well-lit photo and upload it below.'}
+        </p>
       </div>
 
-      {/* Upload & Preview Section */}
+      {/* Image Upload Area */}
       <form onSubmit={handleSubmit}>
-        {!previewUrl ? (
+        {!previewUrl && (
           <div
+            onClick={() => fileInputRef.current?.click()}
             style={{
               border: '2px dashed #cbd5e1',
               borderRadius: '8px',
-              padding: '1.5rem',
+              padding: '2rem 1rem',
               textAlign: 'center',
+              cursor: isSubmitted ? 'default' : 'pointer',
               background: '#f8fafc',
               marginBottom: '1rem',
-              cursor: isSubmitted ? 'default' : 'pointer',
+              transition: 'border-color 0.2s',
             }}
-            onClick={() => !isSubmitted && fileInputRef.current?.click()}
           >
+            <span style={{ fontSize: '2rem', display: 'block', marginBottom: '0.5rem' }}>📷</span>
+            <strong style={{ display: 'block', color: '#1e293b', fontSize: '0.95rem' }}>
+              Click to photograph or upload solution
+            </strong>
+            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+              Supports JPEG, PNG, or WebP (Max 10MB)
+            </p>
             <input
-              type="file"
               ref={fileInputRef}
+              type="file"
               accept="image/jpeg,image/png,image/webp,image/jpg"
               capture="environment"
-              disabled={isSubmitted || isSubmitting}
               onChange={handleFileChange}
               style={{ display: 'none' }}
+              disabled={isSubmitted || isSubmitting}
             />
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📷</div>
-            <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600, color: '#334155' }}>
-              Click to take a photo or upload solution image
-            </p>
-            <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
-              Supports JPEG, PNG, WebP (max 10MB)
-            </p>
           </div>
-        ) : (
+        )}
+
+        {/* Image Preview */}
+        {previewUrl && (
           <div
             style={{
-              border: '1px solid #cbd5e1',
-              borderRadius: '8px',
+              marginBottom: '1rem',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
               padding: '0.75rem',
               background: '#f8fafc',
-              marginBottom: '1rem',
             }}
           >
             <div
@@ -244,7 +266,7 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
               }}
             >
               <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>
-                📷 Solution Image Preview
+                📸 Attached Solution Photo
               </span>
               {!isSubmitted && (
                 <button
@@ -290,26 +312,6 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
           </div>
         )}
 
-        {/* Submission Confirmation */}
-        {submissionResult && (
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              marginBottom: '1rem',
-              borderRadius: '6px',
-              background: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              color: '#166534',
-              fontSize: '0.9rem',
-            }}
-          >
-            <strong>✅ Handwritten Solution Uploaded & Submitted</strong>
-            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem' }}>
-              Your solution photo has been saved securely and queued for AI vision evaluation.
-            </p>
-          </div>
-        )}
-
         {/* Submit Button */}
         {!isSubmitted && (
           <button
@@ -332,6 +334,15 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
           </button>
         )}
       </form>
+
+      {/* Evaluation Feedback Card */}
+      {submissionResult && (
+        <EvaluationFeedbackCard
+          evaluation={submissionResult.evaluation}
+          status={submissionResult.status}
+          onRetry={handleReplacePhoto}
+        />
+      )}
     </div>
   );
 };

@@ -52,11 +52,17 @@ export interface AIMessage {
   content: string;
 }
 
+export interface AIImagePart {
+  mimeType: string;
+  data: string; // Base64 encoded data or Data URI
+}
+
 export interface AIGenerateOptions {
   model?: string;
   temperature?: number;
   maxTokens?: number;
   systemInstruction?: string;
+  images?: AIImagePart[];
 }
 
 export interface AITextResponse {
@@ -612,6 +618,7 @@ export const AssessmentSubmissionStatusSchema = z.enum([
   'SUBMITTED',
   'EVALUATING',
   'EVALUATED',
+  'NEEDS_REVIEW',
   'FAILED',
 ]);
 export type AssessmentSubmissionStatus = z.infer<typeof AssessmentSubmissionStatusSchema>;
@@ -669,6 +676,76 @@ export const AssessmentSubmissionRequestSchema = z
   );
 export type AssessmentSubmissionRequest = z.infer<typeof AssessmentSubmissionRequestSchema>;
 
+// ==========================================
+// 10. Milestone 7 Phase 3: AI Evaluation & Adaptive State Contracts
+// ==========================================
+
+export const StepStatusSchema = z.enum([
+  'correct',
+  'partially_correct',
+  'incorrect',
+  'unclear',
+]);
+export type StepStatus = z.infer<typeof StepStatusSchema>;
+
+export const StepEvaluationSchema = z.object({
+  step: z.union([z.number(), z.string()]),
+  criterion: z.string().optional(),
+  status: StepStatusSchema,
+  score: z.number().min(0).optional(),
+  maxScore: z.number().min(0).optional(),
+  feedback: z.string(),
+});
+export type StepEvaluation = z.infer<typeof StepEvaluationSchema>;
+
+export const UnderstandingLevelSchema = z.enum([
+  'strong',
+  'moderate',
+  'weak',
+  'unclear',
+]);
+export type UnderstandingLevel = z.infer<typeof UnderstandingLevelSchema>;
+
+export const ConceptAssessmentSchema = z.object({
+  understanding: UnderstandingLevelSchema,
+  methodSelection: UnderstandingLevelSchema.optional(),
+  calculation: UnderstandingLevelSchema.optional(),
+  completeness: UnderstandingLevelSchema.optional(),
+  reasoning: UnderstandingLevelSchema.optional(),
+});
+export type ConceptAssessment = z.infer<typeof ConceptAssessmentSchema>;
+
+export const RecommendedActionSchema = z.enum([
+  'CONTINUE',
+  'INCREASE_DIFFICULTY',
+  'TARGETED_PRACTICE',
+  'REMEDIAL_PRACTICE',
+  'RETRY',
+  'NEEDS_REVIEW',
+]);
+export type RecommendedAction = z.infer<typeof RecommendedActionSchema>;
+
+export const EvaluationResultSchema = z.object({
+  questionId: z.string().min(1),
+  submissionId: z.string().min(1),
+  correct: z.boolean(),
+  score: z.number().min(0),
+  maxScore: z.number().min(0),
+  percentage: z.number().min(0).max(100),
+  evaluationStatus: AssessmentSubmissionStatusSchema,
+  evaluationMode: z.union([AssessmentEvaluationModeSchema, z.literal('DETERMINISTIC')]),
+  stepEvaluation: z.array(StepEvaluationSchema).optional(),
+  conceptAssessment: ConceptAssessmentSchema.optional(),
+  misconceptions: z.array(z.string()).default([]),
+  strengths: z.array(z.string()).default([]),
+  weaknesses: z.array(z.string()).default([]),
+  recommendedAction: RecommendedActionSchema,
+  confidence: z.number().min(0).max(1).default(1.0),
+  feedback: z.string().min(1),
+  evaluatedAt: z.string(),
+});
+export type EvaluationResult = z.infer<typeof EvaluationResultSchema>;
+
 // Persisted Submission Entity
 export const AssessmentSubmissionSchema = z.object({
   id: z.string().min(1),
@@ -685,9 +762,54 @@ export const AssessmentSubmissionSchema = z.object({
   submittedAt: z.string(),
   score: z.number().min(0).optional(),
   feedback: z.string().optional(),
+  evaluation: EvaluationResultSchema.optional(),
   metadata: z.record(z.unknown()).optional(),
 });
 export type AssessmentSubmission = z.infer<typeof AssessmentSubmissionSchema>;
+
+// Learner Skills & Concept Mastery
+export const LearnerConceptSkillsSchema = z.object({
+  understanding: z.number().min(0).max(1).default(0.5),
+  method_selection: z.number().min(0).max(1).default(0.5),
+  substitution: z.number().min(0).max(1).optional(),
+  calculation: z.number().min(0).max(1).optional(),
+  final_answer: z.number().min(0).max(1).optional(),
+  reasoning: z.number().min(0).max(1).optional(),
+  completeness: z.number().min(0).max(1).optional(),
+});
+export type LearnerConceptSkills = z.infer<typeof LearnerConceptSkillsSchema>;
+
+export const RecentPerformanceItemSchema = z.object({
+  questionId: z.string(),
+  difficulty: AssessmentDifficultySchema,
+  scorePercentage: z.number().min(0).max(100),
+  evaluatedAt: z.string(),
+  questionType: AssessmentQuestionTypeSchema,
+});
+export type RecentPerformanceItem = z.infer<typeof RecentPerformanceItemSchema>;
+
+export const LearnerConceptMasterySchema = z.object({
+  concept: z.string().min(1),
+  subject: z.string().optional(),
+  mastery: z.number().min(0).max(1).default(0.5),
+  confidence: z.number().min(0).max(1).default(0.5),
+  skills: LearnerConceptSkillsSchema.default({
+    understanding: 0.5,
+    method_selection: 0.5,
+  }),
+  recentPerformance: z.array(RecentPerformanceItemSchema).default([]),
+  misconceptions: z.array(z.string()).default([]),
+  lastEvaluatedAt: z.string().optional(),
+});
+export type LearnerConceptMastery = z.infer<typeof LearnerConceptMasterySchema>;
+
+export const LearnerAssessmentStateSchema = z.object({
+  userId: z.string().min(1),
+  concepts: z.record(LearnerConceptMasterySchema).default({}),
+  overallMastery: z.number().min(0).max(1).optional(),
+  updatedAt: z.string(),
+});
+export type LearnerAssessmentState = z.infer<typeof LearnerAssessmentStateSchema>;
 
 // Assessment Generation Request DTO
 export const CreateAssessmentRequestSchema = z.object({
@@ -700,11 +822,15 @@ export const CreateAssessmentRequestSchema = z.object({
   marks: z.number().int().positive().optional(),
   goal: AssessmentGoalSchema.optional(),
   sessionId: z.string().optional(),
+  targetSkill: z.string().optional(),
+  targetMisconception: z.string().optional(),
+  adaptiveContext: z.record(z.unknown()).optional(),
 });
 export type CreateAssessmentRequest = z.infer<typeof CreateAssessmentRequestSchema>;
 
 export type AssessmentSubmissionResponse = ApiResponse<AssessmentSubmission>;
 export type AssessmentQuestionResponse = ApiResponse<ClientAssessmentQuestion>;
+export type EvaluationResultResponse = ApiResponse<EvaluationResult>;
 
 
 

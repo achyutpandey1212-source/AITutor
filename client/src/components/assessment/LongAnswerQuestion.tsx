@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ClientAssessmentQuestion, AssessmentSubmission } from '@ai-tutor/shared';
 import { liveTutorApiClient } from '../../services/api.service';
+import { EvaluationFeedbackCard } from './EvaluationFeedbackCard';
 
 export interface LongAnswerQuestionProps {
   question: ClientAssessmentQuestion;
@@ -23,7 +24,29 @@ export const LongAnswerQuestion: React.FC<LongAnswerQuestionProps> = ({
   );
 
   const isSubmitted = Boolean(submissionResult);
-  const wordCount = answer.trim() ? answer.trim().split(/\s+/).length : 0;
+
+  // Poll evaluation status if SUBMITTED or EVALUATING
+  useEffect(() => {
+    if (!idToken || !submissionResult) return;
+    if (submissionResult.status !== 'SUBMITTED' && submissionResult.status !== 'EVALUATING') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const updated = await liveTutorApiClient.getAssessmentSubmission(
+          idToken,
+          question.questionId
+        );
+        if (updated && updated.status !== submissionResult.status) {
+          setSubmissionResult(updated);
+          if (onSubmitted) onSubmitted(updated);
+        }
+      } catch (err) {
+        console.warn('Error polling long answer evaluation status:', err);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [idToken, question.questionId, submissionResult, onSubmitted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +104,7 @@ export const LongAnswerQuestion: React.FC<LongAnswerQuestionProps> = ({
               fontWeight: 600,
             }}
           >
-            LONG ANSWER / ESSAY
+            LONG ANSWER
           </span>
           <span
             style={{
@@ -107,7 +130,7 @@ export const LongAnswerQuestion: React.FC<LongAnswerQuestionProps> = ({
           )}
         </div>
         <span style={{ fontWeight: 700, color: '#0f172a' }}>
-          {question.marks} Marks
+          {question.marks} Marks (Structured Response)
         </span>
       </div>
 
@@ -121,50 +144,40 @@ export const LongAnswerQuestion: React.FC<LongAnswerQuestionProps> = ({
             padding: '0.5rem 0.75rem',
             borderRadius: '6px',
             marginBottom: '0.75rem',
-            fontStyle: 'italic',
           }}
         >
           {question.context}
         </p>
       )}
 
-      <h3 style={{ fontSize: '1.05rem', color: '#1e293b', marginTop: 0, marginBottom: '1rem' }}>
+      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#0f172a', lineHeight: '1.4' }}>
         {question.question}
       </h3>
 
-      {/* Input Form */}
+      {/* Text Area Form */}
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '0.5rem' }}>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>
+            Structured Detailed Response:
+          </label>
           <textarea
             rows={7}
             value={answer}
-            disabled={isSubmitted || isSubmitting}
             onChange={(e) => setAnswer(e.target.value)}
-            placeholder="Write your comprehensive explanation or analysis here..."
+            disabled={isSubmitted || isSubmitting}
+            placeholder="Structure your answer with clear points, reasoning, causes, and conclusions..."
             style={{
               width: '100%',
-              padding: '0.75rem',
+              padding: '0.65rem 0.75rem',
               borderRadius: '6px',
               border: '1px solid #cbd5e1',
-              boxSizing: 'border-box',
-              fontFamily: 'inherit',
               fontSize: '0.95rem',
-              lineHeight: 1.5,
-              resize: 'vertical',
+              fontFamily: 'inherit',
+              lineHeight: '1.4',
+              background: isSubmitted ? '#f8fafc' : '#ffffff',
+              boxSizing: 'border-box',
             }}
           />
-        </div>
-
-        {/* Word count */}
-        <div
-          style={{
-            textAlign: 'right',
-            fontSize: '0.8rem',
-            color: '#64748b',
-            marginBottom: '1rem',
-          }}
-        >
-          {wordCount} words ({answer.length} characters)
         </div>
 
         {/* Error Alert */}
@@ -183,26 +196,6 @@ export const LongAnswerQuestion: React.FC<LongAnswerQuestionProps> = ({
           </div>
         )}
 
-        {/* Submission Confirmation */}
-        {submissionResult && (
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              marginBottom: '1rem',
-              borderRadius: '6px',
-              background: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              color: '#166534',
-              fontSize: '0.9rem',
-            }}
-          >
-            <strong>✅ Long Response Submitted</strong>
-            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem' }}>
-              Your detailed answer has been persisted and prepared for AI teacher evaluation.
-            </p>
-          </div>
-        )}
-
         {/* Submit Button */}
         {!isSubmitted && (
           <button
@@ -210,7 +203,7 @@ export const LongAnswerQuestion: React.FC<LongAnswerQuestionProps> = ({
             disabled={!answer.trim() || isSubmitting}
             style={{
               padding: '0.6rem 1.25rem',
-              background: !answer.trim() || isSubmitting ? '#94a3b8' : '#2563eb',
+              background: !answer.trim() || isSubmitting ? '#94a3b8' : '#7c3aed',
               color: '#ffffff',
               border: 'none',
               borderRadius: '6px',
@@ -218,10 +211,18 @@ export const LongAnswerQuestion: React.FC<LongAnswerQuestionProps> = ({
               cursor: !answer.trim() || isSubmitting ? 'not-allowed' : 'pointer',
             }}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Long Answer'}
+            {isSubmitting ? 'Submitting...' : 'Submit Detailed Answer'}
           </button>
         )}
       </form>
+
+      {/* Evaluation Feedback Card */}
+      {submissionResult && (
+        <EvaluationFeedbackCard
+          evaluation={submissionResult.evaluation}
+          status={submissionResult.status}
+        />
+      )}
     </div>
   );
 };

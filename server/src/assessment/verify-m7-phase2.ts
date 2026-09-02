@@ -72,6 +72,21 @@ class InMemoryAssessmentSubmissionModel {
     return this.store.get(key) || null;
   }
 
+  async findById(id: string) {
+    for (const doc of this.store.values()) {
+      if (doc._id === id || doc.id === id) return doc;
+    }
+    return null;
+  }
+
+  async findOneAndUpdate(filter: any, update: any, _options?: any) {
+    const key = `${filter.userId}_${filter.questionId}`;
+    const existing = this.store.get(key) || {};
+    const merged = { ...existing, ...update, _id: existing._id || `sub_${Date.now()}` };
+    this.store.set(key, merged);
+    return merged;
+  }
+
   async create(data: any) {
     const key = `${data.userId}_${data.questionId}`;
     const doc = { ...data, _id: `sub_${Date.now()}_${Math.random().toString(36).substring(7)}` };
@@ -81,6 +96,21 @@ class InMemoryAssessmentSubmissionModel {
 
   clear() {
     this.store.clear();
+  }
+}
+
+class InMemoryLearnerAssessmentStateModel {
+  private store = new Map<string, any>();
+
+  async findOne(filter: any) {
+    return this.store.get(filter.userId) || null;
+  }
+
+  async findOneAndUpdate(filter: any, update: any, _options?: any) {
+    const existing = this.store.get(filter.userId) || {};
+    const merged = { ...existing, ...update, updatedAt: new Date() };
+    this.store.set(filter.userId, merged);
+    return merged;
   }
 }
 
@@ -106,11 +136,18 @@ async function runM7Phase2Verification() {
   // Inject in-memory mocks for deterministic unit execution
   const mockQModel = new InMemoryAssessmentQuestionModel();
   const mockSubModel = new InMemoryAssessmentSubmissionModel();
+  const mockLearnerModel = new InMemoryLearnerAssessmentStateModel();
 
   (AssessmentQuestionModel as any).findOneAndUpdate = mockQModel.findOneAndUpdate.bind(mockQModel);
   (AssessmentQuestionModel as any).findOne = mockQModel.findOne.bind(mockQModel);
   (AssessmentSubmissionModel as any).findOne = mockSubModel.findOne.bind(mockSubModel);
+  (AssessmentSubmissionModel as any).findById = mockSubModel.findById.bind(mockSubModel);
+  (AssessmentSubmissionModel as any).findOneAndUpdate = mockSubModel.findOneAndUpdate.bind(mockSubModel);
   (AssessmentSubmissionModel as any).create = mockSubModel.create.bind(mockSubModel);
+
+  const { LearnerAssessmentStateModel } = await import('../models/learner-assessment-state.model.js');
+  (LearnerAssessmentStateModel as any).findOne = mockLearnerModel.findOne.bind(mockLearnerModel);
+  (LearnerAssessmentStateModel as any).findOneAndUpdate = mockLearnerModel.findOneAndUpdate.bind(mockLearnerModel);
 
   const submissionService = new AssessmentSubmissionService();
   const engine = new AssessmentEngine();

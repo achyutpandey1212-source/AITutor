@@ -223,6 +223,23 @@ export class LiveTutorApiClient {
 
     return json.data;
   }
+
+  async evaluateAssessmentQuestion(
+    idToken: string,
+    questionId: string
+  ): Promise<import('@ai-tutor/shared').EvaluationResult> {
+    const res = await fetch(`/api/assessments/questions/${questionId}/evaluate`, {
+      method: 'POST',
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: import('@ai-tutor/shared').EvaluationResultResponse = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Evaluation request failed (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
 }
 
 export const liveTutorApiClient = new LiveTutorApiClient();

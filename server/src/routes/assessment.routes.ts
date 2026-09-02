@@ -5,6 +5,7 @@ import type {
   ApiResponse,
   AssessmentQuestionResponse,
   AssessmentSubmissionResponse,
+  EvaluationResultResponse,
 } from '@ai-tutor/shared';
 import {
   AssessmentSubmissionRequestSchema,
@@ -14,6 +15,7 @@ import {
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { assessmentEngine } from '../assessment/assessment.engine.js';
 import { assessmentSubmissionService } from '../assessment/assessment-submission.service.js';
+import { teachingStateUpdater } from '../assessment/teaching-state-updater.js';
 import { documentService, retrievalService } from '../knowledge/index.js';
 import { TeachingSessionModel } from '../models/teaching-session.model.js';
 
@@ -63,8 +65,20 @@ assessmentRouter.post(
         return;
       }
 
-      const { concept, subject, grade, difficulty, questionType, evaluationMode, marks, goal, sessionId } =
-        bodyParse.data;
+      const {
+        concept,
+        subject,
+        grade,
+        difficulty,
+        questionType,
+        evaluationMode,
+        marks,
+        goal,
+        sessionId,
+        targetSkill,
+        targetMisconception,
+        adaptiveContext,
+      } = bodyParse.data;
 
       // Extract existing teaching state if sessionId provided
       let teachingState = undefined;
@@ -75,6 +89,9 @@ assessmentRouter.post(
         }
       }
 
+      // Extract persistent student learner state
+      const learnerState = await teachingStateUpdater.getLearnerState(userId);
+
       // Check RAG documents for grounding
       let knowledgeContext = undefined;
       const hasDocs = await documentService.hasReadyDocuments(userId);
@@ -82,7 +99,7 @@ assessmentRouter.post(
         knowledgeContext = await retrievalService.retrieveKnowledgeContext(userId, `${subject} ${concept}`);
       }
 
-      // Deterministically plan strategy
+      // Deterministically plan strategy with learnerState & adaptive signals
       const plan = assessmentEngine.planAssessment({
         concept,
         subject,
@@ -93,14 +110,19 @@ assessmentRouter.post(
         preferredEvaluationMode: evaluationMode,
         targetMarks: marks,
         teachingState,
+        learnerState,
+        targetSkill,
+        targetMisconception,
+        adaptiveContext,
       });
 
       const strategy = plan.strategies[0];
 
-      // Generate structured question
+      // Generate structured question with surface form variation
       const serverQuestion = await assessmentEngine.generateQuestion({
         strategy,
         teachingState,
+        learnerState,
         knowledgeContext,
       });
 
@@ -154,10 +176,18 @@ assessmentRouter.post(
         return;
       }
 
+      // Check RAG documents for evaluation grounding
+      let knowledgeContext = undefined;
+      const hasDocs = await documentService.hasReadyDocuments(userId);
+      if (hasDocs) {
+        knowledgeContext = await retrievalService.retrieveKnowledgeContext(userId, questionId);
+      }
+
       const submission = await assessmentSubmissionService.submitAnswer(
         userId,
         questionId,
-        bodyParse.data
+        bodyParse.data,
+        { knowledgeContext }
       );
 
       res.status(200).json({
@@ -228,7 +258,49 @@ assessmentRouter.post(
   }
 );
 
-// 4. GET /api/assessments/questions/:questionId/submission - Checks student's submission
+// 4. POST /api/assessments/questions/:questionId/evaluate - Explicitly triggers/awaits evaluation
+assessmentRouter.post(
+  '/questions/:questionId/evaluate',
+  requireAuth,
+  async (req: Request, res: Response<EvaluationResultResponse>): Promise<void> => {
+    try {
+      const userId = req.user?.uid;
+      const { questionId } = req.params;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: { message: 'Unauthorized', code: 'AUTH_REQUIRED' },
+        });
+        return;
+      }
+
+      // Check RAG documents
+      let knowledgeContext = undefined;
+      const hasDocs = await documentService.hasReadyDocuments(userId);
+      if (hasDocs) {
+        knowledgeContext = await retrievalService.retrieveKnowledgeContext(userId, questionId);
+      }
+
+      const evaluation = await assessmentSubmissionService.triggerEvaluation(userId, questionId, {
+        knowledgeContext,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: evaluation,
+      });
+    } catch (error: any) {
+      console.error('Error evaluating assessment question:', error);
+      res.status(500).json({
+        success: false,
+        error: { message: error.message || 'Evaluation failed', code: 'EVALUATION_ERROR' },
+      });
+    }
+  }
+);
+
+// 5. GET /api/assessments/questions/:questionId/submission - Checks student's submission & evaluation status
 assessmentRouter.get(
   '/questions/:questionId/submission',
   requireAuth,

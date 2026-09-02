@@ -197,12 +197,27 @@ export class GeminiProvider implements IAIProvider {
     const preferredModel = options?.model || this.defaultModel;
     const { contents, systemInstruction } = this.formatContents(prompt);
 
+    let payloadContents: any = contents;
+    if (options?.images && options.images.length > 0) {
+      const parts: any[] = [];
+      for (const img of options.images) {
+        parts.push({
+          inlineData: {
+            mimeType: img.mimeType || 'image/jpeg',
+            data: img.data.replace(/^data:[^;]+;base64,/, ''),
+          },
+        });
+      }
+      parts.push({ text: contents });
+      payloadContents = parts;
+    }
+
     const { result, model } = await this.executeWithKeyAndModelRotation(
       preferredModel,
       async (ai, activeModel) => {
         const response = await ai.models.generateContent({
           model: activeModel,
-          contents,
+          contents: payloadContents,
           config: {
             systemInstruction: options?.systemInstruction || systemInstruction,
             temperature: options?.temperature ?? 0.3,
@@ -225,6 +240,21 @@ export class GeminiProvider implements IAIProvider {
     const preferredModel = options?.model || this.defaultModel;
     const { contents, systemInstruction } = this.formatContents(prompt);
 
+    let payloadContents: any = contents;
+    if (options?.images && options.images.length > 0) {
+      const parts: any[] = [];
+      for (const img of options.images) {
+        parts.push({
+          inlineData: {
+            mimeType: img.mimeType || 'image/jpeg',
+            data: img.data.replace(/^data:[^;]+;base64,/, ''),
+          },
+        });
+      }
+      parts.push({ text: contents });
+      payloadContents = parts;
+    }
+
     const structuredInstruction = `Respond ONLY with valid JSON conforming to this specification:\n${schemaDescription}\nDo not wrap in markdown codeblocks if possible, or output clean JSON only.`;
 
     const fullSystem = options?.systemInstruction || systemInstruction
@@ -236,7 +266,7 @@ export class GeminiProvider implements IAIProvider {
       async (ai, activeModel) => {
         const response = await ai.models.generateContent({
           model: activeModel,
-          contents,
+          contents: payloadContents,
           config: {
             systemInstruction: fullSystem,
             responseMimeType: 'application/json',

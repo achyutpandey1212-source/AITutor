@@ -1,6 +1,7 @@
 import type {
   AssessmentStrategyDecision,
   KnowledgeContext,
+  LearnerAssessmentState,
   TeachingState,
 } from '@ai-tutor/shared';
 
@@ -21,7 +22,8 @@ Your responsibility:
    - High-mark questions (5-10 marks): Test comprehensive reasoning, multi-step problem solving, derivations, or structured analysis.
 5. RUBRIC GENERATION: Always provide an accurate, step-by-step evaluation rubric with expected criteria, calculations, and the precise final answer.
 6. MCQ RULES: Provide exactly 4 distinct, plausible options (A, B, C, D) with exactly one unambiguous correct option. Avoid options like "All of the above" or "None of the above" unless pedagogically necessary.
-7. MATHEMATICS & SCIENCE: For numerical problems, specify units clearly in the question text. For multi-step questions (evaluationMode = IMAGE_SOLUTION), create a problem that requires showing complete handwritten working steps.`;
+7. MATHEMATICS & SCIENCE: For numerical problems, specify units clearly in the question text. For multi-step questions (evaluationMode = IMAGE_SOLUTION), create a problem that requires showing complete handwritten working steps.
+8. SURFACE FORM VARIATION: When creating targeted or remedial practice questions, test the targeted skill using a fresh, distinct surface form (e.g. real-world context, word problem, or new scenario) rather than simply changing single numbers on the exact previous question.`;
   }
 
   /**
@@ -31,7 +33,8 @@ Your responsibility:
     strategy: AssessmentStrategyDecision,
     teachingState?: Partial<TeachingState>,
     knowledgeContext?: KnowledgeContext,
-    customInstructions?: string
+    customInstructions?: string,
+    learnerState?: LearnerAssessmentState
   ): string {
     let ragContextStr = '';
     let ragGuidance = '';
@@ -59,11 +62,18 @@ Grounding Requirements:
 - Do NOT fabricate facts, numbers, or topics that contradict this material.`;
     }
 
+    const conceptMastery = learnerState?.concepts?.[strategy.concept];
+    const skillSignals = conceptMastery?.skills
+      ? `\nStudent Skill Breakdown:\n- Method Selection: ${(conceptMastery.skills.method_selection * 100).toFixed(0)}%\n- Calculation Accuracy: ${((conceptMastery.skills.calculation ?? 0.5) * 100).toFixed(0)}%\n- Conceptual Understanding: ${(conceptMastery.skills.understanding * 100).toFixed(0)}%`
+      : '';
+
     const misconceptionStr =
       strategy.targetMisconceptions && strategy.targetMisconceptions.length > 0
-        ? `\nTarget Misconceptions to Address/Diagnose:\n${strategy.targetMisconceptions.map((m) => `- ${m}`).join('\n')}`
+        ? `\nTarget Misconceptions to Address/Diagnose:\n${strategy.targetMisconceptions.map((m: string) => `- ${m}`).join('\n')}`
+        : conceptMastery?.misconceptions && conceptMastery.misconceptions.length > 0
+        ? `\nActive Concept Misconceptions:\n${conceptMastery.misconceptions.map((m: string) => `- ${m}`).join('\n')}`
         : teachingState?.misconceptions && teachingState.misconceptions.length > 0
-        ? `\nStudent's Known Misconceptions:\n${teachingState.misconceptions.map((m) => `- ${m}`).join('\n')}`
+        ? `\nStudent's Known Misconceptions:\n${teachingState.misconceptions.map((m: string) => `- ${m}`).join('\n')}`
         : '';
 
     const masteredStr =

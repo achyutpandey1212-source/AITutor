@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ClientAssessmentQuestion, AssessmentSubmission } from '@ai-tutor/shared';
 import { liveTutorApiClient } from '../../services/api.service';
+import { EvaluationFeedbackCard } from './EvaluationFeedbackCard';
 
 export interface NumericalQuestionProps {
   question: ClientAssessmentQuestion;
@@ -24,6 +25,29 @@ export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
 
   const isSubmitted = Boolean(submissionResult);
 
+  // Poll evaluation status if SUBMITTED or EVALUATING
+  useEffect(() => {
+    if (!idToken || !submissionResult) return;
+    if (submissionResult.status !== 'SUBMITTED' && submissionResult.status !== 'EVALUATING') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const updated = await liveTutorApiClient.getAssessmentSubmission(
+          idToken,
+          question.questionId
+        );
+        if (updated && updated.status !== submissionResult.status) {
+          setSubmissionResult(updated);
+          if (onSubmitted) onSubmitted(updated);
+        }
+      } catch (err) {
+        console.warn('Error polling numerical evaluation status:', err);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [idToken, question.questionId, submissionResult, onSubmitted]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!answer.trim() || isSubmitting || isSubmitted) return;
@@ -44,7 +68,7 @@ export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
       }
     } catch (err: any) {
       console.error('Numerical submission error:', err);
-      setError(err?.message || 'Failed to submit answer. Please try again.');
+      setError(err?.message || 'Failed to submit numerical answer. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -120,41 +144,38 @@ export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
             padding: '0.5rem 0.75rem',
             borderRadius: '6px',
             marginBottom: '0.75rem',
-            fontStyle: 'italic',
           }}
         >
           {question.context}
         </p>
       )}
 
-      <h3 style={{ fontSize: '1.05rem', color: '#1e293b', marginTop: 0, marginBottom: '1rem' }}>
+      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#0f172a', lineHeight: '1.4' }}>
         {question.question}
       </h3>
 
-      {/* Input Form */}
+      {/* Numerical Answer Input Form */}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
-            Enter Final Numerical Answer (with units if required):
+          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>
+            Your Answer / Working:
           </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontWeight: 700, color: '#64748b' }}>Answer =</span>
-            <input
-              type="text"
-              value={answer}
-              disabled={isSubmitted || isSubmitting}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder="e.g. 5, -3.2, 12 m/s, x = 4"
-              style={{
-                padding: '0.65rem 0.75rem',
-                borderRadius: '6px',
-                border: '1px solid #cbd5e1',
-                fontSize: '1rem',
-                flex: 1,
-                maxWidth: '280px',
-              }}
-            />
-          </div>
+          <input
+            type="text"
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            disabled={isSubmitted || isSubmitting}
+            placeholder="e.g. 42 m/s or x = 5"
+            style={{
+              width: '100%',
+              padding: '0.65rem 0.75rem',
+              borderRadius: '6px',
+              border: '1px solid #cbd5e1',
+              fontSize: '1rem',
+              background: isSubmitted ? '#f8fafc' : '#ffffff',
+              boxSizing: 'border-box',
+            }}
+          />
         </div>
 
         {/* Error Alert */}
@@ -173,26 +194,6 @@ export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
           </div>
         )}
 
-        {/* Submission Confirmation */}
-        {submissionResult && (
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              marginBottom: '1rem',
-              borderRadius: '6px',
-              background: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              color: '#166534',
-              fontSize: '0.9rem',
-            }}
-          >
-            <strong>✅ Numerical Answer Submitted</strong>
-            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem' }}>
-              Your calculation value ({submissionResult.answer}) has been safely recorded.
-            </p>
-          </div>
-        )}
-
         {/* Submit Button */}
         {!isSubmitted && (
           <button
@@ -200,7 +201,7 @@ export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
             disabled={!answer.trim() || isSubmitting}
             style={{
               padding: '0.6rem 1.25rem',
-              background: !answer.trim() || isSubmitting ? '#94a3b8' : '#2563eb',
+              background: !answer.trim() || isSubmitting ? '#94a3b8' : '#0284c7',
               color: '#ffffff',
               border: 'none',
               borderRadius: '6px',
@@ -212,6 +213,14 @@ export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
           </button>
         )}
       </form>
+
+      {/* Evaluation Feedback Card */}
+      {submissionResult && (
+        <EvaluationFeedbackCard
+          evaluation={submissionResult.evaluation}
+          status={submissionResult.status}
+        />
+      )}
     </div>
   );
 };

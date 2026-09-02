@@ -25,14 +25,15 @@ export class QuestionGenerator {
    * Generates a fully validated AssessmentQuestion contract based on a determined strategy.
    */
   async generateQuestion(input: GenerateQuestionInput): Promise<AssessmentQuestion> {
-    const { strategy, teachingState, knowledgeContext, customInstructions } = input;
+    const { strategy, teachingState, knowledgeContext, customInstructions, learnerState } = input;
 
     const systemInstruction = AssessmentPrompts.getAssessmentSystemInstruction();
     const prompt = AssessmentPrompts.buildQuestionPrompt(
       strategy,
       teachingState,
       knowledgeContext,
-      customInstructions
+      customInstructions,
+      learnerState
     );
     const schemaDescription = AssessmentPrompts.getAssessmentQuestionSchemaDescription();
 

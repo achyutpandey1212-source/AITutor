@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ClientAssessmentQuestion, AssessmentSubmission } from '@ai-tutor/shared';
 import { liveTutorApiClient } from '../../services/api.service';
+import { EvaluationFeedbackCard } from './EvaluationFeedbackCard';
 
 export interface ShortAnswerQuestionProps {
   question: ClientAssessmentQuestion;
@@ -23,6 +24,29 @@ export const ShortAnswerQuestion: React.FC<ShortAnswerQuestionProps> = ({
   );
 
   const isSubmitted = Boolean(submissionResult);
+
+  // Poll evaluation status if SUBMITTED or EVALUATING
+  useEffect(() => {
+    if (!idToken || !submissionResult) return;
+    if (submissionResult.status !== 'SUBMITTED' && submissionResult.status !== 'EVALUATING') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const updated = await liveTutorApiClient.getAssessmentSubmission(
+          idToken,
+          question.questionId
+        );
+        if (updated && updated.status !== submissionResult.status) {
+          setSubmissionResult(updated);
+          if (onSubmitted) onSubmitted(updated);
+        }
+      } catch (err) {
+        console.warn('Error polling short answer evaluation status:', err);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [idToken, question.questionId, submissionResult, onSubmitted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,8 +99,8 @@ export const ShortAnswerQuestion: React.FC<ShortAnswerQuestionProps> = ({
             style={{
               padding: '0.2rem 0.5rem',
               borderRadius: '4px',
-              background: '#fef3c7',
-              color: '#92400e',
+              background: '#fef9c3',
+              color: '#854d0e',
               fontWeight: 600,
             }}
           >
@@ -110,7 +134,7 @@ export const ShortAnswerQuestion: React.FC<ShortAnswerQuestionProps> = ({
         </span>
       </div>
 
-      {/* Question Context & Text */}
+      {/* Question Context & Prompt */}
       {question.context && (
         <p
           style={{
@@ -120,35 +144,38 @@ export const ShortAnswerQuestion: React.FC<ShortAnswerQuestionProps> = ({
             padding: '0.5rem 0.75rem',
             borderRadius: '6px',
             marginBottom: '0.75rem',
-            fontStyle: 'italic',
           }}
         >
           {question.context}
         </p>
       )}
 
-      <h3 style={{ fontSize: '1.05rem', color: '#1e293b', marginTop: 0, marginBottom: '1rem' }}>
+      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#0f172a', lineHeight: '1.4' }}>
         {question.question}
       </h3>
 
-      {/* Input Form */}
+      {/* Text Area Form */}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>
+            Your Answer:
+          </label>
           <textarea
-            rows={3}
+            rows={4}
             value={answer}
-            disabled={isSubmitted || isSubmitting}
             onChange={(e) => setAnswer(e.target.value)}
-            placeholder="Type your concise answer here..."
+            disabled={isSubmitted || isSubmitting}
+            placeholder="Type your explanation or answer clearly..."
             style={{
               width: '100%',
-              padding: '0.75rem',
+              padding: '0.65rem 0.75rem',
               borderRadius: '6px',
               border: '1px solid #cbd5e1',
-              boxSizing: 'border-box',
-              fontFamily: 'inherit',
               fontSize: '0.95rem',
-              resize: 'vertical',
+              fontFamily: 'inherit',
+              lineHeight: '1.4',
+              background: isSubmitted ? '#f8fafc' : '#ffffff',
+              boxSizing: 'border-box',
             }}
           />
         </div>
@@ -169,26 +196,6 @@ export const ShortAnswerQuestion: React.FC<ShortAnswerQuestionProps> = ({
           </div>
         )}
 
-        {/* Submission Confirmation */}
-        {submissionResult && (
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              marginBottom: '1rem',
-              borderRadius: '6px',
-              background: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              color: '#166534',
-              fontSize: '0.9rem',
-            }}
-          >
-            <strong>✅ Answer Submitted</strong>
-            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem' }}>
-              Your response has been saved and queued for teacher evaluation.
-            </p>
-          </div>
-        )}
-
         {/* Submit Button */}
         {!isSubmitted && (
           <button
@@ -196,7 +203,7 @@ export const ShortAnswerQuestion: React.FC<ShortAnswerQuestionProps> = ({
             disabled={!answer.trim() || isSubmitting}
             style={{
               padding: '0.6rem 1.25rem',
-              background: !answer.trim() || isSubmitting ? '#94a3b8' : '#2563eb',
+              background: !answer.trim() || isSubmitting ? '#94a3b8' : '#ca8a04',
               color: '#ffffff',
               border: 'none',
               borderRadius: '6px',
@@ -204,10 +211,18 @@ export const ShortAnswerQuestion: React.FC<ShortAnswerQuestionProps> = ({
               cursor: !answer.trim() || isSubmitting ? 'not-allowed' : 'pointer',
             }}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+            {isSubmitting ? 'Submitting...' : 'Submit Short Answer'}
           </button>
         )}
       </form>
+
+      {/* Evaluation Feedback Card */}
+      {submissionResult && (
+        <EvaluationFeedbackCard
+          evaluation={submissionResult.evaluation}
+          status={submissionResult.status}
+        />
+      )}
     </div>
   );
 };

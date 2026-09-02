@@ -95,6 +95,7 @@ export class AssessmentEngine {
       const question = await this.generator.generateQuestion({
         strategy,
         teachingState: input.planInput.teachingState,
+        learnerState: input.planInput.learnerState,
         knowledgeContext: input.knowledgeContext,
       });
       questions.push(question);
@@ -114,13 +115,55 @@ export class AssessmentEngine {
   }
 
   /**
-   * Deterministic difficulty selection based on student mastery signals.
+   * Deterministic difficulty selection based on student mastery signals and learner state.
    */
   private determineDifficulty(input: AssessmentPlanInput): AssessmentDifficulty {
     if (input.preferredDifficulty) {
       return input.preferredDifficulty;
     }
 
+    // 1. Check persistent LearnerAssessmentState if present
+    if (input.learnerState && input.learnerState.concepts) {
+      const conceptState = input.learnerState.concepts[input.concept];
+      if (conceptState) {
+        // If previous evaluation had low confidence (< 0.5), do not change difficulty abruptly
+        if (conceptState.confidence < 0.5) {
+          const lastDiff = conceptState.recentPerformance?.[0]?.difficulty;
+          if (lastDiff) return lastDiff;
+        }
+
+        // Check recent performance trend (last 2-3 scores)
+        const recentScores = (conceptState.recentPerformance || []).slice(0, 3);
+        const allStrong =
+          recentScores.length >= 2 && recentScores.every((r) => r.scorePercentage >= 80);
+        if (allStrong && conceptState.mastery >= 0.7) {
+          return 'hard';
+        }
+
+        const allWeak =
+          recentScores.length >= 2 && recentScores.every((r) => r.scorePercentage <= 45);
+        if (allWeak && conceptState.mastery <= 0.45) {
+          return 'easy';
+        }
+
+        // If calculation specifically is weak but method selection is strong:
+        // maintain appropriate difficulty (e.g. medium) to practice calculation rather than dropping to trivial
+        if (
+          conceptState.skills.calculation &&
+          conceptState.skills.calculation < 0.5 &&
+          conceptState.skills.method_selection >= 0.7
+        ) {
+          return 'medium';
+        }
+
+        // General mastery thresholds
+        if (conceptState.mastery >= 0.75) return 'hard';
+        if (conceptState.mastery <= 0.40) return 'easy';
+        return 'medium';
+      }
+    }
+
+    // 2. Check teaching state if provided
     const state = input.teachingState;
     if (!state) {
       return input.goal === 'practice' ? 'medium' : 'easy';
