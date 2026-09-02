@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   KnowledgeContext,
   LearnerProfile,
   TeachingSession,
@@ -39,9 +39,21 @@ Your pedagogical principles:
     knowledgeContext?: KnowledgeContext
   ): string {
     let knowledgeStr = '';
+    let ragGuidance = '';
     if (knowledgeContext && knowledgeContext.retrievedChunks && knowledgeContext.retrievedChunks.length > 0) {
-      knowledgeStr = `\nRetrieved Curriculum/Knowledge Chunks:\n` +
-        knowledgeContext.retrievedChunks.map((c, i) => `[${i + 1}] ${c.text}`).join('\n');
+      knowledgeStr =
+        `\n--- RETRIEVED STUDENT STUDY MATERIAL (Grounded Context) ---\n` +
+        knowledgeContext.retrievedChunks
+          .map((c, i) => `[Source ${i + 1}: ${c.source || c.filename || 'Uploaded Document'} (relevance: ${c.relevance?.toFixed(2) || 'N/A'})]\n${c.text}`)
+          .join('\n\n') +
+        `\n----------------------------------------------------------\n`;
+
+      ragGuidance = `
+Knowledge Grounding Rules:
+- PREFER uploaded study material above when relevant to the student's question or concept.
+- Do NOT fabricate information or cite claims as from the document if they are not present.
+- If the retrieved passages do not contain enough information to answer fully, acknowledge what the document covers and supplement naturally from general knowledge.
+- Explain concepts naturally at the student's level without quoting raw passages verbatim.`;
     }
 
     return `Topic: "${session.topic}"
@@ -58,14 +70,13 @@ Current Teaching State:
 - Last Student Action: ${currentState.lastStudentAction}
 - Recommended Next Action: ${currentState.recommendedNextAction}
 ${knowledgeStr}
-
 Student's Latest Message:
 "${studentMessage}"
 
 Instructions:
-1. Analyze the student's message in context of the topic and current state.
+1. Analyze the student's message in context of the topic, current state, and any retrieved study material.${ragGuidance}
 2. Determine if the student asked a question, requested an example, gave an answer to evaluate, or has a misconception.
-3. Formulate an engaging, pedagogically sound response.
+3. Formulate an engaging, pedagogically sound response adhering to your persona.
 4. Provide an updated understanding of the student's mastery in stateUpdate (adjust understanding, misconceptions, conceptsMastered, conceptsNeedingWork, and recommendedNextAction).
 5. If the student answered a question, include the "assessment" field with correctness and feedback.`;
   }

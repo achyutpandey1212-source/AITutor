@@ -3,9 +3,10 @@ import { useLiveTutor } from '../hooks/useLiveTutor';
 
 export interface LiveTutorScreenProps {
   idToken: string | null;
+  readyDocsCount?: number;
 }
 
-export const LiveTutorScreen: React.FC<LiveTutorScreenProps> = ({ idToken }) => {
+export const LiveTutorScreen: React.FC<LiveTutorScreenProps> = ({ idToken, readyDocsCount = 0 }) => {
   const [topicInput, setTopicInput] = useState<string>("Newton's Laws of Motion");
   const [selectedLanguage, setSelectedLanguage] = useState<'english' | 'hindi' | 'hinglish'>('english');
   const [typedMessage, setTypedMessage] = useState<string>('');
@@ -57,13 +58,16 @@ export const LiveTutorScreen: React.FC<LiveTutorScreenProps> = ({ idToken }) => 
         Speak into your microphone or type a question to learn with the AI teacher with automatic speech-to-text and voice playback.
       </p>
 
-      {/* Browser Support Badges */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
+      {/* Browser Support & Knowledge Badges */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.85rem', flexWrap: 'wrap' }}>
         <span style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: isSttSupported ? '#dcfce7' : '#fee2e2', color: isSttSupported ? '#166534' : '#991b1b' }}>
           STT: {isSttSupported ? 'Browser Web Speech API Ready' : 'Unsupported Browser'}
         </span>
         <span style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: isTtsSupported ? '#dcfce7' : '#fee2e2', color: isTtsSupported ? '#166534' : '#991b1b' }}>
           TTS: {isTtsSupported ? 'SpeechSynthesis Ready' : 'Unsupported'}
+        </span>
+        <span style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: readyDocsCount > 0 ? '#e0e7ff' : '#f1f5f9', color: readyDocsCount > 0 ? '#3730a3' : '#64748b', fontWeight: 500 }}>
+          {readyDocsCount > 0 ? `📚 RAG Active (${readyDocsCount} study docs indexed)` : '📚 General Knowledge Mode (No docs uploaded)'}
         </span>
       </div>
 

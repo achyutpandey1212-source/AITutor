@@ -9,6 +9,7 @@ import {
 import { auth } from './config/firebase';
 import type { ApiResponse, HealthStatus, User as AppUser, AITestResponse } from '@ai-tutor/shared';
 import { LiveTutorScreen } from './components/LiveTutorScreen';
+import { DocumentManager } from './components/DocumentManager';
 
 export const App: React.FC = () => {
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -27,6 +28,9 @@ export const App: React.FC = () => {
   const [aiResult, setAiResult] = useState<AITestResponse | null>(null);
   const [aiLoading, setAiLoading] = useState<boolean>(false);
   const [aiStreamText, setAiStreamText] = useState<string>('');
+
+  // Document Manager state
+  const [readyDocsCount, setReadyDocsCount] = useState<number>(0);
 
   // Check health
   useEffect(() => {
@@ -279,9 +283,17 @@ export const App: React.FC = () => {
         )}
       </section>
 
+      {/* Milestone 6: Knowledge & Document Manager */}
+      {currentUser && (
+        <DocumentManager
+          idToken={idToken}
+          onDocumentsUpdated={(count) => setReadyDocsCount(count)}
+        />
+      )}
+
       {/* Milestone 5: Live Tutor Screen */}
       {currentUser && (
-        <LiveTutorScreen idToken={idToken} />
+        <LiveTutorScreen idToken={idToken} readyDocsCount={readyDocsCount} />
       )}
 
       {/* Raw AI Provider Debug Verification */}

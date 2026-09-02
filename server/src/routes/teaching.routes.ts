@@ -19,6 +19,7 @@ import {
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { TeachingSessionModel } from '../models/teaching-session.model.js';
 import { teacherEngine } from '../engine/teacher.engine.js';
+import { documentService, retrievalService } from '../knowledge/index.js';
 
 export const teachingRouter = Router();
 
@@ -172,7 +173,20 @@ teachingRouter.post(
         updatedAt: sessionDoc.updatedAt.toISOString(),
       };
 
-      const { message, knowledgeContext } = bodyParse.data;
+      const { message, knowledgeContext: explicitKnowledge } = bodyParse.data;
+
+      // Automatically retrieve knowledge context if user has ready documents and none was passed
+      let effectiveKnowledge = explicitKnowledge;
+      if (!effectiveKnowledge) {
+        const hasDocs = await documentService.hasReadyDocuments(userId);
+        if (hasDocs) {
+          const ragStart = Date.now();
+          effectiveKnowledge = await retrievalService.retrieveKnowledgeContext(userId, message);
+          if (effectiveKnowledge) {
+            console.info(`[TeachingRoute] Injected ${effectiveKnowledge.retrievedChunks?.length || 0} RAG chunks (took ${Date.now() - ragStart}ms)`);
+          }
+        }
+      }
 
       // Generate pedagogical response through TeacherEngine
       const teacherResponse = await teacherEngine.generateTeacherResponse(
@@ -180,7 +194,7 @@ teachingRouter.post(
         session,
         session.teachingState,
         message,
-        knowledgeContext
+        effectiveKnowledge
       );
 
       // Deterministically merge state update
@@ -261,7 +275,7 @@ teachingRouter.post(
         return;
       }
 
-      const { transcript, language, knowledgeContext } = bodyParse.data;
+      const { transcript, language, knowledgeContext: explicitKnowledge } = bodyParse.data;
 
       // Allow voice request to dynamically set or respect session language
       const targetLanguage = language || sessionDoc.language || 'english';
@@ -282,13 +296,26 @@ teachingRouter.post(
         updatedAt: sessionDoc.updatedAt.toISOString(),
       };
 
+      // Automatic RAG retrieval for voice question if user has ready documents
+      let effectiveKnowledge = explicitKnowledge;
+      if (!effectiveKnowledge) {
+        const hasDocs = await documentService.hasReadyDocuments(userId);
+        if (hasDocs) {
+          const ragStart = Date.now();
+          effectiveKnowledge = await retrievalService.retrieveKnowledgeContext(userId, transcript);
+          if (effectiveKnowledge) {
+            console.info(`[VoiceRoute] Grounded response with ${effectiveKnowledge.retrievedChunks?.length || 0} RAG chunks (took ${Date.now() - ragStart}ms)`);
+          }
+        }
+      }
+
       const aiStart = Date.now();
       const teacherResponse = await teacherEngine.generateTeacherResponse(
         session.learnerProfile,
         session,
         session.teachingState,
         transcript,
-        knowledgeContext
+        effectiveKnowledge
       );
       const aiGenerationMs = Date.now() - aiStart;
 
@@ -361,7 +388,7 @@ teachingRouter.post(
         return;
       }
 
-      const { topic, learnerProfile, sessionId, knowledgeContext } = bodyParse.data;
+      const { topic, learnerProfile, sessionId, knowledgeContext: explicitKnowledge } = bodyParse.data;
 
       // If sessionId is passed, verify ownership
       if (sessionId) {
@@ -390,9 +417,18 @@ teachingRouter.post(
         explanationStyle: 'simple',
       };
 
+      // Automatic RAG retrieval for lesson plan topic if documents exist
+      let effectiveKnowledge = explicitKnowledge;
+      if (!effectiveKnowledge) {
+        const hasDocs = await documentService.hasReadyDocuments(userId);
+        if (hasDocs) {
+          effectiveKnowledge = await retrievalService.retrieveKnowledgeContext(userId, topic);
+        }
+      }
+
       const lessonPlan = await teacherEngine.generateLessonPlan(topic, profile, {
         sessionId,
-        knowledgeContext,
+        knowledgeContext: effectiveKnowledge,
       });
 
       res.status(200).json({
@@ -408,3 +444,4 @@ teachingRouter.post(
     }
   }
 );
+

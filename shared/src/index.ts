@@ -171,11 +171,18 @@ export const TeacherResponseSchema = z.object({
 });
 export type TeacherResponse = z.infer<typeof TeacherResponseSchema>;
 
-// E. Knowledge Context (Contract for future RAG)
+// E. Knowledge Context (RAG Foundation)
 export const KnowledgeChunkSchema = z.object({
   text: z.string(),
   source: z.string().optional(),
+  chunkId: z.string().optional(),
+  documentId: z.string().optional(),
+  chunkIndex: z.number().optional(),
+  pageStart: z.number().optional(),
+  pageEnd: z.number().optional(),
+  filename: z.string().optional(),
   relevance: z.number().min(0).max(1).optional(),
+  rerankScore: z.number().optional(),
 });
 export type KnowledgeChunk = z.infer<typeof KnowledgeChunkSchema>;
 
@@ -183,6 +190,8 @@ export const KnowledgeContextSchema = z.object({
   sourceType: z.enum(['topic', 'uploaded_document']),
   sourceId: z.string().optional(),
   retrievedChunks: z.array(KnowledgeChunkSchema).optional(),
+  rerankApplied: z.boolean().optional(),
+  totalChunksFound: z.number().optional(),
 });
 export type KnowledgeContext = z.infer<typeof KnowledgeContextSchema>;
 
@@ -349,3 +358,92 @@ export function normalizeTextForSpeech(text: string): string {
 
   return sanitized;
 }
+
+// ==========================================
+// 7. Milestone 6: Document Ingestion, Vectors & RAG Contracts
+// ==========================================
+
+export const DocumentStatusSchema = z.enum(['pending', 'processing', 'ready', 'failed']);
+export type DocumentStatus = z.infer<typeof DocumentStatusSchema>;
+
+export const ExtractionMethodSchema = z.enum(['pdf_text', 'gemini_fallback']);
+export type ExtractionMethod = z.infer<typeof ExtractionMethodSchema>;
+
+export const DocumentSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  filename: z.string().min(1),
+  mimeType: z.string().default('application/pdf'),
+  size: z.number().int().nonnegative(),
+  status: DocumentStatusSchema.default('pending'),
+  extractionMethod: ExtractionMethodSchema.optional(),
+  pageCount: z.number().int().nonnegative().optional(),
+  chunkCount: z.number().int().nonnegative().default(0),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  errorMessage: z.string().optional(),
+});
+export type Document = z.infer<typeof DocumentSchema>;
+
+export const DocumentChunkMetadataSchema = z.object({
+  filename: z.string().optional(),
+  wordCount: z.number().optional(),
+  tokenEstimate: z.number().optional(),
+  extractionMethod: ExtractionMethodSchema.optional(),
+}).passthrough();
+export type DocumentChunkMetadata = z.infer<typeof DocumentChunkMetadataSchema>;
+
+export const DocumentChunkSchema = z.object({
+  documentId: z.string(),
+  chunkId: z.string(),
+  chunkIndex: z.number().int().nonnegative(),
+  text: z.string().min(1),
+  pageStart: z.number().int().positive().optional(),
+  pageEnd: z.number().int().positive().optional(),
+  metadata: DocumentChunkMetadataSchema.optional(),
+});
+export type DocumentChunk = z.infer<typeof DocumentChunkSchema>;
+
+export const RAGQueryRequestSchema = z.object({
+  query: z.string().min(1, 'Query is required'),
+  documentIds: z.array(z.string()).optional(),
+  topK: z.number().int().positive().max(50).default(12),
+  topN: z.number().int().positive().max(20).default(4),
+});
+export type RAGQueryRequest = z.infer<typeof RAGQueryRequestSchema>;
+
+export const RetrievedChunkSchema = z.object({
+  chunkId: z.string(),
+  documentId: z.string(),
+  chunkIndex: z.number(),
+  text: z.string(),
+  pageStart: z.number().optional(),
+  pageEnd: z.number().optional(),
+  filename: z.string().optional(),
+  vectorScore: z.number(),
+  rerankScore: z.number().optional(),
+  finalScore: z.number(),
+});
+export type RetrievedChunk = z.infer<typeof RetrievedChunkSchema>;
+
+export const RAGLatencyMetricsSchema = z.object({
+  queryEmbeddingMs: z.number().optional(),
+  vectorSearchMs: z.number().optional(),
+  rerankMs: z.number().optional(),
+  totalRetrievalMs: z.number(),
+});
+export type RAGLatencyMetrics = z.infer<typeof RAGLatencyMetricsSchema>;
+
+export const RAGSearchResultSchema = z.object({
+  query: z.string(),
+  retrievedChunks: z.array(RetrievedChunkSchema),
+  totalCandidates: z.number(),
+  rerankApplied: z.boolean(),
+  latency: RAGLatencyMetricsSchema,
+});
+export type RAGSearchResult = z.infer<typeof RAGSearchResultSchema>;
+
+export type RAGSearchResponse = ApiResponse<RAGSearchResult>;
+export type DocumentListResponse = ApiResponse<Document[]>;
+export type DocumentUploadResponse = ApiResponse<Document>;
+
