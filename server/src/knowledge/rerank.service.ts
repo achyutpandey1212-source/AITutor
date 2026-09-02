@@ -1,6 +1,7 @@
 import { CohereClient } from 'cohere-ai';
 import type { RetrievedChunk } from '@ai-tutor/shared';
 import type { QdrantSearchResult } from './vector/qdrant.service.js';
+import { AI_MODELS } from '../ai/ai.config.js';
 
 export interface RerankResult {
   rerankedChunks: RetrievedChunk[];
@@ -10,11 +11,11 @@ export interface RerankResult {
 
 /**
  * Dedicated Cohere Rerank Service.
- * Reorders candidate chunks to distinguish semantically relevant educational passages.
+ * Reorders candidate chunks using rerank-v4.0-fast to distinguish semantically relevant educational passages.
  * Degrades gracefully to raw vector similarity ranking if unavailable.
  */
 export class RerankService {
-  public static readonly DEFAULT_MODEL = 'rerank-english-v3.0';
+  public static readonly DEFAULT_MODEL = AI_MODELS.COHERE.RERANK;
 
   private client: CohereClient | null = null;
   private model: string;

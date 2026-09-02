@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   AIGenerateOptions,
   AIMessage,
   AIStructuredResponse,
@@ -7,6 +7,12 @@
 import type { IAIProvider } from './ai-provider.interface.js';
 import { GeminiProvider } from './providers/gemini.provider.js';
 import { GroqProvider } from './providers/groq.provider.js';
+import { AITaskType, TASK_MODEL_MAPPINGS } from './ai.config.js';
+import { classifyAIError } from './ai.errors.js';
+
+export interface AIServiceGenerateOptions extends AIGenerateOptions {
+  taskType?: AITaskType;
+}
 
 export class AIService {
   private primaryProvider: IAIProvider;
@@ -17,41 +23,40 @@ export class AIService {
     this.fallbackProvider = fallback || new GroqProvider();
   }
 
-  private isRecoverableProviderError(error: any): boolean {
-    if (!error) return false;
-    const message = (error.message || '').toLowerCase();
-    const status = error.status || error.statusCode || error.response?.status;
+  public getPrimaryProvider(): IAIProvider {
+    return this.primaryProvider;
+  }
 
-    // Network / Rate Limit / Service unavailable / Quota exceeded / Provider key issues
-    if (
-      status === 429 ||
-      status === 401 ||
-      status === 403 ||
-      status === 500 ||
-      status === 502 ||
-      status === 503 ||
-      status === 504 ||
-      message.includes('rate limit') ||
-      message.includes('quota') ||
-      message.includes('fetch failed') ||
-      message.includes('econnrefused') ||
-      message.includes('timeout') ||
-      message.includes('overloaded') ||
-      message.includes('resource exhausted') ||
-      message.includes('api_key') ||
-      message.includes('unauthorized') ||
-      message.includes('not configured')
-    ) {
-      return true;
+  public getFallbackProvider(): IAIProvider {
+    return this.fallbackProvider;
+  }
+
+  /**
+   * Resolves options based on explicit task type mapping.
+   */
+  private resolveOptions(options?: AIServiceGenerateOptions): AIGenerateOptions {
+    if (!options?.taskType) {
+      return options || {};
     }
 
-    return false;
+    const taskConfig = TASK_MODEL_MAPPINGS[options.taskType];
+    if (!taskConfig) {
+      return options;
+    }
+
+    return {
+      ...options,
+      model: options.model || taskConfig.modelChain[0],
+      temperature: options.temperature ?? taskConfig.temperature,
+      maxTokens: options.maxTokens || taskConfig.maxTokens,
+    };
   }
 
   async generateText(
     prompt: string | AIMessage[],
-    options?: AIGenerateOptions
+    options?: AIServiceGenerateOptions
   ): Promise<AITextResponse> {
+    const resolvedOpts = this.resolveOptions(options);
     const primaryConfigured = this.primaryProvider.isConfigured();
     const fallbackConfigured = this.fallbackProvider.isConfigured();
 
@@ -61,7 +66,7 @@ export class AIService {
 
     if (primaryConfigured) {
       try {
-        const result = await this.primaryProvider.generateText(prompt, options);
+        const result = await this.primaryProvider.generateText(prompt, resolvedOpts);
         return {
           text: result.text,
           provider: this.primaryProvider.name,
@@ -69,12 +74,21 @@ export class AIService {
           fallbackUsed: false,
         };
       } catch (primaryError: any) {
-        console.warn(`[AIService] Primary provider (${this.primaryProvider.name}) failed:`, primaryError?.message || primaryError);
+        const classified = classifyAIError(primaryError);
+        console.warn(
+          `[AIService] Primary provider (${this.primaryProvider.name}) failed with code ${classified.code}:`,
+          classified.message
+        );
 
-        if (this.isRecoverableProviderError(primaryError) && fallbackConfigured) {
-          console.info(`[AIService] Attempting fallback to ${this.fallbackProvider.name}...`);
+        if (classified.isProviderRecoverable && fallbackConfigured) {
+          console.info(`[AIService] Routing to fallback provider (${this.fallbackProvider.name})...`);
           try {
-            const fallbackResult = await this.fallbackProvider.generateText(prompt, options);
+            const fallbackOpts: AIServiceGenerateOptions = {
+              ...resolvedOpts,
+              model: options?.model && !options.model.startsWith('gemini') ? options.model : undefined,
+              taskType: 'fallback_reasoning',
+            };
+            const fallbackResult = await this.fallbackProvider.generateText(prompt, fallbackOpts);
             return {
               text: fallbackResult.text,
               provider: this.fallbackProvider.name,
@@ -82,17 +96,24 @@ export class AIService {
               fallbackUsed: true,
             };
           } catch (fallbackError: any) {
-            console.error(`[AIService] Fallback provider (${this.fallbackProvider.name}) also failed:`, fallbackError?.message || fallbackError);
-            throw new Error(`AI generation failed on both primary and fallback providers: ${primaryError.message} | Fallback: ${fallbackError.message}`);
+            const fallbackClassified = classifyAIError(fallbackError);
+            console.error(
+              `[AIService] Fallback provider (${this.fallbackProvider.name}) failed with code ${fallbackClassified.code}:`,
+              fallbackClassified.message
+            );
+            throw new Error(
+              `AI generation failed on both primary (${classified.code}) and fallback (${fallbackClassified.code}) providers.`
+            );
           }
         }
 
         throw primaryError;
       }
     } else {
-      // Direct fallback if primary not configured
-      console.info(`[AIService] Primary provider not configured. Routing directly to fallback provider (${this.fallbackProvider.name})...`);
-      const fallbackResult = await this.fallbackProvider.generateText(prompt, options);
+      console.info(
+        `[AIService] Primary provider not configured. Routing directly to fallback (${this.fallbackProvider.name})...`
+      );
+      const fallbackResult = await this.fallbackProvider.generateText(prompt, resolvedOpts);
       return {
         text: fallbackResult.text,
         provider: this.fallbackProvider.name,
@@ -105,8 +126,9 @@ export class AIService {
   async generateStructured<T>(
     prompt: string | AIMessage[],
     schemaDescription: string,
-    options?: AIGenerateOptions
+    options?: AIServiceGenerateOptions
   ): Promise<AIStructuredResponse<T>> {
+    const resolvedOpts = this.resolveOptions(options);
     const primaryConfigured = this.primaryProvider.isConfigured();
     const fallbackConfigured = this.fallbackProvider.isConfigured();
 
@@ -116,7 +138,11 @@ export class AIService {
 
     if (primaryConfigured) {
       try {
-        const result = await this.primaryProvider.generateStructured<T>(prompt, schemaDescription, options);
+        const result = await this.primaryProvider.generateStructured<T>(
+          prompt,
+          schemaDescription,
+          resolvedOpts
+        );
         return {
           data: result.data,
           provider: this.primaryProvider.name,
@@ -124,15 +150,26 @@ export class AIService {
           fallbackUsed: false,
         };
       } catch (primaryError: any) {
-        console.warn(`[AIService] Primary provider structured generation failed:`, primaryError?.message || primaryError);
+        const classified = classifyAIError(primaryError);
+        console.warn(
+          `[AIService] Primary provider structured generation failed with code ${classified.code}:`,
+          classified.message
+        );
 
-        if (this.isRecoverableProviderError(primaryError) && fallbackConfigured) {
-          console.info(`[AIService] Attempting fallback to ${this.fallbackProvider.name} for structured output...`);
+        if (classified.isProviderRecoverable && fallbackConfigured) {
+          console.info(
+            `[AIService] Routing structured request to fallback provider (${this.fallbackProvider.name})...`
+          );
           try {
+            const fallbackOpts: AIServiceGenerateOptions = {
+              ...resolvedOpts,
+              model: options?.model && !options.model.startsWith('gemini') ? options.model : undefined,
+              taskType: 'fallback_reasoning',
+            };
             const fallbackResult = await this.fallbackProvider.generateStructured<T>(
               prompt,
               schemaDescription,
-              options
+              fallbackOpts
             );
             return {
               data: fallbackResult.data,
@@ -141,19 +178,27 @@ export class AIService {
               fallbackUsed: true,
             };
           } catch (fallbackError: any) {
-            console.error(`[AIService] Fallback structured generation failed:`, fallbackError?.message || fallbackError);
-            throw new Error(`Structured AI generation failed on both providers: ${primaryError.message}`);
+            const fallbackClassified = classifyAIError(fallbackError);
+            console.error(
+              `[AIService] Fallback structured generation failed with code ${fallbackClassified.code}:`,
+              fallbackClassified.message
+            );
+            throw new Error(
+              `Structured generation failed on both primary (${classified.code}) and fallback (${fallbackClassified.code}) providers.`
+            );
           }
         }
 
         throw primaryError;
       }
     } else {
-      console.info(`[AIService] Primary provider not configured. Routing structured output directly to fallback (${this.fallbackProvider.name})...`);
+      console.info(
+        `[AIService] Primary provider not configured. Routing structured request directly to fallback (${this.fallbackProvider.name})...`
+      );
       const fallbackResult = await this.fallbackProvider.generateStructured<T>(
         prompt,
         schemaDescription,
-        options
+        resolvedOpts
       );
       return {
         data: fallbackResult.data,
@@ -167,8 +212,9 @@ export class AIService {
   async streamText(
     prompt: string | AIMessage[],
     onChunk: (chunk: string) => void,
-    options?: AIGenerateOptions
+    options?: AIServiceGenerateOptions
   ): Promise<AITextResponse> {
+    const resolvedOpts = this.resolveOptions(options);
     const primaryConfigured = this.primaryProvider.isConfigured();
     const fallbackConfigured = this.fallbackProvider.isConfigured();
 
@@ -178,7 +224,7 @@ export class AIService {
 
     if (primaryConfigured) {
       try {
-        const result = await this.primaryProvider.streamText(prompt, onChunk, options);
+        const result = await this.primaryProvider.streamText(prompt, onChunk, resolvedOpts);
         return {
           text: result.fullText,
           provider: this.primaryProvider.name,
@@ -186,12 +232,25 @@ export class AIService {
           fallbackUsed: false,
         };
       } catch (primaryError: any) {
-        console.warn(`[AIService] Primary stream failed:`, primaryError?.message || primaryError);
+        const classified = classifyAIError(primaryError);
+        console.warn(
+          `[AIService] Primary stream failed with code ${classified.code}:`,
+          classified.message
+        );
 
-        if (this.isRecoverableProviderError(primaryError) && fallbackConfigured) {
-          console.info(`[AIService] Attempting stream fallback to ${this.fallbackProvider.name}...`);
+        if (classified.isProviderRecoverable && fallbackConfigured) {
+          console.info(`[AIService] Routing stream to fallback provider (${this.fallbackProvider.name})...`);
           try {
-            const fallbackResult = await this.fallbackProvider.streamText(prompt, onChunk, options);
+            const fallbackOpts: AIServiceGenerateOptions = {
+              ...resolvedOpts,
+              model: options?.model && !options.model.startsWith('gemini') ? options.model : undefined,
+              taskType: 'fallback_reasoning',
+            };
+            const fallbackResult = await this.fallbackProvider.streamText(
+              prompt,
+              onChunk,
+              fallbackOpts
+            );
             return {
               text: fallbackResult.fullText,
               provider: this.fallbackProvider.name,
@@ -199,16 +258,24 @@ export class AIService {
               fallbackUsed: true,
             };
           } catch (fallbackError: any) {
-            console.error(`[AIService] Fallback stream failed:`, fallbackError?.message || fallbackError);
-            throw new Error(`Streaming failed on both providers: ${primaryError.message}`);
+            const fallbackClassified = classifyAIError(fallbackError);
+            console.error(
+              `[AIService] Fallback stream failed with code ${fallbackClassified.code}:`,
+              fallbackClassified.message
+            );
+            throw new Error(
+              `Streaming failed on both primary (${classified.code}) and fallback (${fallbackClassified.code}) providers.`
+            );
           }
         }
 
         throw primaryError;
       }
     } else {
-      console.info(`[AIService] Primary provider not configured. Routing stream directly to fallback (${this.fallbackProvider.name})...`);
-      const fallbackResult = await this.fallbackProvider.streamText(prompt, onChunk, options);
+      console.info(
+        `[AIService] Primary provider not configured. Routing stream directly to fallback (${this.fallbackProvider.name})...`
+      );
+      const fallbackResult = await this.fallbackProvider.streamText(prompt, onChunk, resolvedOpts);
       return {
         text: fallbackResult.fullText,
         provider: this.fallbackProvider.name,

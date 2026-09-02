@@ -47,9 +47,10 @@ export class QuestionGenerator {
           prompt,
           schemaDescription,
           {
+            taskType: 'assessment_generation',
             systemInstruction,
             temperature: 0.2,
-            maxTokens: 2500,
+            maxTokens: 3000,
           }
         );
         rawData = structuredResult.data;

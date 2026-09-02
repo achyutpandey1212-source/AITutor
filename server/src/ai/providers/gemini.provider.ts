@@ -2,13 +2,14 @@ import { GoogleGenAI } from '@google/genai';
 import type { AIGenerateOptions, AIMessage, AIProviderName } from '@ai-tutor/shared';
 import type { IAIProvider } from '../ai-provider.interface.js';
 import { KeyPool } from '../key-pool.js';
+import { AI_CONFIG, AI_MODELS, GEMINI_REASONING_MODEL_CHAIN } from '../ai.config.js';
+import { classifyAIError } from '../ai.errors.js';
 
 export class GeminiProvider implements IAIProvider {
   public readonly name: AIProviderName = 'gemini';
-  public readonly defaultModel = 'gemini-3.5-flash';
+  public readonly defaultModel = AI_MODELS.GEMINI.PRIMARY_REASONING;
   private keyPool: KeyPool | null = null;
   private clients = new Map<string, GoogleGenAI>();
-
 
   constructor(keys?: string[]) {
     if (keys && keys.length > 0) {
@@ -42,62 +43,103 @@ export class GeminiProvider implements IAIProvider {
     return client;
   }
 
-  private isKeyRecoverableError(error: any): boolean {
-    if (!error) return false;
-    const message = (error.message || '').toLowerCase();
-    const status = error.status || error.statusCode || error.response?.status;
-
-    return (
-      status === 429 ||
-      status === 403 ||
-      status === 503 ||
-      status === 500 ||
-      status === 502 ||
-      status === 504 ||
-      message.includes('rate limit') ||
-      message.includes('quota') ||
-      message.includes('resource exhausted') ||
-      message.includes('service unavailable') ||
-      message.includes('high demand') ||
-      message.includes('api_key') ||
-      message.includes('unauthorized') ||
-      message.includes('invalid api key')
-    );
-  }
-
-  private async executeWithKeyRotation<R>(
-    operation: (client: GoogleGenAI) => Promise<R>
-  ): Promise<R> {
+  /**
+   * Executes an operation across the model chain and key pool with bounded attempts (max 2 total),
+   * strict request timeouts (10s), and instant model/provider escalation.
+   */
+  private async executeWithKeyAndModelRotation<R>(
+    preferredModel: string,
+    operation: (client: GoogleGenAI, activeModel: string, keySlot: number) => Promise<R>
+  ): Promise<{ result: R; model: string }> {
     const pool = this.getKeyPool();
-    const totalKeys = pool.getKeyCount();
-    if (totalKeys === 0) {
-      throw new Error('GEMINI_API_KEY or GEMINI_API_KEYS environment variable is not configured');
+    if (!pool.isConfigured()) {
+      throw new Error('GEMINI_API_KEYS or GEMINI_API_KEY environment variable is not configured');
+    }
+
+    // Determine model chain: preferred model first, then fallback chain
+    const modelChain: string[] = [preferredModel];
+    for (const fallbackModel of GEMINI_REASONING_MODEL_CHAIN) {
+      if (!modelChain.includes(fallbackModel)) {
+        modelChain.push(fallbackModel);
+      }
     }
 
     let lastError: any = null;
-    const attemptedKeys = new Set<string>();
+    let totalAttempts = 0;
+    const maxGlobalAttempts = AI_CONFIG.MAX_KEY_ATTEMPTS_PER_PROVIDER; // 2 attempts maximum per request
 
-    while (attemptedKeys.size < totalKeys) {
-      const apiKey = pool.getNextKey();
-      if (!apiKey || attemptedKeys.has(apiKey)) {
+    for (const activeModel of modelChain) {
+      if (totalAttempts >= maxGlobalAttempts) {
         break;
       }
 
-      attemptedKeys.add(apiKey);
+      const keyInfo = pool.getNextKeyInfo();
+      if (!keyInfo) {
+        break;
+      }
+
+      totalAttempts++;
+      const { key: apiKey, slotIndex } = keyInfo;
+      const startTime = Date.now();
+
       try {
         const client = this.getClient(apiKey);
-        return await operation(client);
-      } catch (error: any) {
-        lastError = error;
-        if (this.isKeyRecoverableError(error)) {
-          pool.markKeyUnavailable(apiKey);
-          continue;
+
+        // Wrap with bounded 10s timeout
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error(`Gemini request timed out after ${AI_CONFIG.REQUEST_TIMEOUT_MS}ms`));
+          }, AI_CONFIG.REQUEST_TIMEOUT_MS);
+          timeoutId.unref?.();
+        });
+
+        const result = await Promise.race([
+          operation(client, activeModel, slotIndex),
+          timeoutPromise,
+        ]);
+
+        pool.markKeySuccess(apiKey);
+        console.info(
+          `[GeminiProvider] provider=gemini model=${activeModel} keySlot=${slotIndex} status=success durationMs=${
+            Date.now() - startTime
+          }`
+        );
+
+        return { result, model: activeModel };
+      } catch (rawError: any) {
+        lastError = rawError;
+        const classified = classifyAIError(rawError);
+
+        console.warn(
+          `[GeminiProvider] provider=gemini model=${activeModel} keySlot=${slotIndex} code=${
+            classified.code
+          } durationMs=${Date.now() - startTime} message="${classified.message}"`
+        );
+
+        // If key level error: mark key unavailable
+        if (classified.isKeyRecoverable) {
+          pool.markKeyUnavailable(apiKey, undefined, classified.code);
         }
-        throw error;
+
+        // If non-recoverable client error (e.g. malformed request params): fail fast
+        if (!classified.isProviderRecoverable && !classified.isKeyRecoverable && !classified.isModelError) {
+          throw rawError;
+        }
+
+        // If we reached max bounded attempts (2 attempts total): break immediately to allow AIService fallback to Groq
+        if (totalAttempts >= maxGlobalAttempts) {
+          console.warn(
+            `[GeminiProvider] Reached max attempt limit (${maxGlobalAttempts}). Escalating to fallback provider.`
+          );
+          break;
+        }
       }
     }
 
-    throw lastError || new Error('All Gemini API keys in the pool are currently unavailable/exhausted');
+    throw (
+      lastError ||
+      new Error('Gemini provider attempts exhausted. Escalating to fallback.')
+    );
   }
 
   private formatContents(prompt: string | AIMessage[]): { contents: string; systemInstruction?: string } {
@@ -138,7 +180,12 @@ export class GeminiProvider implements IAIProvider {
       try {
         return JSON.parse(cleaned) as T;
       } catch (err: any) {
-        throw new Error(`Failed to parse AI JSON response: ${err.message}. Raw text preview: ${text.substring(0, 200)}`);
+        throw new Error(
+          `Failed to parse AI JSON response: ${err.message}. Raw text preview: ${text.substring(
+            0,
+            200
+          )}`
+        );
       }
     }
   }
@@ -147,23 +194,27 @@ export class GeminiProvider implements IAIProvider {
     prompt: string | AIMessage[],
     options?: AIGenerateOptions
   ): Promise<{ text: string; model: string }> {
-    const model = options?.model || this.defaultModel;
+    const preferredModel = options?.model || this.defaultModel;
     const { contents, systemInstruction } = this.formatContents(prompt);
 
-    return this.executeWithKeyRotation(async (ai) => {
-      const response = await ai.models.generateContent({
-        model,
-        contents,
-        config: {
-          systemInstruction: options?.systemInstruction || systemInstruction,
-          temperature: options?.temperature,
-          maxOutputTokens: options?.maxTokens || 4000,
-        },
-      });
+    const { result, model } = await this.executeWithKeyAndModelRotation(
+      preferredModel,
+      async (ai, activeModel) => {
+        const response = await ai.models.generateContent({
+          model: activeModel,
+          contents,
+          config: {
+            systemInstruction: options?.systemInstruction || systemInstruction,
+            temperature: options?.temperature ?? 0.3,
+            maxOutputTokens: options?.maxTokens || 4000,
+          },
+        });
 
-      const text = response.text || '';
-      return { text, model };
-    });
+        return response.text || '';
+      }
+    );
+
+    return { text: result, model };
   }
 
   async generateStructured<T>(
@@ -171,7 +222,7 @@ export class GeminiProvider implements IAIProvider {
     schemaDescription: string,
     options?: AIGenerateOptions
   ): Promise<{ data: T; model: string }> {
-    const model = options?.model || this.defaultModel;
+    const preferredModel = options?.model || this.defaultModel;
     const { contents, systemInstruction } = this.formatContents(prompt);
 
     const structuredInstruction = `Respond ONLY with valid JSON conforming to this specification:\n${schemaDescription}\nDo not wrap in markdown codeblocks if possible, or output clean JSON only.`;
@@ -180,22 +231,26 @@ export class GeminiProvider implements IAIProvider {
       ? `${options?.systemInstruction || systemInstruction}\n\n${structuredInstruction}`
       : structuredInstruction;
 
-    return this.executeWithKeyRotation(async (ai) => {
-      const response = await ai.models.generateContent({
-        model,
-        contents,
-        config: {
-          systemInstruction: fullSystem,
-          responseMimeType: 'application/json',
-          temperature: options?.temperature ?? 0.2,
-          maxOutputTokens: options?.maxTokens || 4000,
-        },
-      });
+    const { result, model } = await this.executeWithKeyAndModelRotation(
+      preferredModel,
+      async (ai, activeModel) => {
+        const response = await ai.models.generateContent({
+          model: activeModel,
+          contents,
+          config: {
+            systemInstruction: fullSystem,
+            responseMimeType: 'application/json',
+            temperature: options?.temperature ?? 0.2,
+            maxOutputTokens: options?.maxTokens || 4000,
+          },
+        });
 
-      const text = response.text || '{}';
-      const data = this.cleanAndParseJson<T>(text);
-      return { data, model };
-    });
+        const text = response.text || '{}';
+        return this.cleanAndParseJson<T>(text);
+      }
+    );
+
+    return { data: result, model };
   }
 
   async streamText(
@@ -203,30 +258,35 @@ export class GeminiProvider implements IAIProvider {
     onChunk: (chunk: string) => void,
     options?: AIGenerateOptions
   ): Promise<{ fullText: string; model: string }> {
-    const model = options?.model || this.defaultModel;
+    const preferredModel = options?.model || this.defaultModel;
     const { contents, systemInstruction } = this.formatContents(prompt);
 
-    return this.executeWithKeyRotation(async (ai) => {
-      const responseStream = await ai.models.generateContentStream({
-        model,
-        contents,
-        config: {
-          systemInstruction: options?.systemInstruction || systemInstruction,
-          temperature: options?.temperature,
-          maxOutputTokens: options?.maxTokens || 4000,
-        },
-      });
+    const { result, model } = await this.executeWithKeyAndModelRotation(
+      preferredModel,
+      async (ai, activeModel) => {
+        const responseStream = await ai.models.generateContentStream({
+          model: activeModel,
+          contents,
+          config: {
+            systemInstruction: options?.systemInstruction || systemInstruction,
+            temperature: options?.temperature ?? 0.3,
+            maxOutputTokens: options?.maxTokens || 4000,
+          },
+        });
 
-      let fullText = '';
-      for await (const chunk of responseStream) {
-        const chunkText = chunk.text || '';
-        if (chunkText) {
-          fullText += chunkText;
-          onChunk(chunkText);
+        let fullText = '';
+        for await (const chunk of responseStream) {
+          const chunkText = chunk.text || '';
+          if (chunkText) {
+            fullText += chunkText;
+            onChunk(chunkText);
+          }
         }
-      }
 
-      return { fullText, model };
-    });
+        return fullText;
+      }
+    );
+
+    return { fullText: result, model };
   }
 }

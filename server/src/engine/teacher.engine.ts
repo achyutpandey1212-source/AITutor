@@ -1,4 +1,4 @@
-﻿import crypto from 'crypto';
+import crypto from 'crypto';
 import type {
   KnowledgeContext,
   LearnerProfile,
@@ -50,14 +50,26 @@ export class TeacherEngine {
       prompt,
       schemaDesc,
       {
+        taskType: 'reasoning',
         systemInstruction,
         temperature: 0.3,
-        maxTokens: 2000,
+        maxTokens: 3000,
       }
     );
 
+    // Deterministic normalization of AI output
+    const rawData = (structuredResult.data || {}) as any;
+    if (rawData && typeof rawData === 'object') {
+      if (rawData.assessment && typeof rawData.assessment === 'object' && !rawData.assessment.correctness) {
+        rawData.assessment.correctness = 'unclear';
+      }
+      if (!rawData.updatedState) {
+        rawData.updatedState = currentState;
+      }
+    }
+
     // Validate structured AI output with Zod contract
-    const parseResult = TeacherResponseSchema.safeParse(structuredResult.data);
+    const parseResult = TeacherResponseSchema.safeParse(rawData);
     if (!parseResult.success) {
       console.error('[TeacherEngine] Zod validation failed for teacher response:', parseResult.error.format());
       throw new Error(`AI generated invalid TeacherResponse contract: ${parseResult.error.message}`);

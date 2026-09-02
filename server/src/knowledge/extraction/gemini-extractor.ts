@@ -40,6 +40,7 @@ ${rawText ? rawText.substring(0, 15000) : '[Scanned document text was empty or c
 `;
 
       const response = await this.ai.generateText(prompt, {
+        taskType: 'document_understanding',
         systemInstruction:
           'You are a high-fidelity educational document extraction assistant. Output clean, readable, comprehensive study material text.',
         temperature: 0.1,

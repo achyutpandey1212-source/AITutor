@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import type { DocumentChunk } from '@ai-tutor/shared';
 import { EmbeddingService } from '../embedding.service.js';
+import { AI_CONFIG } from '../../ai/ai.config.js';
 
 export interface QdrantPointPayload {
   userId: string;
@@ -30,7 +31,7 @@ export interface QdrantSearchResult {
  * Service managing Qdrant vector database interactions with strict multi-tenant isolation.
  */
 export class QdrantService {
-  public static readonly DEFAULT_COLLECTION = 'ai_tutor_knowledge';
+  public static readonly DEFAULT_COLLECTION = AI_CONFIG.QDRANT.DEFAULT_COLLECTION;
 
   private client: QdrantClient | null = null;
   private collectionName: string;
@@ -61,7 +62,7 @@ export class QdrantService {
   /**
    * Ensures the Qdrant collection exists with proper dimensions and Cosine distance metric.
    */
-  async ensureCollection(vectorDimension = EmbeddingService.VECTOR_DIMENSION): Promise<void> {
+  async ensureCollection(vectorDimension: number = EmbeddingService.VECTOR_DIMENSION): Promise<void> {
     if (this.isInitialized) return;
 
     try {

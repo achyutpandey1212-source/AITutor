@@ -1,4 +1,5 @@
 import { CohereClient } from 'cohere-ai';
+import { AI_MODELS } from '../ai/ai.config.js';
 
 export interface EmbeddingConfig {
   model?: string;
@@ -8,11 +9,11 @@ export interface EmbeddingConfig {
 
 /**
  * Dedicated Cohere Embedding Service.
- * Centralizes embedding models, vector dimensions, batching, and input types.
+ * Centralizes embedding models (embed-v4.0), vector dimensions (1536), batching, and input types.
  */
 export class EmbeddingService {
-  public static readonly DEFAULT_MODEL = 'embed-english-v3.0';
-  public static readonly VECTOR_DIMENSION = 1024;
+  public static readonly DEFAULT_MODEL = AI_MODELS.COHERE.EMBEDDING;
+  public static readonly VECTOR_DIMENSION = AI_MODELS.COHERE.EMBEDDING_DIMENSION;
   public static readonly DEFAULT_BATCH_SIZE = 64;
 
   private client: CohereClient | null = null;
