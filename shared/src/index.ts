@@ -189,9 +189,12 @@ export type KnowledgeChunk = z.infer<typeof KnowledgeChunkSchema>;
 export const KnowledgeContextSchema = z.object({
   sourceType: z.enum(['topic', 'uploaded_document']),
   sourceId: z.string().optional(),
-  retrievedChunks: z.array(KnowledgeChunkSchema).optional(),
+  hasUploadedDocuments: z.boolean().default(false),
+  relevantContextFound: z.boolean().default(false),
+  retrievedChunks: z.array(KnowledgeChunkSchema).default([]),
   rerankApplied: z.boolean().optional(),
   totalChunksFound: z.number().optional(),
+  relevanceThreshold: z.number().optional(),
 });
 export type KnowledgeContext = z.infer<typeof KnowledgeContextSchema>;
 

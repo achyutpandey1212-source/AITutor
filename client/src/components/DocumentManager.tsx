@@ -272,7 +272,9 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({ idToken, onDoc
 
             <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {searchResult.retrievedChunks.length === 0 ? (
-                <p style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>No matching chunks found.</p>
+                <div style={{ padding: '0.75rem', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '4px', fontSize: '0.85rem', color: '#64748b' }}>
+                  ℹ️ <strong>No sufficiently relevant chunks found.</strong> ({searchResult.totalCandidates} raw candidate{searchResult.totalCandidates === 1 ? '' : 's'} were evaluated by the Cohere relevance gate and rejected as irrelevant to this query).
+                </div>
               ) : (
                 searchResult.retrievedChunks.map((chunk, i) => (
                   <div key={chunk.chunkId} style={{ padding: '0.75rem', border: '1px solid #e2e8f0', borderRadius: '4px', background: '#ffffff' }}>

@@ -138,6 +138,15 @@ export class IngestionService {
       console.info(`[IngestionService] Ingestion completed successfully for doc=${documentId}:`, telemetry);
     } catch (err: any) {
       console.error(`[IngestionService] Ingestion FAILED for doc=${documentId}:`, err.message);
+
+      // Rollback: delete any partially upserted vectors to prevent orphaned chunks
+      try {
+        await this.qdrant.deleteByDocument(userId, documentId);
+        console.info(`[IngestionService] Cleaned up Qdrant vectors for failed doc=${documentId}`);
+      } catch (cleanupErr: any) {
+        console.warn(`[IngestionService] Warning: Vector cleanup for failed doc=${documentId} failed:`, cleanupErr.message);
+      }
+
       await this.documents.updateStatus(documentId, 'failed', {
         errorMessage: err.message || 'Ingestion pipeline failure',
       });

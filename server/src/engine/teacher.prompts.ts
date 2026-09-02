@@ -40,20 +40,54 @@ Your pedagogical principles:
   ): string {
     let knowledgeStr = '';
     let ragGuidance = '';
-    if (knowledgeContext && knowledgeContext.retrievedChunks && knowledgeContext.retrievedChunks.length > 0) {
+
+    if (knowledgeContext && knowledgeContext.hasUploadedDocuments) {
+      if (
+        knowledgeContext.relevantContextFound &&
+        knowledgeContext.retrievedChunks &&
+        knowledgeContext.retrievedChunks.length > 0
+      ) {
+        knowledgeStr =
+          `\n--- RETRIEVED STUDENT STUDY MATERIAL (Grounded Context) ---\n` +
+          knowledgeContext.retrievedChunks
+            .map(
+              (c, i) =>
+                `[Source ${i + 1}: ${c.source || c.filename || 'Uploaded Document'} (relevance: ${c.relevance?.toFixed(2) || 'N/A'})]\n${c.text}`
+            )
+            .join('\n\n') +
+          `\n----------------------------------------------------------\n`;
+
+        ragGuidance = `
+Knowledge Grounding Rules:
+- PREFER the uploaded study material above when relevant to the student's question or concept.
+- Base your explanations on this material. Do NOT fabricate facts or claim details exist in the document if they do not.
+- Explain concepts naturally at the student's level without quoting raw passages verbatim.`;
+      } else {
+        ragGuidance = `
+Knowledge Context Notice:
+- The student has uploaded study material, but NO relevant information was found in their documents for this question ("${studentMessage}").
+- Do NOT claim or imply that your answer comes from their uploaded document.
+- Mention naturally (in one brief conversational sentence) that this topic isn't covered in their uploaded study material, then answer helpfully from general pedagogical knowledge.`;
+      }
+    } else if (
+      knowledgeContext &&
+      knowledgeContext.retrievedChunks &&
+      knowledgeContext.retrievedChunks.length > 0
+    ) {
       knowledgeStr =
         `\n--- RETRIEVED STUDENT STUDY MATERIAL (Grounded Context) ---\n` +
         knowledgeContext.retrievedChunks
-          .map((c, i) => `[Source ${i + 1}: ${c.source || c.filename || 'Uploaded Document'} (relevance: ${c.relevance?.toFixed(2) || 'N/A'})]\n${c.text}`)
+          .map(
+            (c, i) =>
+              `[Source ${i + 1}: ${c.source || c.filename || 'Uploaded Document'} (relevance: ${c.relevance?.toFixed(2) || 'N/A'})]\n${c.text}`
+          )
           .join('\n\n') +
         `\n----------------------------------------------------------\n`;
 
       ragGuidance = `
 Knowledge Grounding Rules:
-- PREFER uploaded study material above when relevant to the student's question or concept.
-- Do NOT fabricate information or cite claims as from the document if they are not present.
-- If the retrieved passages do not contain enough information to answer fully, acknowledge what the document covers and supplement naturally from general knowledge.
-- Explain concepts naturally at the student's level without quoting raw passages verbatim.`;
+- PREFER uploaded study material above when relevant.
+- Do NOT fabricate facts or claim details exist in the document if they do not.`;
     }
 
     return `Topic: "${session.topic}"
