@@ -1,18 +1,22 @@
-﻿import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import type { AIGenerateOptions, AIMessage, AIProviderName } from '@ai-tutor/shared';
 import type { IAIProvider } from '../ai-provider.interface.js';
 import { KeyPool } from '../key-pool.js';
 
 export class GeminiProvider implements IAIProvider {
   public readonly name: AIProviderName = 'gemini';
-  public readonly defaultModel = 'gemini-2.5-flash';
-  private keyPool: KeyPool;
+  public readonly defaultModel = 'gemini-3.6-flash';
+  private keyPool: KeyPool | null = null;
   private clients = new Map<string, GoogleGenAI>();
 
   constructor(keys?: string[]) {
     if (keys && keys.length > 0) {
       this.keyPool = new KeyPool('gemini', keys);
-    } else {
+    }
+  }
+
+  public getKeyPool(): KeyPool {
+    if (!this.keyPool) {
       const configuredKeys: string[] = [];
       if (process.env.GEMINI_API_KEYS) {
         configuredKeys.push(...process.env.GEMINI_API_KEYS.split(','));
@@ -21,14 +25,11 @@ export class GeminiProvider implements IAIProvider {
       }
       this.keyPool = new KeyPool('gemini', configuredKeys);
     }
+    return this.keyPool;
   }
 
   isConfigured(): boolean {
-    return this.keyPool.isConfigured();
-  }
-
-  public getKeyPool(): KeyPool {
-    return this.keyPool;
+    return this.getKeyPool().isConfigured();
   }
 
   private getClient(apiKey: string): GoogleGenAI {
@@ -48,9 +49,15 @@ export class GeminiProvider implements IAIProvider {
     return (
       status === 429 ||
       status === 403 ||
+      status === 503 ||
+      status === 500 ||
+      status === 502 ||
+      status === 504 ||
       message.includes('rate limit') ||
       message.includes('quota') ||
       message.includes('resource exhausted') ||
+      message.includes('service unavailable') ||
+      message.includes('high demand') ||
       message.includes('api_key') ||
       message.includes('unauthorized') ||
       message.includes('invalid api key')
@@ -60,7 +67,8 @@ export class GeminiProvider implements IAIProvider {
   private async executeWithKeyRotation<R>(
     operation: (client: GoogleGenAI) => Promise<R>
   ): Promise<R> {
-    const totalKeys = this.keyPool.getKeyCount();
+    const pool = this.getKeyPool();
+    const totalKeys = pool.getKeyCount();
     if (totalKeys === 0) {
       throw new Error('GEMINI_API_KEY or GEMINI_API_KEYS environment variable is not configured');
     }
@@ -69,7 +77,7 @@ export class GeminiProvider implements IAIProvider {
     const attemptedKeys = new Set<string>();
 
     while (attemptedKeys.size < totalKeys) {
-      const apiKey = this.keyPool.getNextKey();
+      const apiKey = pool.getNextKey();
       if (!apiKey || attemptedKeys.has(apiKey)) {
         break;
       }
@@ -81,11 +89,9 @@ export class GeminiProvider implements IAIProvider {
       } catch (error: any) {
         lastError = error;
         if (this.isKeyRecoverableError(error)) {
-          this.keyPool.markKeyUnavailable(apiKey);
-          // Try next available key from the pool
+          pool.markKeyUnavailable(apiKey);
           continue;
         }
-        // Non-key/fatal programming error, throw immediately
         throw error;
       }
     }
@@ -115,6 +121,27 @@ export class GeminiProvider implements IAIProvider {
     };
   }
 
+  private cleanAndParseJson<T>(rawText: string): T {
+    const text = rawText.trim();
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      let cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/gi, '').trim();
+
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+      }
+
+      try {
+        return JSON.parse(cleaned) as T;
+      } catch (err: any) {
+        throw new Error(`Failed to parse AI JSON response: ${err.message}. Raw text preview: ${text.substring(0, 200)}`);
+      }
+    }
+  }
+
   async generateText(
     prompt: string | AIMessage[],
     options?: AIGenerateOptions
@@ -129,7 +156,7 @@ export class GeminiProvider implements IAIProvider {
         config: {
           systemInstruction: options?.systemInstruction || systemInstruction,
           temperature: options?.temperature,
-          maxOutputTokens: options?.maxTokens,
+          maxOutputTokens: options?.maxTokens || 4000,
         },
       });
 
@@ -159,20 +186,14 @@ export class GeminiProvider implements IAIProvider {
         config: {
           systemInstruction: fullSystem,
           responseMimeType: 'application/json',
-          temperature: options?.temperature ?? 0.1,
-          maxOutputTokens: options?.maxTokens,
+          temperature: options?.temperature ?? 0.2,
+          maxOutputTokens: options?.maxTokens || 4000,
         },
       });
 
       const text = response.text || '{}';
-      try {
-        const data = JSON.parse(text) as T;
-        return { data, model };
-      } catch {
-        const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
-        const data = JSON.parse(cleaned) as T;
-        return { data, model };
-      }
+      const data = this.cleanAndParseJson<T>(text);
+      return { data, model };
     });
   }
 
@@ -191,7 +212,7 @@ export class GeminiProvider implements IAIProvider {
         config: {
           systemInstruction: options?.systemInstruction || systemInstruction,
           temperature: options?.temperature,
-          maxOutputTokens: options?.maxTokens,
+          maxOutputTokens: options?.maxTokens || 4000,
         },
       });
 

@@ -6,13 +6,17 @@ import { KeyPool } from '../key-pool.js';
 export class GroqProvider implements IAIProvider {
   public readonly name: AIProviderName = 'groq';
   public readonly defaultModel = 'llama-3.3-70b-versatile';
-  private keyPool: KeyPool;
+  private keyPool: KeyPool | null = null;
   private clients = new Map<string, Groq>();
 
   constructor(keys?: string[]) {
     if (keys && keys.length > 0) {
       this.keyPool = new KeyPool('groq', keys);
-    } else {
+    }
+  }
+
+  public getKeyPool(): KeyPool {
+    if (!this.keyPool) {
       const configuredKeys: string[] = [];
       if (process.env.GROQ_API_KEYS) {
         configuredKeys.push(...process.env.GROQ_API_KEYS.split(','));
@@ -21,14 +25,11 @@ export class GroqProvider implements IAIProvider {
       }
       this.keyPool = new KeyPool('groq', configuredKeys);
     }
+    return this.keyPool;
   }
 
   isConfigured(): boolean {
-    return this.keyPool.isConfigured();
-  }
-
-  public getKeyPool(): KeyPool {
-    return this.keyPool;
+    return this.getKeyPool().isConfigured();
   }
 
   private getClient(apiKey: string): Groq {
@@ -61,7 +62,8 @@ export class GroqProvider implements IAIProvider {
   private async executeWithKeyRotation<R>(
     operation: (client: Groq) => Promise<R>
   ): Promise<R> {
-    const totalKeys = this.keyPool.getKeyCount();
+    const pool = this.getKeyPool();
+    const totalKeys = pool.getKeyCount();
     if (totalKeys === 0) {
       throw new Error('GROQ_API_KEY or GROQ_API_KEYS environment variable is not configured');
     }
@@ -70,7 +72,7 @@ export class GroqProvider implements IAIProvider {
     const attemptedKeys = new Set<string>();
 
     while (attemptedKeys.size < totalKeys) {
-      const apiKey = this.keyPool.getNextKey();
+      const apiKey = pool.getNextKey();
       if (!apiKey || attemptedKeys.has(apiKey)) {
         break;
       }
@@ -82,8 +84,7 @@ export class GroqProvider implements IAIProvider {
       } catch (error: any) {
         lastError = error;
         if (this.isKeyRecoverableError(error)) {
-          this.keyPool.markKeyUnavailable(apiKey);
-          // Try next available key in the pool
+          pool.markKeyUnavailable(apiKey);
           continue;
         }
         throw error;
