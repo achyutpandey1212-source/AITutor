@@ -6,6 +6,7 @@ import type {
   TeacherResponse,
   TeachingSession,
   TeachingState,
+  TutorSessionContext,
   VoiceInteractionResponse,
 } from '@ai-tutor/shared';
 import {
@@ -22,6 +23,23 @@ import { teacherEngine } from '../engine/teacher.engine.js';
 import { documentService, retrievalService } from '../knowledge/index.js';
 
 export const teachingRouter = Router();
+
+function buildSessionContext(sessionDoc: any): TutorSessionContext {
+  return {
+    sessionId: sessionDoc._id.toString(),
+    userId: sessionDoc.userId,
+    subject: sessionDoc.subject || 'General',
+    topic: sessionDoc.topic,
+    language: sessionDoc.language || 'english',
+    conversationHistory: sessionDoc.conversationHistory || [],
+    activeConcept: sessionDoc.currentConcept || sessionDoc.topic,
+    teachingState: sessionDoc.teachingState,
+    assessmentSessionId: sessionDoc.assessmentSessionId,
+    currentQuestionId: sessionDoc.currentQuestionId,
+    currentMode: sessionDoc.currentMode || 'TEACHING',
+    updatedAt: sessionDoc.updatedAt ? sessionDoc.updatedAt.toISOString() : new Date().toISOString(),
+  };
+}
 
 // 1. POST /api/teaching/sessions - Creates a new teaching session
 teachingRouter.post(
@@ -75,22 +93,28 @@ teachingRouter.post(
       const sessionDoc = await TeachingSessionModel.create({
         userId,
         topic,
+        subject: req.body?.subject || 'General',
         learnerProfile: initialProfile,
         status: 'active',
         currentConcept: topic,
         language: initialProfile.preferredLanguage,
         teachingState: initialTeachingState,
+        currentMode: 'TEACHING',
+        conversationHistory: [],
       });
 
       const createdSession: TeachingSession = {
         id: sessionDoc._id.toString(),
         userId: sessionDoc.userId,
         topic: sessionDoc.topic,
+        subject: sessionDoc.subject || 'General',
         learnerProfile: sessionDoc.learnerProfile,
         status: sessionDoc.status,
         currentConcept: sessionDoc.currentConcept,
         language: sessionDoc.language,
         teachingState: sessionDoc.teachingState,
+        currentMode: sessionDoc.currentMode || 'TEACHING',
+        conversationHistory: sessionDoc.conversationHistory || [],
         startedAt: sessionDoc.createdAt.toISOString(),
         updatedAt: sessionDoc.updatedAt.toISOString(),
       };
@@ -109,13 +133,82 @@ teachingRouter.post(
   }
 );
 
+// 1b. GET /api/teaching/sessions/:sessionId - Retrieves teaching session details
+teachingRouter.get(
+  '/sessions/:sessionId',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<{ session: TeachingSession; context: TutorSessionContext }>>): Promise<void> => {
+    try {
+      const userId = req.user?.uid;
+      const { sessionId } = req.params;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: { message: 'Unauthorized', code: 'AUTH_REQUIRED' },
+        });
+        return;
+      }
+
+      const sessionDoc = await TeachingSessionModel.findById(sessionId);
+      if (!sessionDoc) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Teaching session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
+      if (sessionDoc.userId !== userId) {
+        res.status(403).json({
+          success: false,
+          error: { message: 'Forbidden: You do not own this teaching session', code: 'FORBIDDEN' },
+        });
+        return;
+      }
+
+      const session: TeachingSession = {
+        id: sessionDoc._id.toString(),
+        userId: sessionDoc.userId,
+        topic: sessionDoc.topic,
+        subject: sessionDoc.subject || 'General',
+        learnerProfile: sessionDoc.learnerProfile,
+        status: sessionDoc.status,
+        currentConcept: sessionDoc.currentConcept,
+        language: sessionDoc.language,
+        teachingState: sessionDoc.teachingState,
+        currentMode: sessionDoc.currentMode || 'TEACHING',
+        assessmentSessionId: sessionDoc.assessmentSessionId,
+        currentQuestionId: sessionDoc.currentQuestionId,
+        conversationHistory: sessionDoc.conversationHistory || [],
+        startedAt: sessionDoc.createdAt.toISOString(),
+        updatedAt: sessionDoc.updatedAt.toISOString(),
+      };
+
+      res.status(200).json({
+        success: true,
+        data: {
+          session,
+          context: buildSessionContext(sessionDoc),
+        },
+      });
+    } catch (error: any) {
+      console.error('Error fetching teaching session:', error);
+      res.status(500).json({
+        success: false,
+        error: { message: error.message || 'Failed to fetch session', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
 // 2. POST /api/teaching/sessions/:sessionId/respond - Responds to student message in session
 teachingRouter.post(
   '/sessions/:sessionId/respond',
   requireAuth,
   async (
     req: Request,
-    res: Response<ApiResponse<{ teacherResponse: TeacherResponse; teachingState: TeachingState }>>
+    res: Response<ApiResponse<{ teacherResponse: TeacherResponse; teachingState: TeachingState; sessionContext: TutorSessionContext }>>
   ): Promise<void> => {
     try {
       const userId = req.user?.uid;
@@ -164,11 +257,16 @@ teachingRouter.post(
         id: sessionDoc._id.toString(),
         userId: sessionDoc.userId,
         topic: sessionDoc.topic,
+        subject: sessionDoc.subject || 'General',
         learnerProfile: sessionDoc.learnerProfile,
         status: sessionDoc.status,
         currentConcept: sessionDoc.currentConcept,
         language: sessionDoc.language,
         teachingState: sessionDoc.teachingState,
+        currentMode: sessionDoc.currentMode || 'TEACHING',
+        assessmentSessionId: sessionDoc.assessmentSessionId,
+        currentQuestionId: sessionDoc.currentQuestionId,
+        conversationHistory: sessionDoc.conversationHistory || [],
         startedAt: sessionDoc.createdAt.toISOString(),
         updatedAt: sessionDoc.updatedAt.toISOString(),
       };
@@ -203,11 +301,25 @@ teachingRouter.post(
         teacherResponse.stateUpdate
       );
 
-      // Persist updated state and currentConcept
+      // Determine new pedagogical mode
+      let newMode: 'TEACHING' | 'ASSESSMENT' | 'FEEDBACK' | 'REVIEW' = 'TEACHING';
+      if (teacherResponse.intent === 'question' || teacherResponse.teachingAction === 'assess') {
+        newMode = 'ASSESSMENT';
+      } else if (teacherResponse.intent === 'feedback') {
+        newMode = 'FEEDBACK';
+      }
+
+      // Persist conversation turns & updated state
+      const now = new Date().toISOString();
       sessionDoc.teachingState = updatedState;
       if (updatedState.currentConcept) {
         sessionDoc.currentConcept = updatedState.currentConcept;
       }
+      sessionDoc.currentMode = newMode;
+      sessionDoc.conversationHistory.push(
+        { role: 'student', text: message, timestamp: now },
+        { role: 'tutor', text: teacherResponse.responseText, intent: teacherResponse.intent, timestamp: new Date().toISOString() }
+      );
       await sessionDoc.save();
 
       res.status(200).json({
@@ -215,6 +327,7 @@ teachingRouter.post(
         data: {
           teacherResponse,
           teachingState: updatedState,
+          sessionContext: buildSessionContext(sessionDoc),
         },
       });
     } catch (error: any) {
@@ -284,6 +397,7 @@ teachingRouter.post(
         id: sessionDoc._id.toString(),
         userId: sessionDoc.userId,
         topic: sessionDoc.topic,
+        subject: sessionDoc.subject || 'General',
         learnerProfile: {
           ...sessionDoc.learnerProfile,
           preferredLanguage: targetLanguage,
@@ -292,6 +406,10 @@ teachingRouter.post(
         currentConcept: sessionDoc.currentConcept,
         language: targetLanguage,
         teachingState: sessionDoc.teachingState,
+        currentMode: sessionDoc.currentMode || 'TEACHING',
+        assessmentSessionId: sessionDoc.assessmentSessionId,
+        currentQuestionId: sessionDoc.currentQuestionId,
+        conversationHistory: sessionDoc.conversationHistory || [],
         startedAt: sessionDoc.createdAt.toISOString(),
         updatedAt: sessionDoc.updatedAt.toISOString(),
       };
@@ -325,12 +443,26 @@ teachingRouter.post(
         teacherResponse.stateUpdate
       );
 
-      // Persist to MongoDB
+      // Determine new pedagogical mode
+      let newMode: 'TEACHING' | 'ASSESSMENT' | 'FEEDBACK' | 'REVIEW' = 'TEACHING';
+      if (teacherResponse.intent === 'question' || teacherResponse.teachingAction === 'assess') {
+        newMode = 'ASSESSMENT';
+      } else if (teacherResponse.intent === 'feedback') {
+        newMode = 'FEEDBACK';
+      }
+
+      // Persist to MongoDB with conversation turns
+      const now = new Date().toISOString();
       sessionDoc.teachingState = updatedState;
       if (updatedState.currentConcept) {
         sessionDoc.currentConcept = updatedState.currentConcept;
       }
       sessionDoc.language = targetLanguage;
+      sessionDoc.currentMode = newMode;
+      sessionDoc.conversationHistory.push(
+        { role: 'student', text: transcript, timestamp: now },
+        { role: 'tutor', text: teacherResponse.responseText, intent: teacherResponse.intent, timestamp: new Date().toISOString() }
+      );
       await sessionDoc.save();
 
       // Normalize teacher response for speech synthesis
@@ -344,6 +476,7 @@ teachingRouter.post(
           teacherResponse,
           teachingState: updatedState,
           normalizedSpeechText,
+          sessionContext: buildSessionContext(sessionDoc),
           latency: {
             backendDurationMs,
             aiGenerationMs,

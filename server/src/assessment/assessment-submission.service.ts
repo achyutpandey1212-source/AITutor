@@ -461,16 +461,59 @@ export class AssessmentSubmissionService {
   ): Promise<Array<{ question: AssessmentQuestion; latestSubmission?: AssessmentSubmission }>> {
     const historyItems: Array<{ question: AssessmentQuestion; latestSubmission?: AssessmentSubmission }> = [];
 
-    const allQuestions = Array.from(this.inMemoryQuestions.values()).filter((q) => {
-      if (q.metadata?.userId && q.metadata.userId !== userId) return false;
-      if (filter?.subject && q.subject !== filter.subject) return false;
-      if (filter?.concept && q.concept !== filter.concept) return false;
-      if (filter?.difficulty && q.difficulty !== filter.difficulty) return false;
-      if (filter?.sessionId && q.metadata?.sessionId !== filter.sessionId) return false;
-      return true;
-    });
+    let questions: AssessmentQuestion[] = [];
 
-    for (const q of allQuestions) {
+    if (this.isMongoConnected()) {
+      try {
+        const query: any = { userId };
+        if (filter?.subject) query.subject = filter.subject;
+        if (filter?.concept) query.concept = filter.concept;
+        if (filter?.difficulty) query.difficulty = filter.difficulty;
+        if (filter?.sessionId) query.sessionId = filter.sessionId;
+
+        const docs = await AssessmentQuestionModel.find(query).sort({ createdAt: -1 }).lean();
+        if (docs && docs.length > 0) {
+          questions = docs.map((doc: any) =>
+            AssessmentQuestionSchema.parse({
+              questionId: doc.questionId,
+              concept: doc.concept,
+              subject: doc.subject,
+              grade: doc.grade,
+              difficulty: doc.difficulty,
+              questionType: doc.questionType,
+              evaluationMode: doc.evaluationMode,
+              marks: doc.marks,
+              question: doc.question,
+              context: doc.context,
+              options: doc.options,
+              correctOptionId: doc.correctOptionId,
+              expectedAnswer: doc.expectedAnswer,
+              rubric: doc.rubric,
+              submissionGuidance: doc.submissionGuidance,
+              requiresImageUpload: doc.requiresImageUpload,
+              ragGrounded: doc.ragGrounded,
+              groundingSources: doc.groundingSources,
+              metadata: doc.metadata,
+            })
+          );
+        }
+      } catch (err) {
+        console.warn('[AssessmentSubmissionService] Failed to query question history from Mongo, using fallback:', err);
+      }
+    }
+
+    if (questions.length === 0) {
+      questions = Array.from(this.inMemoryQuestions.values()).filter((q) => {
+        if (q.metadata?.userId && q.metadata.userId !== userId) return false;
+        if (filter?.subject && q.subject !== filter.subject) return false;
+        if (filter?.concept && q.concept !== filter.concept) return false;
+        if (filter?.difficulty && q.difficulty !== filter.difficulty) return false;
+        if (filter?.sessionId && q.metadata?.sessionId !== filter.sessionId) return false;
+        return true;
+      });
+    }
+
+    for (const q of questions) {
       const latestSub = await this.getSubmission(userId, q.questionId);
       if (filter?.correctOnly && (!latestSub || !latestSub.evaluation?.correct)) {
         continue;

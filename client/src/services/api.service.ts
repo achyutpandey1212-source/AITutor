@@ -400,6 +400,43 @@ export class LiveTutorApiClient {
     return json.data;
   }
 
+  async getTeachingSession(
+    idToken: string,
+    sessionId: string
+  ): Promise<{ session: TeachingSession; context: import('@ai-tutor/shared').TutorSessionContext } | null> {
+    const res = await fetch(`/api/teaching/sessions/${sessionId}`, {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: ApiResponse<{ session: TeachingSession; context: import('@ai-tutor/shared').TutorSessionContext }> = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return null;
+    }
+
+    return json.data;
+  }
+
+  async getQuestionHistory(
+    idToken: string,
+    filter?: { subject?: string; concept?: string; sessionId?: string }
+  ): Promise<Array<{ question: import('@ai-tutor/shared').AssessmentQuestion; latestSubmission?: import('@ai-tutor/shared').AssessmentSubmission }>> {
+    const params = new URLSearchParams();
+    if (filter?.subject) params.append('subject', filter.subject);
+    if (filter?.concept) params.append('concept', filter.concept);
+    if (filter?.sessionId) params.append('sessionId', filter.sessionId);
+
+    const res = await fetch(`/api/assessments/history?${params.toString()}`, {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: ApiResponse<Array<{ question: import('@ai-tutor/shared').AssessmentQuestion; latestSubmission?: import('@ai-tutor/shared').AssessmentSubmission }>> = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return [];
+    }
+
+    return json.data;
+  }
+
   async getAssessmentAnalytics(
     idToken: string
   ): Promise<import('@ai-tutor/shared').AssessmentAnalytics | null> {

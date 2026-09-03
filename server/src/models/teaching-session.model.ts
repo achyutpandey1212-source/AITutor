@@ -1,14 +1,25 @@
-﻿import mongoose, { Schema, Document } from 'mongoose';
-import type { LearnerProfile, TeachingSessionStatus, TeachingState } from '@ai-tutor/shared';
+import mongoose, { Schema, Document } from 'mongoose';
+import type { LearnerProfile, TeacherIntent, TeachingSessionStatus, TeachingState } from '@ai-tutor/shared';
 
 export interface ITeachingSessionDocument extends Document {
   userId: string;
   topic: string;
+  subject: string;
   learnerProfile: LearnerProfile;
   status: TeachingSessionStatus;
   currentConcept: string;
   language: 'english' | 'hindi' | 'hinglish';
   teachingState: TeachingState;
+  currentMode: 'TEACHING' | 'ASSESSMENT' | 'FEEDBACK' | 'REVIEW';
+  assessmentSessionId?: string;
+  currentQuestionId?: string;
+  conversationHistory: Array<{
+    id?: string;
+    role: 'student' | 'tutor';
+    text: string;
+    intent?: TeacherIntent;
+    timestamp: string;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +69,17 @@ const TeachingStateMongooseSchema = new Schema(
   { _id: false }
 );
 
+const ConversationMessageMongooseSchema = new Schema(
+  {
+    id: { type: String },
+    role: { type: String, enum: ['student', 'tutor'], required: true },
+    text: { type: String, required: true },
+    intent: { type: String },
+    timestamp: { type: String, default: () => new Date().toISOString() },
+  },
+  { _id: false }
+);
+
 const TeachingSessionMongooseSchema = new Schema<ITeachingSessionDocument>(
   {
     userId: {
@@ -69,6 +91,10 @@ const TeachingSessionMongooseSchema = new Schema<ITeachingSessionDocument>(
       type: String,
       required: true,
       trim: true,
+    },
+    subject: {
+      type: String,
+      default: 'General',
     },
     learnerProfile: {
       type: LearnerProfileMongooseSchema,
@@ -91,6 +117,21 @@ const TeachingSessionMongooseSchema = new Schema<ITeachingSessionDocument>(
     teachingState: {
       type: TeachingStateMongooseSchema,
       required: true,
+    },
+    currentMode: {
+      type: String,
+      enum: ['TEACHING', 'ASSESSMENT', 'FEEDBACK', 'REVIEW'],
+      default: 'TEACHING',
+    },
+    assessmentSessionId: {
+      type: String,
+    },
+    currentQuestionId: {
+      type: String,
+    },
+    conversationHistory: {
+      type: [ConversationMessageMongooseSchema],
+      default: [],
     },
   },
   {

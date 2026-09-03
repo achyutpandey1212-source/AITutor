@@ -12,21 +12,19 @@ export const LiveTutorScreen: React.FC<LiveTutorScreenProps> = ({ idToken, ready
   const [typedMessage, setTypedMessage] = useState<string>('');
 
   const {
+    tutorState,
     session,
     teachingState,
     teacherResponse,
-    isListening,
     isSpeaking,
     isLoading,
     error,
     interimTranscript,
     finalTranscript,
-    setFinalTranscript,
     latencies,
     startSession,
-    startVoiceInput,
-    stopVoiceInputAndSubmit,
-    submitStudentMessage,
+    endSession,
+    submitTypedMessage,
     replaySpeech,
     isSttSupported,
     isTtsSupported,
@@ -44,11 +42,10 @@ export const LiveTutorScreen: React.FC<LiveTutorScreenProps> = ({ idToken, ready
 
   const handleSendTyped = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!typedMessage.trim()) return;
+    if (!typedMessage.trim() || isLoading || isSpeaking) return;
     const msg = typedMessage;
     setTypedMessage('');
-    setFinalTranscript(msg);
-    await submitStudentMessage(msg, session?.id, selectedLanguage);
+    await submitTypedMessage(msg);
   };
 
   return (
@@ -130,20 +127,16 @@ export const LiveTutorScreen: React.FC<LiveTutorScreenProps> = ({ idToken, ready
           <h3>🎙️ Voice Controls</h3>
           
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: '1rem 0' }}>
-            {!isListening ? (
+            <span style={{ padding: '0.4rem 0.8rem', borderRadius: '4px', background: tutorState === 'LISTENING' ? '#dcfce7' : tutorState === 'THINKING' ? '#dbeafe' : tutorState === 'SPEAKING' ? '#f3e8ff' : '#f1f5f9', color: '#1e293b', fontWeight: 600, fontSize: '0.9rem' }}>
+              Status: {tutorState}
+            </span>
+
+            {tutorState !== 'IDLE' && (
               <button
-                onClick={startVoiceInput}
-                disabled={isLoading || isSpeaking}
-                style={{ padding: '0.75rem 1.5rem', background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                onClick={endSession}
+                style={{ padding: '0.4rem 0.8rem', background: '#dc2626', color: '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}
               >
-                <span>🎤</span> Start Speaking
-              </button>
-            ) : (
-              <button
-                onClick={stopVoiceInputAndSubmit}
-                style={{ padding: '0.75rem 1.5rem', background: '#dc2626', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-              >
-                <span>⏹️</span> Stop & Send Speech
+                End Session
               </button>
             )}
 
@@ -160,7 +153,7 @@ export const LiveTutorScreen: React.FC<LiveTutorScreenProps> = ({ idToken, ready
           </div>
 
           {/* Live Transcript Display */}
-          {(isListening || interimTranscript || finalTranscript) && (
+          {(tutorState === 'LISTENING' || interimTranscript || finalTranscript) && (
             <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '6px', marginBottom: '1rem' }}>
               <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>STUDENT TRANSCRIPT:</div>
               {finalTranscript && <p style={{ margin: '0.25rem 0', fontWeight: 500 }}>{finalTranscript}</p>}
@@ -175,12 +168,12 @@ export const LiveTutorScreen: React.FC<LiveTutorScreenProps> = ({ idToken, ready
               value={typedMessage}
               onChange={(e) => setTypedMessage(e.target.value)}
               placeholder="Or type what you want to ask..."
-              disabled={isLoading || isListening}
+              disabled={isLoading || isSpeaking}
               style={{ flex: 1, padding: '0.5rem' }}
             />
             <button
               type="submit"
-              disabled={isLoading || isListening || !typedMessage.trim()}
+              disabled={isLoading || isSpeaking || !typedMessage.trim()}
               style={{ padding: '0.5rem 1rem', background: '#475569', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
             >
               Send Text

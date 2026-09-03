@@ -213,15 +213,62 @@ export const TeachingSessionSchema = z.object({
   id: z.string(),
   userId: z.string(),
   topic: z.string().min(1),
+  subject: z.string().default('General'),
   learnerProfile: LearnerProfileSchema,
   status: TeachingSessionStatusSchema.default('active'),
   currentConcept: z.string().optional(),
   language: z.enum(['english', 'hindi', 'hinglish']).default('english'),
   teachingState: TeachingStateSchema,
+  currentMode: z.enum(['TEACHING', 'ASSESSMENT', 'FEEDBACK', 'REVIEW']).default('TEACHING'),
+  assessmentSessionId: z.string().optional(),
+  currentQuestionId: z.string().optional(),
+  conversationHistory: z.array(
+    z.object({
+      id: z.string().optional(),
+      role: z.enum(['student', 'tutor']),
+      text: z.string().min(1),
+      intent: TeacherIntentSchema.optional(),
+      timestamp: z.string(),
+    })
+  ).default([]),
   startedAt: z.string(),
   updatedAt: z.string(),
 });
 export type TeachingSession = z.infer<typeof TeachingSessionSchema>;
+
+// F2. Tutor Session Context (The Nervous System connecting M5/M6/M7)
+export const TutorSessionModeSchema = z.enum([
+  'TEACHING',
+  'ASSESSMENT',
+  'FEEDBACK',
+  'REVIEW',
+]);
+export type TutorSessionMode = z.infer<typeof TutorSessionModeSchema>;
+
+export const TutorConversationMessageSchema = z.object({
+  id: z.string().optional(),
+  role: z.enum(['student', 'tutor']),
+  text: z.string().min(1),
+  intent: TeacherIntentSchema.optional(),
+  timestamp: z.string(),
+});
+export type TutorConversationMessage = z.infer<typeof TutorConversationMessageSchema>;
+
+export const TutorSessionContextSchema = z.object({
+  sessionId: z.string().min(1),
+  userId: z.string().min(1),
+  subject: z.string().default('General'),
+  topic: z.string().min(1),
+  language: z.enum(['english', 'hindi', 'hinglish']).default('english'),
+  conversationHistory: z.array(TutorConversationMessageSchema).default([]),
+  activeConcept: z.string().min(1),
+  teachingState: TeachingStateSchema,
+  assessmentSessionId: z.string().optional(),
+  currentQuestionId: z.string().optional(),
+  currentMode: TutorSessionModeSchema.default('TEACHING'),
+  updatedAt: z.string(),
+});
+export type TutorSessionContext = z.infer<typeof TutorSessionContextSchema>;
 
 // G. Lesson Scene & Plan
 export const SceneTypeSchema = z.enum([
@@ -293,6 +340,7 @@ export const VoiceInteractionResponseSchema = z.object({
   teacherResponse: TeacherResponseSchema,
   teachingState: TeachingStateSchema,
   normalizedSpeechText: z.string(),
+  sessionContext: TutorSessionContextSchema.optional(),
   latency: LatencyMetricsSchema.optional(),
 });
 export type VoiceInteractionResponse = z.infer<typeof VoiceInteractionResponseSchema>;

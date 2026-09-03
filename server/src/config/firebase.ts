@@ -1,4 +1,4 @@
-﻿import admin from 'firebase-admin';
+import admin from 'firebase-admin';
 
 let isInitialized = false;
 
@@ -38,7 +38,16 @@ export const initializeFirebaseAdmin = (): typeof admin => {
   return admin;
 };
 
+let customAuthProvider: any = null;
+
+export const setCustomAuthProvider = (provider: any) => {
+  customAuthProvider = provider;
+};
+
 export const getFirebaseAuth = () => {
+  if (customAuthProvider) {
+    return customAuthProvider;
+  }
   const adminApp = initializeFirebaseAdmin();
   return adminApp.auth();
 };

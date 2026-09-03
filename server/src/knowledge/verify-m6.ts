@@ -274,6 +274,7 @@ Mendel's Second Law: The Law of Independent Assortment states that alleles of tw
   const mockSession: TeachingSession = {
     id: 'sess_1',
     userId: 'user_student',
+    subject: 'Biology',
     topic: 'Biology - Heredity',
     learnerProfile: {
       preferredLanguage: 'english',
@@ -284,6 +285,8 @@ Mendel's Second Law: The Law of Independent Assortment states that alleles of tw
     status: 'active',
     currentConcept: 'Heredity Basics',
     language: 'english',
+    currentMode: 'TEACHING',
+    conversationHistory: [],
     teachingState: {
       currentConcept: 'Heredity Basics',
       understanding: 'developing',
