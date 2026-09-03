@@ -88,7 +88,15 @@ export class TeacherEngine {
         rawData.updatedState = currentState;
       }
       if (!rawData.action) {
-        if (
+        // Phase 3.5: Detect explicit replay requests
+        const isReplayRequest =
+          /explain (that|it|this|the .*) again|show (me )?(that|the) (previous|earlier)?\s*(diagram|formula|slide|visual)?\s*again|repeat (what you said|that|this)|go over that (once more|again)|say that again/i.test(
+            studentMessage
+          ) && !/differently|another way|different way/i.test(studentMessage);
+
+        if (isReplayRequest) {
+          rawData.action = { type: 'REPLAY_EXPLANATION', reason: 'student_requested_replay' };
+        } else if (
           rawData.intent === 'question' ||
           (typeof rawData.responseText === 'string' && /\?\s*$/i.test(rawData.responseText.trim()))
         ) {

@@ -5,6 +5,7 @@ import { liveTutorApiClient } from '../../services/api.service';
 import { textToSpeechService } from '../../services/tts.service';
 import { AssessmentRenderer } from '../assessment/AssessmentRenderer';
 import { VisualClassroomPlayer } from '../VisualClassroomPlayer';
+import { SessionTimeline } from '../SessionTimeline';
 
 export interface TutorPageProps {
   idToken: string;
@@ -83,6 +84,8 @@ export const TutorPage: React.FC<TutorPageProps> = ({ idToken, onNavigate }) => 
     captionsEnabled,
     toggleCaptions,
     replayVisualSegment,
+    replayTeachingSegment,
+    explainAgain,
   } = useLiveTutor({
     idToken,
     defaultTopic: topicInput,
@@ -323,6 +326,7 @@ export const TutorPage: React.FC<TutorPageProps> = ({ idToken, onNavigate }) => 
             onToggleCaptions={toggleCaptions}
             captionsEnabled={captionsEnabled}
             onReplaySegment={replayVisualSegment}
+            onExplainAgain={explainAgain}
           />
         </div>
 
@@ -624,8 +628,10 @@ export const TutorPage: React.FC<TutorPageProps> = ({ idToken, onNavigate }) => 
 
           {/* Real-time Voice & Conversation Transcript Feed */}
           <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem', minHeight: '220px', maxHeight: '420px', overflowY: 'auto' }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '0.5rem' }}>
-              Classroom Conversation & Voice Transcript:
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b' }}>
+                Classroom Conversation & Voice Transcript:
+              </div>
             </div>
 
             {sessionContext?.conversationHistory && sessionContext.conversationHistory.length > 0 ? (
@@ -689,6 +695,37 @@ export const TutorPage: React.FC<TutorPageProps> = ({ idToken, onNavigate }) => 
                 Send
               </button>
             </form>
+          )}
+
+          {/* Phase 3.5: Persistent Session Pedagogical Memory Timeline */}
+          {session && (
+            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem 1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
+                  🧠 Session Memory & Concept Milestones
+                </span>
+                <button
+                  type="button"
+                  onClick={explainAgain}
+                  style={{
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    color: '#2563eb',
+                    borderRadius: '4px',
+                    padding: '0.2rem 0.5rem',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ↻ Explain Again
+                </button>
+              </div>
+              <SessionTimeline
+                sessionId={session.id}
+                onReplaySegment={replayTeachingSegment}
+              />
+            </div>
           )}
         </div>
       </div>

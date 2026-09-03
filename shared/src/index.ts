@@ -175,6 +175,8 @@ export const TutorActionTypeSchema = z.enum([
   'WAIT_FOR_ANSWER',
   'EXPLAIN',
   'CONTINUE_TEACHING',
+  // Phase 3.5: Replay & Session Memory
+  'REPLAY_EXPLANATION',
 ]);
 export type TutorActionType = z.infer<typeof TutorActionTypeSchema>;
 
@@ -409,6 +411,74 @@ export const VisualSessionTimelineSchema = z.object({
   entries: z.array(VisualTimelineEntrySchema),
 });
 export type VisualSessionTimeline = z.infer<typeof VisualSessionTimelineSchema>;
+
+// ==========================================
+// Phase 3.5: Replay & Session Memory Contracts
+// ==========================================
+
+export const ReplaySegmentSchema = z.object({
+  segmentId: z.string(),
+  sessionId: z.string(),
+  turnId: z.string(),
+  conceptId: z.string().optional(),
+  concept: z.string(),
+  title: z.string().optional(),
+  speechText: z.string(),
+  displayText: z.string(),
+  captionText: z.string().optional(),
+  visualPlan: VisualPlanSchema.optional(),
+  visualBeats: z.array(VisualBeatSchema).default([]),
+  assetIds: z.array(z.string()).default([]),
+  durationMs: z.number().optional(),
+  replayable: z.boolean().default(true),
+  createdAt: z.string(),
+});
+export type ReplaySegment = z.infer<typeof ReplaySegmentSchema>;
+
+export const ReplayRequestSchema = z.object({
+  segmentId: z.string().optional(),
+  conceptId: z.string().optional(),
+  query: z.string().optional(),
+  mode: z.enum(['DETERMINISTIC', 'RE_EXPLAIN']).default('DETERMINISTIC'),
+});
+export type ReplayRequest = z.infer<typeof ReplayRequestSchema>;
+
+export const ReplayResponseSchema = z.object({
+  segment: ReplaySegmentSchema.optional(),
+  deterministic: z.boolean(),
+  mode: z.enum(['DETERMINISTIC', 'RE_EXPLAIN']),
+  speechText: z.string(),
+  displayText: z.string(),
+  captionText: z.string().optional(),
+  visualBeats: z.array(VisualBeatSchema).default([]),
+  turnId: z.string(),
+  concept: z.string(),
+  message: z.string().optional(),
+});
+export type ReplayResponse = z.infer<typeof ReplayResponseSchema>;
+
+export const SessionMemorySchema = z.object({
+  sessionId: z.string(),
+  topic: z.string(),
+  subject: z.string().default('General'),
+  conceptsCovered: z.array(z.string()).default([]),
+  segments: z.array(ReplaySegmentSchema).default([]),
+  totalDurationMs: z.number().default(0),
+  startedAt: z.string(),
+  updatedAt: z.string(),
+});
+export type SessionMemory = z.infer<typeof SessionMemorySchema>;
+
+export const ConceptMemorySchema = z.object({
+  conceptId: z.string(),
+  conceptTitle: z.string(),
+  segmentIds: z.array(z.string()).default([]),
+  segments: z.array(ReplaySegmentSchema).default([]),
+  keyFormulas: z.array(z.string()).default([]),
+  firstExplainedAt: z.string().optional(),
+  lastExplainedAt: z.string().optional(),
+});
+export type ConceptMemory = z.infer<typeof ConceptMemorySchema>;
 
 export const TeacherResponseSchema = z.object({
   responseText: z.string().min(1),

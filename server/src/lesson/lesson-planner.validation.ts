@@ -237,11 +237,24 @@ export class LessonPlannerValidation {
     const mode: 'RAPID' | 'STANDARD' | 'DEEP' =
       requestedMinutes <= 15 ? 'RAPID' : requestedMinutes <= 40 ? 'STANDARD' : 'DEEP';
 
-    const rawConcepts: LessonConcept[] = Array.isArray(rawBlueprint.conceptSequence)
-      ? rawBlueprint.conceptSequence.map((c: any, idx: number) => {
-          const id = c.id || c.conceptId || `c_${idx + 1}`;
-          validConceptIds.add(id);
-          const totalMin = typeof c.estimatedMinutes === 'number' && c.estimatedMinutes > 0 ? c.estimatedMinutes : 3;
+    const inputConcepts = Array.isArray(rawBlueprint.conceptSequence) && rawBlueprint.conceptSequence.length > 0
+      ? rawBlueprint.conceptSequence
+      : Array.isArray(rawBlueprint.concepts) && rawBlueprint.concepts.length > 0
+      ? rawBlueprint.concepts
+      : [
+          {
+            id: 'c_1',
+            title: rawBlueprint.topic || 'Core Concept',
+            summary: `Fundamentals of ${rawBlueprint.topic || 'the topic'}`,
+            estimatedMinutes: Math.max(1, requestedMinutes),
+            importance: 'CORE',
+          },
+        ];
+
+    const rawConcepts: LessonConcept[] = inputConcepts.map((c: any, idx: number) => {
+      const id = c.id || c.conceptId || `c_${idx + 1}`;
+      validConceptIds.add(id);
+      const totalMin = typeof c.estimatedMinutes === 'number' && c.estimatedMinutes > 0 ? c.estimatedMinutes : 3;
 
           const visualSegments = Array.isArray(c.visualSegments) && c.visualSegments.length > 0
             ? c.visualSegments
@@ -334,8 +347,7 @@ export class LessonPlannerValidation {
                 }))
               : [],
           };
-        })
-      : [];
+        });
 
     // 1. Dependency Topological Sorting
     const sortedConcepts = this.topologicalSortConcepts(rawConcepts);

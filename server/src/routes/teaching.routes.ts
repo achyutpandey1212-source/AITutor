@@ -42,6 +42,8 @@ import { lessonPlannerService } from '../lesson/lesson-planner.service.js';
 import { defaultVisualStrategyEngine } from '../visual/visual-strategy.engine.js';
 import { defaultVisualHistoryService } from '../visual/visual-history.service.js';
 import { defaultVisualAssetRepository } from '../visual/visual-asset.repository.js';
+import { defaultReplayService } from '../memory/replay.service.js';
+import { defaultSessionMemoryService } from '../memory/session-memory.service.js';
 
 export const teachingRouter = Router();
 
@@ -899,8 +901,28 @@ async function processTurnCore(params: {
       displayText: normalizedDisplay,
       captionText: caption,
     });
+
+    // Phase 3.5: Persist replayable teaching segment
+    const segmentId = `seg_${sessionDoc._id.toString()}_${effectiveTurnId}_${Date.now().toString(36)}`;
+    await defaultReplayService.saveSegment({
+      segmentId,
+      sessionId: sessionDoc._id.toString(),
+      turnId: effectiveTurnId,
+      conceptId: updatedState.currentConcept || sessionDoc.currentConcept,
+      concept: updatedState.currentConcept || sessionDoc.topic,
+      title: visualPlan?.beats?.[0]?.data?.title || updatedState.currentConcept || sessionDoc.topic,
+      speechText: normalizedSpeech,
+      displayText: normalizedDisplay,
+      captionText: caption,
+      visualPlan,
+      visualBeats: teacherResponse.visualBeats || visualPlan?.beats || [],
+      assetIds: visualPlan?.assetIds || [],
+      durationMs: visualPlan?.beats?.reduce((s: number, b: any) => s + (b.durationHint || 5000), 0) || 5000,
+      replayable: true,
+      createdAt: new Date().toISOString(),
+    });
   } catch (visErr) {
-    console.warn('[TeachingRoute] Visual strategy planning warning:', visErr);
+    console.warn('[TeachingRoute] Visual strategy planning / replay segment persistence warning:', visErr);
   }
 
   const teachingContent = {
@@ -1541,6 +1563,135 @@ teachingRouter.get(
       res.status(500).json({
         success: false,
         error: { message: err.message || 'Failed to retrieve visual asset', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// =========================================================================
+// Phase 3.5: Replay & Session Memory Endpoints
+// =========================================================================
+
+// 12. GET /api/teaching/sessions/:sessionId/memory - Returns session memory summary
+teachingRouter.get(
+  '/sessions/:sessionId/memory',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { sessionId } = req.params;
+      const memory = await defaultSessionMemoryService.getSessionMemory(sessionId);
+      res.status(200).json({
+        success: true,
+        data: memory,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to retrieve session memory', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// 13. GET /api/teaching/sessions/:sessionId/replay-segments - Returns replayable segments
+teachingRouter.get(
+  '/sessions/:sessionId/replay-segments',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { sessionId } = req.params;
+      const query = req.query.query as string | undefined;
+      const segments = query
+        ? await defaultSessionMemoryService.findRelevantSegments(sessionId, query)
+        : await defaultSessionMemoryService.getSessionMemory(sessionId).then((m) => m.segments);
+
+      res.status(200).json({
+        success: true,
+        data: segments,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to list replay segments', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// 14. GET /api/teaching/sessions/:sessionId/replay-segments/:segmentId - Returns a specific segment
+teachingRouter.get(
+  '/sessions/:sessionId/replay-segments/:segmentId',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { segmentId } = req.params;
+      const segment = await defaultSessionMemoryService.getReplaySegment(segmentId);
+      if (!segment) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Replay segment not found', code: 'NOT_FOUND' },
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: segment,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to retrieve replay segment', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// 15. POST /api/teaching/sessions/:sessionId/replay-segments/:segmentId/replay - Deterministic replay
+teachingRouter.post(
+  '/sessions/:sessionId/replay-segments/:segmentId/replay',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { segmentId } = req.params;
+      const replayPayload = await defaultReplayService.replaySegment(segmentId);
+      if (!replayPayload) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Replay segment not found or not replayable', code: 'NOT_FOUND' },
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: replayPayload,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to execute replay', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// 16. GET /api/teaching/sessions/:sessionId/concepts/:conceptId/history - Concept teaching history
+teachingRouter.get(
+  '/sessions/:sessionId/concepts/:conceptId/history',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { sessionId, conceptId } = req.params;
+      const conceptMemory = await defaultSessionMemoryService.getConceptHistory(sessionId, conceptId);
+      res.status(200).json({
+        success: true,
+        data: conceptMemory,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to retrieve concept history', code: 'SERVER_ERROR' },
       });
     }
   }

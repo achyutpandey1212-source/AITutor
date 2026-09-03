@@ -855,6 +855,117 @@ export function useLiveTutor({
     [idToken, startBeatSequence]
   );
 
+  // Phase 3.5: Replay teaching segment by segmentId
+  const replayTeachingSegment = useCallback(
+    async (segmentId: string) => {
+      const currentSessionId = sessionRef.current?.id;
+      if (!idToken || !currentSessionId) return;
+
+      // Interruption/barge-in safety: cancel pending TTS and beat timers
+      speechToTextService.pauseCapture();
+      textToSpeechService.cancel();
+      cancelBeatTimers();
+      activeTurnIdRef.current = `replay_${segmentId}_${Date.now()}`;
+
+      try {
+        const res = await fetch(
+          `/api/teaching/sessions/${currentSessionId}/replay-segments/${segmentId}/replay`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        const json = await res.json();
+        if (json.success && json.data) {
+          const replay = json.data;
+          // Apply visual beats
+          if (replay.visualBeats && replay.visualBeats.length > 0) {
+            const first = replay.visualBeats[0];
+            setVisualState((prev) => ({
+              ...prev,
+              visualType: first.type,
+              visualData: first.data,
+              concept: replay.concept || prev.concept,
+              activeBeatIndex: 0,
+              totalBeats: replay.visualBeats.length,
+            }));
+            startBeatSequence(replay.visualBeats, activeTurnIdRef.current);
+          }
+
+          // Play speech
+          if (replay.speechText) {
+            setTutorState('SPEAKING');
+            textToSpeechService.speak(replay.speechText, languageRef.current, {
+              onStart: () => {},
+              onEnd: () => {
+                setTutorState('LISTENING');
+                speechToTextService.resumeCapture();
+              },
+              onError: () => {
+                setTutorState('LISTENING');
+                speechToTextService.resumeCapture();
+              },
+            });
+          }
+        }
+      } catch (err: any) {
+        console.warn('[useLiveTutor] replayTeachingSegment failed:', err);
+        setTutorState('LISTENING');
+        speechToTextService.resumeCapture();
+      }
+    },
+    [idToken, cancelBeatTimers, startBeatSequence]
+  );
+
+  // Phase 3.5: Replay latest segment for a given concept
+  const replayConcept = useCallback(
+    async (conceptId: string) => {
+      const currentSessionId = sessionRef.current?.id;
+      if (!idToken || !currentSessionId) return;
+      try {
+        const res = await fetch(
+          `/api/teaching/sessions/${currentSessionId}/concepts/${conceptId}/history`,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
+        const json = await res.json();
+        if (json.success && json.data?.segments?.length > 0) {
+          const latest = json.data.segments[json.data.segments.length - 1];
+          await replayTeachingSegment(latest.segmentId);
+        }
+      } catch (err: any) {
+        console.warn('[useLiveTutor] replayConcept failed:', err);
+      }
+    },
+    [idToken, replayTeachingSegment]
+  );
+
+  // Phase 3.5: "Explain Again" shortcut (replays the latest explained concept or active visual)
+  const explainAgain = useCallback(async () => {
+    const currentSessionId = sessionRef.current?.id;
+    if (!idToken || !currentSessionId) return;
+    try {
+      const res = await fetch(`/api/teaching/sessions/${currentSessionId}/replay-segments`, {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      const json = await res.json();
+      if (json.success && json.data && json.data.length > 0) {
+        const latest = json.data[json.data.length - 1];
+        await replayTeachingSegment(latest.segmentId);
+      }
+    } catch (err: any) {
+      console.warn('[useLiveTutor] explainAgain failed:', err);
+    }
+  }, [idToken, replayTeachingSegment]);
+
   // Clean up on unmount
   useEffect(() => {
     return () => {
@@ -897,6 +1008,9 @@ export function useLiveTutor({
     captionsEnabled,
     toggleCaptions,
     replayVisualSegment,
+    replayTeachingSegment,
+    replayConcept,
+    explainAgain,
     isSttSupported: speechToTextService.isSupported(),
     isTtsSupported: textToSpeechService.isSupported(),
   };

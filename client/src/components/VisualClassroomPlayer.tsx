@@ -3,6 +3,7 @@ import { Player } from '@remotion/player';
 import type { TutorVisualState, TutorVisualType } from '@ai-tutor/shared';
 import { LiveClassroomComposition } from '../remotion/compositions/LiveClassroomComposition';
 import { VisualHistoryPanel } from './VisualHistoryPanel';
+import { ReplayControls } from './ReplayControls';
 
 export interface VisualClassroomPlayerProps {
   visualState: TutorVisualState;
@@ -12,6 +13,7 @@ export interface VisualClassroomPlayerProps {
   onToggleCaptions?: () => void;
   captionsEnabled?: boolean;
   onReplaySegment?: (visualId: string) => void;
+  onExplainAgain?: () => void;
 }
 
 export const VisualClassroomPlayer: React.FC<VisualClassroomPlayerProps> = ({
@@ -22,6 +24,7 @@ export const VisualClassroomPlayer: React.FC<VisualClassroomPlayerProps> = ({
   onToggleCaptions,
   captionsEnabled = false,
   onReplaySegment,
+  onExplainAgain,
 }) => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
@@ -156,6 +159,14 @@ export const VisualClassroomPlayer: React.FC<VisualClassroomPlayerProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {/* Phase 3.5: Deterministic Explain Again / Replay Controls */}
+          {onExplainAgain && (
+            <ReplayControls
+              onExplainAgain={onExplainAgain}
+              disabled={isDemoRunning}
+            />
+          )}
+
           {/* Captions Accessibility Toggle (Phase 3: Default OFF) */}
           <button
             type="button"
