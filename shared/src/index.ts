@@ -187,6 +187,48 @@ export const TutorActionSchema = z.object({
 });
 export type TutorAction = z.infer<typeof TutorActionSchema>;
 
+export const TutorVisualTypeSchema = z.enum([
+  'NONE',
+  'TITLE',
+  'TEXT',
+  'DIAGRAM',
+  'FORMULA',
+  'EXAMPLE',
+  'COMPARISON',
+  'PROCESS',
+  'HIGHLIGHT',
+  'RECAP',
+  'QUESTION_PROMPT',
+  'ILLUSTRATION',
+]);
+export type TutorVisualType = z.infer<typeof TutorVisualTypeSchema>;
+
+export const TutorVisualDataSchema = z.object({
+  title: z.string().optional(),
+  subtitle: z.string().optional(),
+  heading: z.string().optional(),
+  text: z.string().optional(),
+  bullets: z.array(z.string()).optional(),
+  diagramType: z.string().optional(),
+  diagramData: z.record(z.unknown()).optional(),
+  formula: z.string().optional(),
+  formulaLabel: z.string().optional(),
+  formulaExplanation: z.string().optional(),
+  variables: z.array(
+    z.object({
+      symbol: z.string(),
+      meaning: z.string(),
+    })
+  ).optional(),
+}).passthrough().optional();
+export type TutorVisualData = z.infer<typeof TutorVisualDataSchema>;
+
+export const TeachingVisualPayloadSchema = z.object({
+  type: TutorVisualTypeSchema.default('TITLE'),
+  data: TutorVisualDataSchema.optional(),
+});
+export type TeachingVisualPayload = z.infer<typeof TeachingVisualPayloadSchema>;
+
 export const TeacherResponseSchema = z.object({
   responseText: z.string().min(1),
   language: z.enum(['english', 'hindi', 'hinglish']).default('english'),
@@ -195,6 +237,11 @@ export const TeacherResponseSchema = z.object({
   action: TutorActionSchema.optional(),
   assessment: AssessmentResultSchema.optional(),
   stateUpdate: TeachingStateSchema.partial().optional(),
+  // Phase 2.5: Multi-Channel Content Separation
+  speechText: z.string().optional(),
+  captionText: z.string().optional(),
+  visual: TeachingVisualPayloadSchema.optional(),
+  teachingContent: z.lazy(() => TeachingContentSchema).optional(),
 });
 export type TeacherResponse = z.infer<typeof TeacherResponseSchema>;
 
@@ -741,6 +788,11 @@ export const VoiceInteractionResponseSchema = z.object({
   assessmentQuestion: z.lazy(() => ClientAssessmentQuestionSchema).optional(),
   tutorAction: TutorActionSchema.optional(),
   turnId: z.string().optional(),
+  // Phase 2.5: Multi-Channel Content Pipeline
+  speechText: z.string().optional(),
+  captionText: z.string().optional(),
+  visualPayload: z.record(z.unknown()).optional(),
+  teachingContent: z.lazy(() => TeachingContentSchema).optional(),
   latency: LatencyMetricsSchema.optional(),
 });
 export type VoiceInteractionResponse = z.infer<typeof VoiceInteractionResponseSchema>;
@@ -781,6 +833,13 @@ export const RespondSessionResponseSchema = z.object({
   assessmentQuestion: z.lazy(() => ClientAssessmentQuestionSchema).optional(),
   tutorAction: TutorActionSchema.optional(),
   turnId: z.string().optional(),
+  // Phase 2.5: Multi-Channel Content Pipeline
+  speechText: z.string().optional(),
+  captionText: z.string().optional(),
+  visualPayload: z.record(z.unknown()).optional(),
+  teachingContent: z.lazy(() => TeachingContentSchema).optional(),
+  normalizedSpeechText: z.string().optional(),
+  aiGenerationMs: z.number().optional(),
 });
 export type RespondSessionResponse = z.infer<typeof RespondSessionResponseSchema>;
 
@@ -796,52 +855,11 @@ export type CreateLessonPlanRequest = z.infer<typeof CreateLessonPlanRequestSche
 // 6. Speech Text Normalization (Deterministic, Shared & Reusable)
 // ==========================================
 
-/**
- * Deterministically strips Markdown syntax and normalizes mathematical/presentation
- * characters so that Speech Synthesis (TTS) produces clean, natural pronunciation.
- */
-export function normalizeTextForSpeech(text: string): string {
-  if (!text) return '';
-
-  let sanitized = text;
-
-  // 1. Remove code blocks (```...```) and inline code (`...`)
-  sanitized = sanitized.replace(/```[\s\S]*?```/g, ' ');
-  sanitized = sanitized.replace(/`([^`]+)`/g, '$1');
-
-  // 2. Remove markdown images and links: ![alt](url) -> "" and [text](url) -> text
-  sanitized = sanitized.replace(/!\[([^\]]*)\]\([^)]*\)/g, '');
-  sanitized = sanitized.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
-
-  // 3. Remove Markdown headers (#, ##, etc.)
-  sanitized = sanitized.replace(/^#{1,6}\s+/gm, '');
-
-  // 4. Remove bold / italic markers (**text**, *text*, __text__, _text_)
-  sanitized = sanitized.replace(/(\*\*|__)(.*?)\1/g, '$2');
-  sanitized = sanitized.replace(/(\*|_)(.*?)\1/g, '$2');
-
-  // 5. Remove blockquotes, horizontal rules, and bullet points
-  sanitized = sanitized.replace(/^\s*>\s*/gm, '');
-  sanitized = sanitized.replace(/^[-*_]{3,}\s*$/gm, '');
-  sanitized = sanitized.replace(/^\s*[-*+]\s+/gm, '');
-  sanitized = sanitized.replace(/^\s*\d+\.\s+/gm, '');
-
-  // 6. Normalize common math symbols and equations for speech
-  // F = ma -> F equals m times a
-  sanitized = sanitized.replace(/(\b[A-Za-z0-9]+)\s*=\s*([A-Za-z0-9]+)\s*[×*]\s*([A-Za-z0-9]+)/g, '$1 equals $2 times $3');
-  sanitized = sanitized.replace(/(\b[A-Za-z0-9]+)\s*=\s*([A-Za-z0-9]+)/g, '$1 equals $2');
-  sanitized = sanitized.replace(/×/g, ' times ');
-  sanitized = sanitized.replace(/÷/g, ' divided by ');
-  sanitized = sanitized.replace(/≠/g, ' is not equal to ');
-  sanitized = sanitized.replace(/≤/g, ' is less than or equal to ');
-  sanitized = sanitized.replace(/≥/g, ' is greater than or equal to ');
-  sanitized = sanitized.replace(/\$/g, ''); // strip KaTeX / math dollar signs
-
-  // 7. Normalize whitespace and trim
-  sanitized = sanitized.replace(/\s+/g, ' ').trim();
-
-  return sanitized;
-}
+export {
+  normalizeTextForSpeech,
+  formatFormulaForSpeech,
+  cleanCaptionText,
+} from './speech-normalizer.js';
 
 // ==========================================
 // 6b. Conversational Voice Barge-In & State Rules
@@ -1541,36 +1559,6 @@ export const TutorAvatarStateSchema = z.enum([
 ]);
 export type TutorAvatarState = z.infer<typeof TutorAvatarStateSchema>;
 
-export const TutorVisualTypeSchema = z.enum([
-  'NONE',
-  'TITLE',
-  'TEXT',
-  'DIAGRAM',
-  'FORMULA',
-  'EXAMPLE',
-]);
-export type TutorVisualType = z.infer<typeof TutorVisualTypeSchema>;
-
-export const TutorVisualDataSchema = z.object({
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
-  heading: z.string().optional(),
-  text: z.string().optional(),
-  bullets: z.array(z.string()).optional(),
-  diagramType: z.string().optional(),
-  diagramData: z.record(z.unknown()).optional(),
-  formula: z.string().optional(),
-  formulaLabel: z.string().optional(),
-  formulaExplanation: z.string().optional(),
-  variables: z.array(
-    z.object({
-      symbol: z.string(),
-      meaning: z.string(),
-    })
-  ).optional(),
-}).passthrough().optional();
-export type TutorVisualData = z.infer<typeof TutorVisualDataSchema>;
-
 export const TutorVisualStateSchema = z.object({
   sessionId: z.string().default(''),
   topic: z.string().default('AI Tutor Classroom'),
@@ -1579,8 +1567,23 @@ export const TutorVisualStateSchema = z.object({
   avatarState: TutorAvatarStateSchema.default('IDLE'),
   visualType: TutorVisualTypeSchema.default('TITLE'),
   visualData: TutorVisualDataSchema,
+  captionText: z.string().optional(),
   highlightedText: z.string().optional(),
   turnId: z.string().optional(),
   lastUpdated: z.string().optional(),
 });
 export type TutorVisualState = z.infer<typeof TutorVisualStateSchema>;
+
+// ==========================================
+// 12. Phase 2.5: Teaching Content & Multi-Channel Turn Pipeline
+// ==========================================
+
+export const TeachingContentSchema = z.object({
+  turnId: z.string().optional(),
+  concept: z.string().optional(),
+  speechText: z.string().min(1),
+  captionText: z.string().optional(),
+  displayText: z.string().optional(),
+  visual: TeachingVisualPayloadSchema.optional(),
+});
+export type TeachingContent = z.infer<typeof TeachingContentSchema>;

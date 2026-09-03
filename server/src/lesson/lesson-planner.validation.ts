@@ -369,6 +369,19 @@ export class LessonPlannerValidation {
         priority: ['HIGH', 'MEDIUM', 'LOW'].includes(opp.priority) ? opp.priority : 'MEDIUM',
       }));
 
+    // If AI omitted assessment opportunities, create default checkpoints for concepts
+    if (assessmentOpportunities.length === 0 && normalizedConcepts.length > 0) {
+      normalizedConcepts.forEach((concept: any, idx: number) => {
+        assessmentOpportunities.push({
+          id: `opp_${concept.id}_${idx + 1}`,
+          conceptId: concept.id,
+          reason: idx === 0 ? 'CONCEPT_CHECK' : 'APPLICATION_CHECK',
+          recommendedQuestionTypes: ['MCQ', 'SHORT_ANSWER'],
+          priority: 'MEDIUM',
+        });
+      });
+    }
+
     // 4. Filter Visual Requirements to valid concepts
     const visualRequirements = (Array.isArray(rawBlueprint.visualRequirements)
       ? rawBlueprint.visualRequirements

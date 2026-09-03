@@ -11,6 +11,8 @@ import {
   LessonPlanSchema,
   TeacherResponseSchema,
   TeachingStateSchema,
+  normalizeTextForSpeech,
+  cleanCaptionText,
 } from '@ai-tutor/shared';
 import { aiService, AIService } from '../ai/ai.service.js';
 import { TeacherPrompts } from './teacher.prompts.js';
@@ -84,6 +86,51 @@ export class TeacherEngine {
           rawData.action = { type: 'CONTINUE_TEACHING' };
         }
       }
+
+      // Phase 2.5 Multi-Channel Normalization
+      const rawSpeech = typeof rawData.speechText === 'string' && rawData.speechText.trim()
+        ? rawData.speechText
+        : rawData.responseText || '';
+      const cleanSpeech = normalizeTextForSpeech(rawSpeech);
+      rawData.speechText = cleanSpeech;
+
+      const rawCaption = typeof rawData.captionText === 'string' && rawData.captionText.trim()
+        ? rawData.captionText
+        : cleanSpeech;
+      rawData.captionText = cleanCaptionText(rawCaption);
+
+      if (rawData.visual && typeof rawData.visual === 'object') {
+        const validTypes = [
+          'NONE', 'TITLE', 'TEXT', 'DIAGRAM', 'FORMULA', 'EXAMPLE',
+          'COMPARISON', 'PROCESS', 'HIGHLIGHT', 'RECAP', 'QUESTION_PROMPT', 'ILLUSTRATION'
+        ];
+        if (!validTypes.includes(rawData.visual.type)) {
+          rawData.visual.type = 'TITLE';
+        }
+        if (!rawData.visual.data || typeof rawData.visual.data !== 'object') {
+          rawData.visual.data = {};
+        }
+      } else {
+        const conceptTitle = rawData.stateUpdate?.currentConcept || currentState.currentConcept || 'Core Concepts';
+        const isFormula = /\b(\d+\/[a-zA-Z]|\b[a-zA-Z]\s*=\s*|\\frac|sin\b|cos\b|snell|mirror|lens)\b/i.test(rawData.responseText || '');
+        rawData.visual = {
+          type: isFormula ? 'FORMULA' : 'TEXT',
+          data: {
+            title: conceptTitle,
+            heading: conceptTitle,
+            text: rawData.captionText,
+            formula: isFormula ? '1/f = 1/v + 1/u' : undefined,
+          },
+        };
+      }
+
+      rawData.teachingContent = {
+        speechText: rawData.speechText,
+        captionText: rawData.captionText,
+        displayText: rawData.responseText,
+        concept: rawData.stateUpdate?.currentConcept || currentState.currentConcept,
+        visual: rawData.visual,
+      };
     }
 
     // Validate structured AI output with Zod contract

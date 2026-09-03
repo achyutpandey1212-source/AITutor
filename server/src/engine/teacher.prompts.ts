@@ -147,7 +147,18 @@ Instructions:
 6. ACTION SELECTION RULES (STRICT SEPARATION OF CONVERSATIONAL QUESTIONS VS FORMAL ASSESSMENT):
    - CONVERSATIONAL QUESTION: If you are asking a conversational question to engage the student, check intuition, or prompt reasoning (e.g., "What do you think happens when light enters glass?", "Can you explain that in your own words?", "Does this make sense?"), set action to {"type": "ASK_CONVERSATIONAL", "reason": "conversational engagement"}. The student will answer naturally in voice/text dialogue. This MUST NOT trigger an assessment widget.
    - FORMAL ASSESSMENT: If the student explicitly asked to be tested/quizzed/given an MCQ/practice (e.g., "test me", "quiz me", "give me an MCQ", "let me practice"), OR if you have finished teaching a major concept and determine a formal scored assessment is pedagogically necessary right now, set action to {"type": "ASK_ASSESSMENT", "questionType": "MCQ" | "SHORT_ANSWER" | "LONG_ANSWER" | "NUMERICAL" | "IMAGE_SOLUTION", "difficulty": "easy" | "medium" | "hard"}. In responseText, warmly introduce the upcoming question (e.g., "Alright, let's test your understanding with a quick problem!"), but NEVER formulate or invent the question text in responseText because AssessmentEngine generates and displays the formal question on the right panel.
-   - Otherwise, set action to {"type": "CONTINUE_TEACHING"} or {"type": "EXPLAIN"}.`;
+   - Otherwise, set action to {"type": "CONTINUE_TEACHING"} or {"type": "EXPLAIN"}.
+7. MULTI-CHANNEL CONTENT PIPELINE RULES (PHASE 2.5):
+   - speechText: Write natural spoken language for TTS. NO raw LaTeX ($$, \\frac, \\sin, etc.), NO Markdown (*, #, -, etc.), NO JSON fragments. Speak mathematical equations phonetically in words (e.g., "one over f equals one over v plus one over u", "n one times sine theta one equals n two times sine theta two").
+   - captionText: Write a short, readable 1-2 sentence subtitle summary (max 120 chars) for the bottom subtitle bar (e.g., "Light bends when changing speed across media.").
+   - visual: Provide structured blackboard content for the Remotion visual classroom:
+     - type: "FORMULA" | "DIAGRAM" | "TEXT" | "COMPARISON" | "RECAP" | "EXAMPLE" | "TITLE"
+     - data:
+       - If FORMULA: { "formula": "1/f = 1/v + 1/u", "formulaLabel": "MIRROR FORMULA", "formulaExplanation": "...", "variables": [{ "symbol": "f", "meaning": "focal length" }] }
+       - If DIAGRAM: { "heading": "...", "diagramType": "ray_diagram", "bullets": [...] }
+       - If COMPARISON: { "heading": "...", "text": "..." }
+       - If TEXT or RECAP: { "heading": "...", "bullets": [...] }
+   - responseText: Keep complete natural dialogue for transcript display.`;
   }
 
   /**
@@ -155,10 +166,25 @@ Instructions:
    */
   static getTeacherResponseSchemaDescription(): string {
     return `{
-  "responseText": "string (the natural dialogue text to speak/show to student)",
+  "responseText": "string (the natural dialogue text for transcript)",
+  "speechText": "string (pure spoken language for TTS without raw LaTeX, Markdown, or syntax)",
+  "captionText": "string (concise 1-2 sentence subtitle summary for blackboard subtitle bar)",
   "language": "english" | "hindi" | "hinglish",
   "intent": "explanation" | "example" | "question" | "clarification" | "feedback" | "encouragement",
   "teachingAction": "explain" | "demonstrate" | "assess" | "clarify" | "advance" | "review",
+  "visual": {
+    "type": "FORMULA" | "DIAGRAM" | "TEXT" | "COMPARISON" | "RECAP" | "EXAMPLE" | "TITLE",
+    "data": {
+      "title": "string (optional)",
+      "heading": "string (optional)",
+      "formula": "string (optional)",
+      "formulaLabel": "string (optional)",
+      "formulaExplanation": "string (optional)",
+      "variables": [{ "symbol": "string", "meaning": "string" }] (optional),
+      "bullets": ["string"] (optional),
+      "text": "string (optional)"
+    }
+  } (optional),
   "action": {
     "type": "SPEAK" | "ASK_CONVERSATIONAL" | "ASK_ASSESSMENT" | "WAIT_FOR_ANSWER" | "EXPLAIN" | "CONTINUE_TEACHING",
     "questionType": "MCQ" | "SHORT_ANSWER" | "LONG_ANSWER" | "NUMERICAL" | "IMAGE_SOLUTION",

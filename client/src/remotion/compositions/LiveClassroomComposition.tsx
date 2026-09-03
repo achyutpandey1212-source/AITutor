@@ -21,6 +21,7 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
     avatarState = 'IDLE',
     visualType = 'TITLE',
     visualData,
+    captionText,
   } = visualState;
 
   const renderScene = () => {
@@ -34,32 +35,37 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
           />
         );
       case 'TEXT':
+      case 'COMPARISON':
+      case 'PROCESS':
+      case 'HIGHLIGHT':
+      case 'RECAP':
+      case 'EXAMPLE':
         return (
           <TextScene
-            heading={visualData?.heading || concept || 'Key Concept'}
+            heading={visualData?.heading || visualData?.title || concept || 'Key Concept'}
             text={visualData?.text}
             bullets={visualData?.bullets}
             concept={concept}
           />
         );
       case 'DIAGRAM':
+      case 'ILLUSTRATION':
         return (
           <DiagramScene
             concept={concept || 'Optical Physics'}
-            label={visualData?.heading || 'Interactive Ray Diagram'}
+            label={visualData?.heading || visualData?.title || 'Interactive Ray Diagram'}
           />
         );
       case 'FORMULA':
         return (
           <FormulaScene
-            formulaLabel={visualData?.formulaLabel}
+            formulaLabel={visualData?.formulaLabel || visualData?.heading || "MATHEMATICAL FORMULA"}
             formula={visualData?.formula}
             concept={concept}
             variables={visualData?.variables}
-            explanation={visualData?.formulaExplanation}
+            explanation={visualData?.formulaExplanation || visualData?.text}
           />
         );
-      case 'EXAMPLE':
       case 'NONE':
       default:
         return (
@@ -193,6 +199,33 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
           }}
         >
           {renderScene()}
+
+          {/* Subtitle / Caption Layer (Phase 2.5) */}
+          {captionText && avatarState === 'SPEAKING' && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '1rem',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                maxWidth: '85%',
+                backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                borderRadius: '10px',
+                padding: '0.45rem 1.25rem',
+                color: '#f8fafc',
+                fontSize: '0.9rem',
+                fontWeight: 500,
+                textAlign: 'center',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 20,
+                lineHeight: 1.4,
+              }}
+            >
+              💬 {captionText}
+            </div>
+          )}
         </div>
       </div>
 

@@ -24,6 +24,7 @@ import {
   UpdateSessionRequestSchema,
   VoiceInteractionRequestSchema,
   normalizeTextForSpeech,
+  cleanCaptionText,
   sanitizeQuestionForClient,
 } from '@ai-tutor/shared';
 import { requireAuth } from '../middleware/auth.middleware.js';
@@ -493,16 +494,7 @@ async function processTurnCore(params: {
   explicitLanguage?: 'english' | 'hindi' | 'hinglish';
   explicitKnowledge?: any;
   turnId?: string;
-}): Promise<{
-  teacherResponse: TeacherResponse;
-  teachingState: TeachingState;
-  sessionContext: TutorSessionContext;
-  assessmentQuestion?: ClientAssessmentQuestion;
-  tutorAction?: TutorAction;
-  turnId: string;
-  normalizedSpeechText: string;
-  aiGenerationMs: number;
-}> {
+}): Promise<RespondSessionResponse> {
   const { userId, sessionDoc, message, mode, explicitLanguage, explicitKnowledge, turnId } = params;
   const targetLanguage = explicitLanguage || sessionDoc.language || 'english';
   const effectiveTurnId = turnId || `turn_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -549,14 +541,34 @@ async function processTurnCore(params: {
         if (qDoc) activeQ = sanitizeQuestionForClient(qDoc);
       }
 
+      const speech = teacherResponse.speechText || normalizeTextForSpeech(teacherResponse.responseText);
+      const caption = teacherResponse.captionText || cleanCaptionText(teacherResponse.responseText);
+      const tc = {
+        turnId: effectiveTurnId,
+        concept: sessionDoc.currentConcept || sessionDoc.topic,
+        speechText: speech,
+        captionText: caption,
+        displayText: teacherResponse.responseText,
+        visual: teacherResponse.visual,
+      };
+
       return {
-        teacherResponse,
+        teacherResponse: {
+          ...teacherResponse,
+          speechText: speech,
+          captionText: caption,
+          teachingContent: tc,
+        },
         teachingState: sessionDoc.teachingState,
         sessionContext: buildSessionContext(sessionDoc),
         assessmentQuestion: activeQ,
         tutorAction: { type: 'WAIT_FOR_ANSWER', questionId: sessionDoc.currentQuestionId },
         turnId: effectiveTurnId,
-        normalizedSpeechText: normalizeTextForSpeech(teacherResponse.responseText),
+        speechText: speech,
+        captionText: caption,
+        visualPayload: teacherResponse.visual ? { type: teacherResponse.visual.type, ...teacherResponse.visual.data } : undefined,
+        teachingContent: tc,
+        normalizedSpeechText: speech,
         aiGenerationMs,
       };
     }
@@ -600,13 +612,33 @@ async function processTurnCore(params: {
       );
       await sessionDoc.save();
 
+      const speech = teacherResponse.speechText || normalizeTextForSpeech(teacherResponse.responseText);
+      const caption = teacherResponse.captionText || cleanCaptionText(teacherResponse.responseText);
+      const tc = {
+        turnId: effectiveTurnId,
+        concept: sessionDoc.currentConcept || sessionDoc.topic,
+        speechText: speech,
+        captionText: caption,
+        displayText: teacherResponse.responseText,
+        visual: teacherResponse.visual,
+      };
+
       return {
-        teacherResponse,
+        teacherResponse: {
+          ...teacherResponse,
+          speechText: speech,
+          captionText: caption,
+          teachingContent: tc,
+        },
         teachingState: sessionDoc.teachingState,
         sessionContext: buildSessionContext(sessionDoc),
         tutorAction: { type: 'EXPLAIN' },
         turnId: effectiveTurnId,
-        normalizedSpeechText: normalizeTextForSpeech(teacherResponse.responseText),
+        speechText: speech,
+        captionText: caption,
+        visualPayload: teacherResponse.visual ? { type: teacherResponse.visual.type, ...teacherResponse.visual.data } : undefined,
+        teachingContent: tc,
+        normalizedSpeechText: speech,
         aiGenerationMs,
       };
     }
@@ -781,17 +813,71 @@ async function processTurnCore(params: {
       ? `${teacherResponse.responseText.replace(/\?[^?]*$/i, '.')}. Let's check your understanding with this question!`
       : teacherResponse.responseText;
 
+  const rawSpeech = teacherResponse.speechText || finalResponseText;
+  const normalizedSpeech = normalizeTextForSpeech(rawSpeech);
+  const caption = teacherResponse.captionText || cleanCaptionText(finalResponseText);
+
+  // Synchronize visual payload from teacher response or active lesson blueprint
+  let effectiveVisual = teacherResponse.visual;
+  if (!effectiveVisual && sessionDoc.lessonBlueprint) {
+    const activeConceptId = sessionDoc.lessonProgress?.currentConceptId;
+    const bpVisualReq = sessionDoc.lessonBlueprint.visualRequirements?.find(
+      (v: any) => v.conceptId === activeConceptId && v.visualType !== 'NONE'
+    );
+    if (bpVisualReq) {
+      effectiveVisual = {
+        type: bpVisualReq.visualType,
+        data: {
+          title: sessionDoc.topic,
+          heading: bpVisualReq.purpose,
+          formula: bpVisualReq.keyElements?.[0],
+          bullets: bpVisualReq.keyElements,
+        },
+      };
+    }
+  }
+
+  if (!effectiveVisual) {
+    const isFormula = /\b(\d+\/[a-zA-Z]|\b[a-zA-Z]\s*=\s*|\\frac|sin\b|cos\b|snell|mirror|lens)\b/i.test(finalResponseText);
+    effectiveVisual = {
+      type: isFormula ? 'FORMULA' : 'TEXT',
+      data: {
+        title: sessionDoc.topic,
+        heading: updatedState.currentConcept || sessionDoc.topic,
+        text: caption,
+        formula: isFormula ? '1/f = 1/v + 1/u' : undefined,
+      },
+    };
+  }
+
+  const teachingContent = {
+    turnId: effectiveTurnId,
+    concept: updatedState.currentConcept || sessionDoc.topic,
+    speechText: normalizedSpeech,
+    captionText: caption,
+    displayText: finalResponseText,
+    visual: effectiveVisual,
+  };
+
   return {
     teacherResponse: {
       ...teacherResponse,
       responseText: finalResponseText,
+      speechText: normalizedSpeech,
+      captionText: caption,
+      visual: effectiveVisual,
+      teachingContent,
     },
     teachingState: updatedState,
     sessionContext: buildSessionContext(sessionDoc),
     assessmentQuestion: clientAssessmentQuestion,
     tutorAction: action,
     turnId: effectiveTurnId,
-    normalizedSpeechText: normalizeTextForSpeech(finalResponseText),
+    speechText: normalizedSpeech,
+    captionText: caption,
+    visualPayload: effectiveVisual ? { type: effectiveVisual.type, ...effectiveVisual.data } : undefined,
+    teachingContent,
+    normalizedSpeechText: normalizedSpeech,
     aiGenerationMs,
   };
 }
@@ -865,14 +951,7 @@ teachingRouter.post(
 
       res.status(200).json({
         success: true,
-        data: {
-          teacherResponse: result.teacherResponse,
-          teachingState: result.teachingState,
-          sessionContext: result.sessionContext,
-          assessmentQuestion: result.assessmentQuestion,
-          tutorAction: result.tutorAction,
-          turnId: result.turnId,
-        },
+        data: result,
       });
     } catch (error: any) {
       console.error('Error in session response:', error);
@@ -959,7 +1038,11 @@ teachingRouter.post(
           transcript,
           teacherResponse: result.teacherResponse,
           teachingState: result.teachingState,
-          normalizedSpeechText: result.normalizedSpeechText,
+          normalizedSpeechText: result.normalizedSpeechText || result.teacherResponse.responseText,
+          speechText: result.speechText,
+          captionText: result.captionText,
+          visualPayload: result.visualPayload,
+          teachingContent: result.teachingContent,
           sessionContext: result.sessionContext,
           assessmentQuestion: result.assessmentQuestion,
           tutorAction: result.tutorAction,

@@ -114,6 +114,8 @@ export function useLiveTutor({
   const micEnabledRef = useRef<boolean>(micEnabled);
   micEnabledRef.current = micEnabled;
 
+  const activeTurnIdRef = useRef<string | null>(null);
+
   const setMicrophoneEnabled = useCallback((enabled: boolean) => {
     setMicEnabled(enabled);
     micEnabledRef.current = enabled;
@@ -210,55 +212,70 @@ export function useLiveTutor({
             lastUpdated: new Date().toISOString(),
           }));
         } else {
-          // Check blueprint visual requirements first as single source of truth
-          const bp = response.sessionContext?.lessonBlueprint;
-          const currentConceptId =
-            response.sessionContext?.lessonProgress?.currentConceptId ||
-            bp?.conceptSequence?.[0]?.id;
-          const bpVisualReq = bp?.visualRequirements?.find(
-            (v: any) => v.conceptId === currentConceptId && v.visualType !== 'NONE'
-          );
+          // Check if teacher produced structured visual or fallback to blueprint
+          const teacherVisual = response.visualPayload || response.teacherResponse?.visual;
+          if (teacherVisual && teacherVisual.type) {
+            nextVisualType = (teacherVisual.type as any) || 'TITLE';
+            nextVisualData = teacherVisual.data || teacherVisual;
+          } else {
+            // Check blueprint visual requirements first as single source of truth
+            const bp = response.sessionContext?.lessonBlueprint;
+            const currentConceptId =
+              response.sessionContext?.lessonProgress?.currentConceptId ||
+              bp?.conceptSequence?.[0]?.id;
+            const bpVisualReq = bp?.visualRequirements?.find(
+              (v: any) => v.conceptId === currentConceptId && v.visualType !== 'NONE'
+            );
 
-          if (bpVisualReq?.visualType === 'FORMULA') {
-            nextVisualType = 'FORMULA';
-            nextVisualData = {
-              formulaLabel: bpVisualReq.purpose.toUpperCase(),
-              formula: bpVisualReq.keyElements?.[0] || 'Formula',
-              concept: response.sessionContext?.activeConcept || "Mathematical Formula",
-              explanation: bpVisualReq.purpose,
-              variables: (bpVisualReq.keyElements || []).map((el: string) => ({
-                symbol: el,
-                meaning: el,
-              })),
-            };
-          } else if (bpVisualReq?.visualType === 'DIAGRAM') {
-            nextVisualType = 'DIAGRAM';
-            nextVisualData = {
-              heading: bpVisualReq.purpose,
-              concept: response.sessionContext?.activeConcept || 'Visual Diagram',
-              elements: bpVisualReq.keyElements || [],
-            };
-          } else if (/\b(snell|formula|equation|sin\b|ratio|\b=|\blaw of refraction)\b/i.test(textLower)) {
-            nextVisualType = 'FORMULA';
-            nextVisualData = {
-              formulaLabel: "SNELL'S LAW OF REFRACTION",
-              formula: 'n₁ · sin(θ₁) = n₂ · sin(θ₂)',
-              concept: response.sessionContext?.activeConcept || "Snell's Law",
-              explanation: 'The ratio of sine of incidence to sine of refraction is constant across media.',
-              variables: [
-                { symbol: 'n₁', meaning: 'Index of medium 1 (Air ≈ 1.0)' },
-                { symbol: 'θ₁', meaning: 'Angle of incidence' },
-                { symbol: 'n₂', meaning: 'Index of medium 2 (Glass ≈ 1.5)' },
-                { symbol: 'θ₂', meaning: 'Angle of refraction' },
-              ],
-            };
-          } else if (/\b(diagram|ray|normal|incident|refract|angle|interface|boundary)\b/i.test(textLower)) {
-            nextVisualType = 'DIAGRAM';
-            nextVisualData = {
-              heading: 'Ray Diagram: Air-Glass Interface',
-              concept: response.sessionContext?.activeConcept || 'Light Refraction',
-            };
+            if (bpVisualReq?.visualType === 'FORMULA') {
+              nextVisualType = 'FORMULA';
+              nextVisualData = {
+                formulaLabel: bpVisualReq.purpose.toUpperCase(),
+                formula: bpVisualReq.keyElements?.[0] || 'Formula',
+                concept: response.sessionContext?.activeConcept || "Mathematical Formula",
+                explanation: bpVisualReq.purpose,
+                variables: (bpVisualReq.keyElements || []).map((el: string) => ({
+                  symbol: el,
+                  meaning: el,
+                })),
+              };
+            } else if (bpVisualReq?.visualType === 'DIAGRAM') {
+              nextVisualType = 'DIAGRAM';
+              nextVisualData = {
+                heading: bpVisualReq.purpose,
+                concept: response.sessionContext?.activeConcept || 'Visual Diagram',
+                elements: bpVisualReq.keyElements || [],
+              };
+            } else if (/\b(snell|formula|equation|sin\b|ratio|\b=|\blaw of refraction)\b/i.test(textLower)) {
+              nextVisualType = 'FORMULA';
+              nextVisualData = {
+                formulaLabel: "SNELL'S LAW OF REFRACTION",
+                formula: 'n₁ · sin(θ₁) = n₂ · sin(θ₂)',
+                concept: response.sessionContext?.activeConcept || "Snell's Law",
+                explanation: 'The ratio of sine of incidence to sine of refraction is constant across media.',
+                variables: [
+                  { symbol: 'n₁', meaning: 'Index of medium 1 (Air ≈ 1.0)' },
+                  { symbol: 'θ₁', meaning: 'Angle of incidence' },
+                  { symbol: 'n₂', meaning: 'Index of medium 2 (Glass ≈ 1.5)' },
+                  { symbol: 'θ₂', meaning: 'Angle of refraction' },
+                ],
+              };
+            } else if (/\b(diagram|ray|normal|incident|refract|angle|interface|boundary)\b/i.test(textLower)) {
+              nextVisualType = 'DIAGRAM';
+              nextVisualData = {
+                heading: 'Ray Diagram: Air-Glass Interface',
+                concept: response.sessionContext?.activeConcept || 'Light Refraction',
+              };
+            }
           }
+
+          const currentTurnId = response.turnId || `turn_${Date.now()}`;
+          activeTurnIdRef.current = currentTurnId;
+
+          const captionToDisplay =
+            response.captionText ||
+            response.teacherResponse?.captionText ||
+            '';
 
           setVisualState((prev) => ({
             ...prev,
@@ -268,6 +285,8 @@ export function useLiveTutor({
             mode: (response.sessionContext?.currentMode as any) || 'TEACHING',
             visualType: nextVisualType,
             visualData: nextVisualData,
+            captionText: captionToDisplay || undefined,
+            turnId: currentTurnId,
             lastUpdated: new Date().toISOString(),
           }));
         }
@@ -292,12 +311,25 @@ export function useLiveTutor({
           response.tutorAction?.type === 'WAIT_FOR_ANSWER' ||
           Boolean(response.assessmentQuestion);
 
-        textToSpeechService.speak(response.normalizedSpeechText, selectedLang, {
+        const currentTurnId = response.turnId || `turn_${Date.now()}`;
+        activeTurnIdRef.current = currentTurnId;
+
+        const speechToSpeak =
+          response.speechText ||
+          response.normalizedSpeechText ||
+          response.teacherResponse?.speechText ||
+          response.teacherResponse?.responseText ||
+          '';
+
+        textToSpeechService.speak(speechToSpeak, selectedLang, {
           onStart: () => {
+            if (activeTurnIdRef.current !== currentTurnId) return;
             const t7 = Date.now();
             setLatencies((prev) => ({ ...prev, ttsDurationMs: t7 - t6 }));
           },
           onEnd: () => {
+            if (activeTurnIdRef.current !== currentTurnId) return;
+            setVisualState((prev) => ({ ...prev, captionText: undefined }));
             if (stateRef.current === 'SPEAKING') {
               setTutorState(isWaitingForAnswer ? 'WAITING_FOR_STUDENT' : 'LISTENING');
               setInterimTranscript('');
@@ -310,6 +342,8 @@ export function useLiveTutor({
             }
           },
           onError: (ttsErr) => {
+            if (activeTurnIdRef.current !== currentTurnId) return;
+            setVisualState((prev) => ({ ...prev, captionText: undefined }));
             console.warn('[LiveTutor] TTS audio warning:', ttsErr);
             if (stateRef.current === 'SPEAKING') {
               setTutorState(isWaitingForAnswer ? 'WAITING_FOR_STUDENT' : 'LISTENING');
@@ -343,7 +377,9 @@ export function useLiveTutor({
         if (!micEnabledRef.current) return;
         setInterimTranscript(interim);
         if (stateRef.current === 'SPEAKING' && isMeaningfulBargeIn(interim, lastSpokenTextRef.current)) {
+          activeTurnIdRef.current = null;
           textToSpeechService.cancel();
+          setVisualState((prev) => ({ ...prev, captionText: undefined }));
           setTutorState('INTERRUPTING');
         }
       },
@@ -351,7 +387,9 @@ export function useLiveTutor({
         if (!micEnabledRef.current) return;
         setFinalTranscript(final);
         if (stateRef.current === 'SPEAKING' && isMeaningfulBargeIn(final, lastSpokenTextRef.current)) {
+          activeTurnIdRef.current = null;
           textToSpeechService.cancel();
+          setVisualState((prev) => ({ ...prev, captionText: undefined }));
           setTutorState('INTERRUPTING');
         }
       },
@@ -364,7 +402,9 @@ export function useLiveTutor({
           if (!isMeaningfulBargeIn(trimmed, lastSpokenTextRef.current)) {
             return;
           }
+          activeTurnIdRef.current = null;
           textToSpeechService.cancel();
+          setVisualState((prev) => ({ ...prev, captionText: undefined }));
         }
 
         if (['LISTENING', 'SPEAKING', 'INTERRUPTING', 'WAITING_FOR_STUDENT'].includes(stateRef.current)) {
