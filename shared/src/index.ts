@@ -1152,3 +1152,69 @@ export type AssessmentBookmarkResponse = ApiResponse<AssessmentBookmark>;
 export type AssessmentBookmarkListResponse = ApiResponse<AssessmentBookmark[]>;
 export type WrongQuestionListResponse = ApiResponse<WrongAssessmentQuestion[]>;
 export type AssessmentAnalyticsResponse = ApiResponse<AssessmentAnalytics>;
+
+// ==========================================
+// 11. Milestone 7.7: Remotion Visual Classroom Contracts
+// ==========================================
+
+export const TutorVisualModeSchema = z.enum([
+  'IDLE',
+  'TEACHING',
+  'ASSESSMENT',
+  'FEEDBACK',
+  'REVIEW',
+]);
+export type TutorVisualMode = z.infer<typeof TutorVisualModeSchema>;
+
+export const TutorAvatarStateSchema = z.enum([
+  'IDLE',
+  'SPEAKING',
+  'LISTENING',
+  'THINKING',
+  'INTERRUPTING',
+]);
+export type TutorAvatarState = z.infer<typeof TutorAvatarStateSchema>;
+
+export const TutorVisualTypeSchema = z.enum([
+  'NONE',
+  'TITLE',
+  'TEXT',
+  'DIAGRAM',
+  'FORMULA',
+  'EXAMPLE',
+]);
+export type TutorVisualType = z.infer<typeof TutorVisualTypeSchema>;
+
+export const TutorVisualDataSchema = z.object({
+  title: z.string().optional(),
+  subtitle: z.string().optional(),
+  heading: z.string().optional(),
+  text: z.string().optional(),
+  bullets: z.array(z.string()).optional(),
+  diagramType: z.string().optional(),
+  diagramData: z.record(z.unknown()).optional(),
+  formula: z.string().optional(),
+  formulaLabel: z.string().optional(),
+  formulaExplanation: z.string().optional(),
+  variables: z.array(
+    z.object({
+      symbol: z.string(),
+      meaning: z.string(),
+    })
+  ).optional(),
+}).passthrough().optional();
+export type TutorVisualData = z.infer<typeof TutorVisualDataSchema>;
+
+export const TutorVisualStateSchema = z.object({
+  sessionId: z.string().default(''),
+  topic: z.string().default('AI Tutor Classroom'),
+  concept: z.string().optional(),
+  mode: TutorVisualModeSchema.default('IDLE'),
+  avatarState: TutorAvatarStateSchema.default('IDLE'),
+  visualType: TutorVisualTypeSchema.default('TITLE'),
+  visualData: TutorVisualDataSchema,
+  highlightedText: z.string().optional(),
+  turnId: z.string().optional(),
+  lastUpdated: z.string().optional(),
+});
+export type TutorVisualState = z.infer<typeof TutorVisualStateSchema>;

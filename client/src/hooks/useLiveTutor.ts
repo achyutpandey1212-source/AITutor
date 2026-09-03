@@ -7,6 +7,9 @@ import type {
   LatencyMetrics,
   ClientAssessmentQuestion,
   TutorAction,
+  TutorVisualState,
+  TutorAvatarState,
+  TutorVisualType,
 } from '@ai-tutor/shared';
 import { speechToTextService } from '../services/stt.service';
 import { textToSpeechService } from '../services/tts.service';
@@ -21,6 +24,24 @@ export type VoiceTutorState =
   | 'SPEAKING'
   | 'INTERRUPTING'
   | 'WAITING_FOR_STUDENT';
+
+export function mapVoiceToAvatarState(state: VoiceTutorState): TutorAvatarState {
+  switch (state) {
+    case 'SPEAKING':
+      return 'SPEAKING';
+    case 'INTERRUPTING':
+      return 'INTERRUPTING';
+    case 'LISTENING':
+    case 'WAITING_FOR_STUDENT':
+      return 'LISTENING';
+    case 'THINKING':
+    case 'CONNECTING':
+      return 'THINKING';
+    case 'IDLE':
+    default:
+      return 'IDLE';
+  }
+}
 
 export interface UseLiveTutorProps {
   idToken: string | null;
@@ -52,6 +73,28 @@ export function useLiveTutor({
   const [finalTranscript, setFinalTranscript] = useState<string>('');
   const [lastSpokenText, setLastSpokenText] = useState<string>('');
   const [micEnabled, setMicEnabled] = useState<boolean>(true);
+
+  // Persistent Remotion Visual Classroom State
+  const [visualState, setVisualState] = useState<TutorVisualState>({
+    sessionId: '',
+    topic: defaultTopic,
+    concept: 'Introduction',
+    mode: 'IDLE',
+    avatarState: 'IDLE',
+    visualType: 'TITLE',
+    visualData: {
+      title: defaultTopic,
+      subtitle: 'Interactive AI Visual Classroom',
+    },
+  });
+
+  // Synchronize avatarState with voice tutor state (IDLE, SPEAKING, LISTENING, THINKING, INTERRUPTING)
+  useEffect(() => {
+    setVisualState((prev) => ({
+      ...prev,
+      avatarState: mapVoiceToAvatarState(tutorState),
+    }));
+  }, [tutorState]);
 
   const [latencies, setLatencies] = useState<LatencyMetrics | null>(null);
   const [timestamps, setTimestamps] = useState<{ [key: string]: number }>({});
@@ -139,6 +182,61 @@ export function useLiveTutor({
 
         if (response.tutorAction) {
           setActiveTutorAction(response.tutorAction);
+        }
+
+        // Synchronize Remotion Visual Classroom with pedagogical state
+        const textLower = response.teacherResponse.responseText.toLowerCase();
+        let nextVisualType: TutorVisualType = 'TEXT';
+        let nextVisualData: any = {
+          heading: response.sessionContext?.activeConcept || response.teachingState?.currentConcept || 'Core Concept',
+          text: response.teacherResponse.responseText.slice(0, 240),
+          bullets: [
+            'Teacher explanation synchronized with live speech.',
+            'Interrupt anytime to ask questions or request examples.',
+          ],
+        };
+
+        if (response.assessmentQuestion || response.tutorAction?.type === 'ASK_ASSESSMENT') {
+          // Assessment mode: keep current visual board intact on left panel!
+          setVisualState((prev) => ({
+            ...prev,
+            mode: 'ASSESSMENT',
+            concept: response.assessmentQuestion?.concept || prev.concept,
+            lastUpdated: new Date().toISOString(),
+          }));
+        } else {
+          if (/\b(snell|formula|equation|sin\b|ratio|\b=|\blaw of refraction)\b/i.test(textLower)) {
+            nextVisualType = 'FORMULA';
+            nextVisualData = {
+              formulaLabel: "SNELL'S LAW OF REFRACTION",
+              formula: 'n₁ · sin(θ₁) = n₂ · sin(θ₂)',
+              concept: response.sessionContext?.activeConcept || "Snell's Law",
+              explanation: 'The ratio of sine of incidence to sine of refraction is constant across media.',
+              variables: [
+                { symbol: 'n₁', meaning: 'Index of medium 1 (Air ≈ 1.0)' },
+                { symbol: 'θ₁', meaning: 'Angle of incidence' },
+                { symbol: 'n₂', meaning: 'Index of medium 2 (Glass ≈ 1.5)' },
+                { symbol: 'θ₂', meaning: 'Angle of refraction' },
+              ],
+            };
+          } else if (/\b(diagram|ray|normal|incident|refract|angle|interface|boundary)\b/i.test(textLower)) {
+            nextVisualType = 'DIAGRAM';
+            nextVisualData = {
+              heading: 'Ray Diagram: Air-Glass Interface',
+              concept: response.sessionContext?.activeConcept || 'Light Refraction',
+            };
+          }
+
+          setVisualState((prev) => ({
+            ...prev,
+            sessionId: targetSessionId,
+            topic: response.sessionContext?.topic || prev.topic,
+            concept: response.sessionContext?.activeConcept || response.teachingState?.currentConcept || prev.concept,
+            mode: (response.sessionContext?.currentMode as any) || 'TEACHING',
+            visualType: nextVisualType,
+            visualData: nextVisualData,
+            lastUpdated: new Date().toISOString(),
+          }));
         }
 
         const backendDuration = t5 - t3;
@@ -311,6 +409,21 @@ export function useLiveTutor({
           updatedAt: newSession.updatedAt,
         });
 
+        // Initialize Remotion Visual Classroom with new session topic
+        setVisualState({
+          sessionId: newSession.id,
+          topic: newSession.topic,
+          concept: newSession.currentConcept || newSession.topic,
+          mode: 'TEACHING',
+          avatarState: 'THINKING',
+          visualType: 'TITLE',
+          visualData: {
+            title: newSession.topic,
+            subtitle: `Subject: ${targetSubject} • Interactive AI Classroom`,
+          },
+          lastUpdated: new Date().toISOString(),
+        });
+
         startListeningLoop();
         return newSession;
       } catch (err: any) {
@@ -341,6 +454,21 @@ export function useLiveTutor({
         setSession(resumedSession);
         setSessionContext(context);
         setTeachingState(resumedSession.teachingState);
+
+        // Restore Remotion Visual Classroom logical state from resumed session
+        setVisualState({
+          sessionId: resumedSession.id,
+          topic: resumedSession.topic,
+          concept: resumedSession.currentConcept || resumedSession.topic,
+          mode: (context.currentMode as any) || 'TEACHING',
+          avatarState: 'LISTENING',
+          visualType: context.currentMode === 'ASSESSMENT' ? 'DIAGRAM' : 'TITLE',
+          visualData: {
+            title: resumedSession.topic,
+            subtitle: `Resumed Session • Concept: ${resumedSession.currentConcept || resumedSession.topic}`,
+          },
+          lastUpdated: new Date().toISOString(),
+        });
 
         // If there was an active assessment question in the session, restore it
         if (context.currentQuestionId && context.currentMode === 'ASSESSMENT') {
@@ -376,6 +504,11 @@ export function useLiveTutor({
       }
     }
     setTutorState('IDLE');
+    setVisualState((prev) => ({
+      ...prev,
+      mode: 'IDLE',
+      avatarState: 'IDLE',
+    }));
   }, [session, idToken]);
 
   // Gracefully ends active session
@@ -393,6 +526,11 @@ export function useLiveTutor({
     setInterimTranscript('');
     setFinalTranscript('');
     setActiveAssessmentQuestion(null);
+    setVisualState((prev) => ({
+      ...prev,
+      mode: 'IDLE',
+      avatarState: 'IDLE',
+    }));
   }, [session, idToken]);
 
   // Sends typed fallback text message
@@ -505,6 +643,8 @@ export function useLiveTutor({
     giveUpAssessment,
     submitAssessmentAnswer,
     replaySpeech,
+    visualState,
+    setVisualState,
     isSttSupported: speechToTextService.isSupported(),
     isTtsSupported: textToSpeechService.isSupported(),
   };
