@@ -82,7 +82,7 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({ idToken, onNavigat
 
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button
-                  onClick={() => onNavigate('/practice')}
+                  onClick={() => onNavigate(`/practice?questionId=${bmk.questionId}`)}
                   style={{
                     padding: '0.4rem 0.8rem',
                     background: '#2563eb',
@@ -94,7 +94,7 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({ idToken, onNavigat
                     fontSize: '0.8rem',
                   }}
                 >
-                  Practice
+                  Practice This Question
                 </button>
                 <button
                   onClick={() => handleRemove(bmk.questionId)}

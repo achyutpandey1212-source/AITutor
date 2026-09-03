@@ -88,7 +88,7 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
                   </div>
 
                   <button
-                    onClick={() => onNavigate('/practice')}
+                    onClick={() => onNavigate(`/practice?questionId=${item.questionId}`)}
                     style={{
                       padding: '0.45rem 1rem',
                       background: '#ea580c',
@@ -100,14 +100,14 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
                       fontSize: '0.85rem',
                     }}
                   >
-                    Reattempt Now
+                    Review Now
                   </button>
                 </div>
               ))}
             </div>
           )}
 
-          {allWrong.length > dueReviews.length && (
+          {allWrong.length > 0 && (
             <div>
               <h3 style={{ fontSize: '1.1rem', color: '#1e293b', marginBottom: '0.75rem' }}>
                 All Tracked Mistakes ({allWrong.length})
@@ -116,12 +116,44 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
                 {allWrong.map((item) => (
                   <div
                     key={item.id}
-                    style={{ padding: '0.75rem 1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.85rem' }}
+                    style={{
+                      padding: '0.75rem 1rem',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      flexWrap: 'wrap',
+                    }}
                   >
-                    <div style={{ fontWeight: 600, color: '#334155' }}>{item.concept}</div>
-                    <div style={{ color: '#64748b', marginTop: '0.2rem' }}>
-                      Status: <strong>{item.reviewStatus}</strong> | Attempted: {item.attemptCount} time{item.attemptCount === 1 ? '' : 's'}
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#334155' }}>
+                        {item.question?.question || `${item.subject} • ${item.concept}`}
+                      </div>
+                      <div style={{ color: '#64748b', marginTop: '0.2rem' }}>
+                        Status: <strong>{item.reviewStatus}</strong> | Attempted: {item.attemptCount} time{item.attemptCount === 1 ? '' : 's'}
+                        {item.nextReviewAt && ` | Scheduled: ${new Date(item.nextReviewAt).toLocaleDateString()}`}
+                      </div>
                     </div>
+
+                    <button
+                      onClick={() => onNavigate(`/practice?questionId=${item.questionId}`)}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        background: '#2563eb',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                      }}
+                    >
+                      Review Now
+                    </button>
                   </div>
                 ))}
               </div>

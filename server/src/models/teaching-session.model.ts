@@ -15,11 +15,18 @@ export interface ITeachingSessionDocument extends Document {
   currentMode: 'TEACHING' | 'ASSESSMENT' | 'FEEDBACK' | 'REVIEW';
   assessmentSessionId?: string;
   currentQuestionId?: string;
+  assessmentStatus?: 'NONE' | 'GENERATING' | 'WAITING_FOR_STUDENT' | 'SUBMITTING' | 'EVALUATING' | 'COMPLETED';
+  progressSummary?: string;
   conversationHistory: Array<{
     id?: string;
+    turnId?: string;
     role: 'student' | 'tutor';
+    type?: 'voice' | 'text' | 'assessment' | 'system';
     text: string;
     intent?: TeacherIntent;
+    concept?: string;
+    questionId?: string;
+    assessmentSessionId?: string;
     timestamp: string;
   }>;
   createdAt: Date;
@@ -74,9 +81,14 @@ const TeachingStateMongooseSchema = new Schema(
 const ConversationMessageMongooseSchema = new Schema(
   {
     id: { type: String },
+    turnId: { type: String },
     role: { type: String, enum: ['student', 'tutor'], required: true },
+    type: { type: String, enum: ['voice', 'text', 'assessment', 'system'], default: 'text' },
     text: { type: String, required: true },
     intent: { type: String },
+    concept: { type: String },
+    questionId: { type: String },
+    assessmentSessionId: { type: String },
     timestamp: { type: String, default: () => new Date().toISOString() },
   },
   { _id: false }
@@ -104,7 +116,7 @@ const TeachingSessionMongooseSchema = new Schema<ITeachingSessionDocument>(
     },
     status: {
       type: String,
-      enum: ['active', 'completed'],
+      enum: ['created', 'active', 'paused', 'completed'],
       default: 'active',
     },
     currentConcept: {
@@ -136,6 +148,14 @@ const TeachingSessionMongooseSchema = new Schema<ITeachingSessionDocument>(
       type: String,
     },
     currentQuestionId: {
+      type: String,
+    },
+    assessmentStatus: {
+      type: String,
+      enum: ['NONE', 'GENERATING', 'WAITING_FOR_STUDENT', 'SUBMITTING', 'EVALUATING', 'COMPLETED'],
+      default: 'NONE',
+    },
+    progressSummary: {
       type: String,
     },
     conversationHistory: {

@@ -17,6 +17,7 @@ import { AssessmentRenderer } from './AssessmentRenderer';
 export interface AssessmentPracticeScreenProps {
   idToken: string | null;
   readyDocsCount?: number;
+  initialQuestionId?: string;
 }
 
 type AssessmentTab = 'practice' | 'bookmarks' | 'reviews' | 'analytics';
@@ -24,6 +25,7 @@ type AssessmentTab = 'practice' | 'bookmarks' | 'reviews' | 'analytics';
 export const AssessmentPracticeScreen: React.FC<AssessmentPracticeScreenProps> = ({
   idToken,
   readyDocsCount = 0,
+  initialQuestionId,
 }) => {
   const [activeTab, setActiveTab] = useState<AssessmentTab>('practice');
 
@@ -52,6 +54,34 @@ export const AssessmentPracticeScreen: React.FC<AssessmentPracticeScreenProps> =
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+
+  // Load specific question if provided via query param or prop
+  const effectiveInitialQId = initialQuestionId || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('questionId') : null);
+
+  useEffect(() => {
+    if (idToken && effectiveInitialQId) {
+      console.log(`[Practice] Loading exact question: ${effectiveInitialQId}`);
+      setIsLoading(true);
+      setError(null);
+      liveTutorApiClient
+        .getQuestion(idToken, effectiveInitialQId)
+        .then((q) => {
+          console.log(`[Practice] Question loaded successfully: ${q.questionId}`);
+          setCurrentQuestion(q);
+          setSubject(q.subject);
+          setConcept(q.concept);
+          setActiveTab('practice');
+          setQuestionStartTime(new Date().toISOString());
+        })
+        .catch((err) => {
+          console.error(`[Practice] Error loading question ${effectiveInitialQId}:`, err);
+          setError(`Unable to load this question: ${err.message || 'Question not found'}`);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [idToken, effectiveInitialQId]);
 
   // Check bookmark status whenever currentQuestion changes
   useEffect(() => {
@@ -366,7 +396,7 @@ export const AssessmentPracticeScreen: React.FC<AssessmentPracticeScreenProps> =
       )}
 
       {/* Error Display */}
-      {error && (
+      {error && (!effectiveInitialQId || currentQuestion) && (
         <div
           style={{
             padding: '0.75rem 1rem',
@@ -379,6 +409,62 @@ export const AssessmentPracticeScreen: React.FC<AssessmentPracticeScreenProps> =
           }}
         >
           {error}
+        </div>
+      )}
+
+      {/* Exact Question Loading State */}
+      {isLoading && effectiveInitialQId && !currentQuestion && (
+        <div
+          style={{
+            padding: '1.5rem',
+            textAlign: 'center',
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            borderRadius: '8px',
+            color: '#1e40af',
+            marginBottom: '1.25rem',
+            fontWeight: 600,
+          }}
+        >
+          Loading question...
+        </div>
+      )}
+
+      {/* Exact Question Error State */}
+      {error && effectiveInitialQId && !currentQuestion && (
+        <div
+          style={{
+            padding: '1.5rem',
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '8px',
+            color: '#991b1b',
+            textAlign: 'center',
+            marginBottom: '1.25rem',
+          }}
+        >
+          <p style={{ fontWeight: 600, margin: '0 0 0.75rem 0' }}>Unable to load this question.</p>
+          <button
+            onClick={() => {
+              setError(null);
+              if (typeof window !== 'undefined') {
+                window.history.pushState({}, '', '/practice');
+              }
+              window.location.href = '/practice';
+            }}
+            style={{
+              padding: '0.4rem 0.9rem',
+              background: '#dc2626',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+            }}
+          >
+            Back to Practice
+          </button>
         </div>
       )}
 

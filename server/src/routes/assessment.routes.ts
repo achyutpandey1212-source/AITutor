@@ -189,6 +189,43 @@ assessmentRouter.post(
   }
 );
 
+// GET /api/assessments/questions/:questionId - Retrieves a single sanitized question by ID
+assessmentRouter.get(
+  '/questions/:questionId',
+  requireAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.uid;
+      const { questionId } = req.params;
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: { message: 'Unauthorized', code: 'AUTH_REQUIRED' },
+        });
+        return;
+      }
+      const question = await assessmentSubmissionService.getQuestion(questionId, userId);
+      if (!question) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Question not found', code: 'QUESTION_NOT_FOUND' },
+        });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        data: sanitizeQuestionForClient(question),
+      });
+    } catch (error: any) {
+      console.error('Error fetching question by ID:', error);
+      res.status(500).json({
+        success: false,
+        error: { message: error.message || 'Failed to fetch question', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
 // POST /api/assessments/questions/:questionId/submit - Submits answer (MCQ, text, numerical)
 assessmentRouter.post(
   '/questions/:questionId/submit',

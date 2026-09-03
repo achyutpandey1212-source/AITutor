@@ -112,7 +112,8 @@ Instructions:
 2. Determine if the student asked a question, requested an example, gave an answer to evaluate, or has a misconception.
 3. Formulate an engaging, pedagogically sound response adhering to your persona.
 4. Provide an updated understanding of the student's mastery in stateUpdate (adjust understanding, misconceptions, conceptsMastered, conceptsNeedingWork, and recommendedNextAction).
-5. If the student answered a question, include the "assessment" field with correctness and feedback.`;
+5. If the student answered a question, include the "assessment" field with correctness and feedback.
+6. If the student explicitly asked to be tested/quizzed, or if you've explained a key concept and need to verify understanding, set action to {"type": "ASK_ASSESSMENT", "questionType": "MCQ" | "SHORT_ANSWER" | "LONG_ANSWER" | "NUMERICAL" | "IMAGE_SOLUTION", "difficulty": "easy" | "medium" | "hard"}. Introduce the question naturally in responseText (e.g., "Let's check your understanding with a quick problem!"), but NEVER invent or print the question yourself. Otherwise set action to {"type": "CONTINUE_TEACHING"} or {"type": "EXPLAIN"}.`;
   }
 
   /**
@@ -124,6 +125,12 @@ Instructions:
   "language": "english" | "hindi" | "hinglish",
   "intent": "explanation" | "example" | "question" | "clarification" | "feedback" | "encouragement",
   "teachingAction": "explain" | "demonstrate" | "assess" | "clarify" | "advance" | "review",
+  "action": {
+    "type": "SPEAK" | "ASK_ASSESSMENT" | "WAIT_FOR_ANSWER" | "EXPLAIN" | "CONTINUE_TEACHING",
+    "questionType": "MCQ" | "SHORT_ANSWER" | "LONG_ANSWER" | "NUMERICAL" | "IMAGE_SOLUTION",
+    "difficulty": "easy" | "medium" | "hard",
+    "reason": "string (optional)"
+  } (optional),
   "assessment": {
     "evaluated": boolean,
     "correctness": "correct" | "partially_correct" | "incorrect" | "unclear",

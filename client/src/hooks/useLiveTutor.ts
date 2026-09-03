@@ -5,6 +5,8 @@ import type {
   TeacherResponse,
   TutorSessionContext,
   LatencyMetrics,
+  ClientAssessmentQuestion,
+  TutorAction,
 } from '@ai-tutor/shared';
 import { speechToTextService } from '../services/stt.service';
 import { textToSpeechService } from '../services/tts.service';
@@ -17,7 +19,8 @@ export type VoiceTutorState =
   | 'LISTENING'
   | 'THINKING'
   | 'SPEAKING'
-  | 'INTERRUPTING';
+  | 'INTERRUPTING'
+  | 'WAITING_FOR_STUDENT';
 
 export interface UseLiveTutorProps {
   idToken: string | null;
@@ -41,11 +44,14 @@ export function useLiveTutor({
   const [sessionContext, setSessionContext] = useState<TutorSessionContext | null>(null);
   const [teachingState, setTeachingState] = useState<TeachingState | null>(null);
   const [teacherResponse, setTeacherResponse] = useState<TeacherResponse | null>(null);
+  const [activeAssessmentQuestion, setActiveAssessmentQuestion] = useState<ClientAssessmentQuestion | null>(null);
+  const [activeTutorAction, setActiveTutorAction] = useState<TutorAction | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [interimTranscript, setInterimTranscript] = useState<string>('');
   const [finalTranscript, setFinalTranscript] = useState<string>('');
   const [lastSpokenText, setLastSpokenText] = useState<string>('');
+  const [micEnabled, setMicEnabled] = useState<boolean>(true);
 
   const [latencies, setLatencies] = useState<LatencyMetrics | null>(null);
   const [timestamps, setTimestamps] = useState<{ [key: string]: number }>({});
@@ -61,6 +67,29 @@ export function useLiveTutor({
 
   const lastSpokenTextRef = useRef<string>(lastSpokenText);
   lastSpokenTextRef.current = lastSpokenText;
+
+  const micEnabledRef = useRef<boolean>(micEnabled);
+  micEnabledRef.current = micEnabled;
+
+  const setMicrophoneEnabled = useCallback((enabled: boolean) => {
+    setMicEnabled(enabled);
+    micEnabledRef.current = enabled;
+    if (!enabled) {
+      speechToTextService.pauseCapture();
+      setInterimTranscript('');
+      setFinalTranscript('');
+    } else {
+      if (sessionRef.current && stateRef.current !== 'IDLE' && stateRef.current !== 'THINKING') {
+        if (stateRef.current !== 'SPEAKING') {
+          speechToTextService.resumeCapture();
+        }
+      }
+    }
+  }, []);
+
+  const toggleMic = useCallback(() => {
+    setMicrophoneEnabled(!micEnabledRef.current);
+  }, [setMicrophoneEnabled]);
 
   // Internal turn submitter
   const submitTurn = useCallback(
@@ -102,6 +131,16 @@ export function useLiveTutor({
           setSessionContext(response.sessionContext);
         }
 
+        if (response.assessmentQuestion) {
+          setActiveAssessmentQuestion(response.assessmentQuestion);
+        } else if (response.tutorAction?.type === 'EXPLAIN' || response.tutorAction?.type === 'CONTINUE_TEACHING') {
+          setActiveAssessmentQuestion(null);
+        }
+
+        if (response.tutorAction) {
+          setActiveTutorAction(response.tutorAction);
+        }
+
         const backendDuration = t5 - t3;
         const totalPerceived = timestamps.t0 ? t5 - timestamps.t0 : backendDuration;
 
@@ -111,10 +150,16 @@ export function useLiveTutor({
           totalPerceivedLatencyMs: totalPerceived,
         });
 
-        // Trigger TTS Output and resume STT in Barge-In listening mode
+        // Trigger TTS Output and resume STT in Barge-In listening mode only if mic is enabled
         setTutorState('SPEAKING');
-        speechToTextService.resumeCapture();
+        if (micEnabledRef.current) {
+          speechToTextService.resumeCapture();
+        }
         const t6 = Date.now();
+
+        const isWaitingForAnswer = response.tutorAction?.type === 'ASK_ASSESSMENT' ||
+          response.tutorAction?.type === 'WAIT_FOR_ANSWER' ||
+          Boolean(response.assessmentQuestion);
 
         textToSpeechService.speak(response.normalizedSpeechText, selectedLang, {
           onStart: () => {
@@ -122,26 +167,37 @@ export function useLiveTutor({
             setLatencies((prev) => ({ ...prev, ttsDurationMs: t7 - t6 }));
           },
           onEnd: () => {
-            // Only transition to LISTENING if tutor hasn't been interrupted into another turn
             if (stateRef.current === 'SPEAKING') {
-              setTutorState('LISTENING');
+              setTutorState(isWaitingForAnswer ? 'WAITING_FOR_STUDENT' : 'LISTENING');
               setInterimTranscript('');
               setFinalTranscript('');
+              if (micEnabledRef.current) {
+                speechToTextService.resumeCapture();
+              } else {
+                speechToTextService.pauseCapture();
+              }
             }
           },
           onError: (ttsErr) => {
             console.warn('[LiveTutor] TTS audio warning:', ttsErr);
             if (stateRef.current === 'SPEAKING') {
-              setTutorState('LISTENING');
+              setTutorState(isWaitingForAnswer ? 'WAITING_FOR_STUDENT' : 'LISTENING');
               setInterimTranscript('');
               setFinalTranscript('');
+              if (micEnabledRef.current) {
+                speechToTextService.resumeCapture();
+              } else {
+                speechToTextService.pauseCapture();
+              }
             }
           },
         });
       } catch (err: any) {
         setError(err.message || 'Error processing teacher response');
         setTutorState('LISTENING');
-        speechToTextService.resumeCapture();
+        if (micEnabledRef.current) {
+          speechToTextService.resumeCapture();
+        }
       }
     },
     [idToken, timestamps]
@@ -153,49 +209,54 @@ export function useLiveTutor({
 
     speechToTextService.start({
       onInterimTranscript: (interim) => {
+        if (!micEnabledRef.current) return;
         setInterimTranscript(interim);
-        // Live Barge-In Interruption Detection
         if (stateRef.current === 'SPEAKING' && isMeaningfulBargeIn(interim, lastSpokenTextRef.current)) {
           textToSpeechService.cancel();
           setTutorState('INTERRUPTING');
         }
       },
       onFinalTranscript: (final) => {
+        if (!micEnabledRef.current) return;
         setFinalTranscript(final);
-        // Live Barge-In Interruption Detection on finalized segment
         if (stateRef.current === 'SPEAKING' && isMeaningfulBargeIn(final, lastSpokenTextRef.current)) {
           textToSpeechService.cancel();
           setTutorState('INTERRUPTING');
         }
       },
       onSpeechTurnDetected: (turnTranscript) => {
+        if (!micEnabledRef.current) return;
         const trimmed = turnTranscript.trim();
         if (!trimmed) return;
 
-        // If student spoke during SPEAKING or INTERRUPTING, verify meaningful utterance
         if (stateRef.current === 'SPEAKING') {
           if (!isMeaningfulBargeIn(trimmed, lastSpokenTextRef.current)) {
-            return; // Ignore accidental noise/audio bleed
+            return;
           }
           textToSpeechService.cancel();
         }
 
-        if (['LISTENING', 'SPEAKING', 'INTERRUPTING'].includes(stateRef.current)) {
+        if (['LISTENING', 'SPEAKING', 'INTERRUPTING', 'WAITING_FOR_STUDENT'].includes(stateRef.current)) {
           const t0 = Date.now();
           setTimestamps({ t0 });
           submitTurn(trimmed);
         }
       },
       onError: (errMessage) => {
-        setError(errMessage);
+        if (micEnabledRef.current) {
+          setError(errMessage);
+        }
       },
       onStateChange: () => {},
     });
 
+    if (!micEnabledRef.current) {
+      speechToTextService.pauseCapture();
+    }
     setTutorState('LISTENING');
   }, [submitTurn]);
 
-  // Starts or Restarts a Teaching Session
+  // Starts a new Teaching Session
   const startSession = useCallback(
     async (
       topicToTeach = defaultTopic,
@@ -214,6 +275,8 @@ export function useLiveTutor({
       setTeacherResponse(null);
       setInterimTranscript('');
       setFinalTranscript('');
+      setActiveAssessmentQuestion(null);
+      setActiveTutorAction(null);
 
       try {
         const newSession = await liveTutorApiClient.createSession(idToken, {
@@ -232,7 +295,6 @@ export function useLiveTutor({
         setSession(newSession);
         setTeachingState(newSession.teachingState);
 
-        // Also initialize sessionContext
         setSessionContext({
           sessionId: newSession.id,
           userId: newSession.userId,
@@ -245,12 +307,11 @@ export function useLiveTutor({
           activeConcept: newSession.currentConcept || newSession.topic,
           teachingState: newSession.teachingState,
           currentMode: newSession.currentMode || 'TEACHING',
+          assessmentStatus: newSession.assessmentStatus || 'NONE',
           updatedAt: newSession.updatedAt,
         });
 
-        // Automatically start the continuous listening loop
         startListeningLoop();
-
         return newSession;
       } catch (err: any) {
         setError(err.message || 'Failed to create teaching session');
@@ -261,14 +322,78 @@ export function useLiveTutor({
     [idToken, defaultTopic, language, defaultSubject, defaultDocumentId, defaultDocumentTitle, startListeningLoop]
   );
 
-  // Gracefully ends active session
-  const endSession = useCallback(() => {
+  // Resumes an existing previous Teaching Session
+  const resumeSession = useCallback(
+    async (sessionId: string) => {
+      if (!idToken) {
+        setError('Authentication required to resume session.');
+        return null;
+      }
+
+      setTutorState('CONNECTING');
+      setError(null);
+      setInterimTranscript('');
+      setFinalTranscript('');
+      setActiveAssessmentQuestion(null);
+
+      try {
+        const { session: resumedSession, context } = await liveTutorApiClient.resumeTeachingSession(idToken, sessionId);
+        setSession(resumedSession);
+        setSessionContext(context);
+        setTeachingState(resumedSession.teachingState);
+
+        // If there was an active assessment question in the session, restore it
+        if (context.currentQuestionId && context.currentMode === 'ASSESSMENT') {
+          try {
+            const q = await liveTutorApiClient.getQuestion(idToken, context.currentQuestionId);
+            setActiveAssessmentQuestion(q);
+            setTutorState('WAITING_FOR_STUDENT');
+          } catch (qErr) {
+            console.warn('[LiveTutor] Could not restore active assessment question:', qErr);
+          }
+        }
+
+        startListeningLoop();
+        return resumedSession;
+      } catch (err: any) {
+        setError(err.message || 'Failed to resume session');
+        setTutorState('IDLE');
+        return null;
+      }
+    },
+    [idToken, startListeningLoop]
+  );
+
+  // Pauses current session
+  const pauseSession = useCallback(async () => {
     speechToTextService.stop();
     textToSpeechService.cancel();
+    if (session && idToken) {
+      try {
+        await liveTutorApiClient.updateTeachingSession(idToken, session.id, { status: 'paused' });
+      } catch {
+        // ignore
+      }
+    }
+    setTutorState('IDLE');
+  }, [session, idToken]);
+
+  // Gracefully ends active session
+  const endSession = useCallback(async () => {
+    speechToTextService.stop();
+    textToSpeechService.cancel();
+    if (session && idToken) {
+      try {
+        await liveTutorApiClient.updateTeachingSession(idToken, session.id, { status: 'completed' });
+      } catch {
+        // ignore
+      }
+    }
     setTutorState('IDLE');
     setInterimTranscript('');
     setFinalTranscript('');
-  }, []);
+    setActiveAssessmentQuestion(null);
+  }, [session, idToken]);
 
   // Sends typed fallback text message
   const submitTypedMessage = useCallback(
@@ -283,6 +408,46 @@ export function useLiveTutor({
     [submitTurn, tutorState]
   );
 
+  // Requests a hint for active assessment
+  const requestAssessmentHint = useCallback(async () => {
+    await submitTypedMessage('Can you give me a hint for this question?');
+  }, [submitTypedMessage]);
+
+  // Gives up on active assessment
+  const giveUpAssessment = useCallback(async () => {
+    await submitTypedMessage("I can't solve this question. Please explain the solution.");
+  }, [submitTypedMessage]);
+
+  // Submits assessment answer via AssessmentRenderer
+  const submitAssessmentAnswer = useCallback(
+    async (submissionPayload: import('@ai-tutor/shared').AssessmentSubmissionRequest) => {
+      if (!idToken || !activeAssessmentQuestion) return null;
+      setTutorState('THINKING');
+      try {
+        const submission = await liveTutorApiClient.submitAssessmentAnswer(
+          idToken,
+          activeAssessmentQuestion.questionId,
+          submissionPayload
+        );
+        setActiveAssessmentQuestion(null);
+        setTutorState('LISTENING');
+        // Announce feedback back to live tutor loop
+        if (submission.evaluation) {
+          const feedbackMsg = submission.evaluation.correct
+            ? `I solved it correctly! Got ${submission.evaluation.score}/${submission.evaluation.maxScore}.`
+            : `I attempted the question. Score: ${submission.evaluation.score}/${submission.evaluation.maxScore}. ${submission.evaluation.feedback}`;
+          await submitTurn(feedbackMsg);
+        }
+        return submission;
+      } catch (subErr: any) {
+        setError(subErr.message || 'Failed to submit answer');
+        setTutorState('WAITING_FOR_STUDENT');
+        return null;
+      }
+    },
+    [idToken, activeAssessmentQuestion, submitTurn]
+  );
+
   // Replays last audio
   const replaySpeech = useCallback(() => {
     if (lastSpokenText && tutorState !== 'SPEAKING') {
@@ -292,16 +457,16 @@ export function useLiveTutor({
       textToSpeechService.speak(lastSpokenText, languageRef.current, {
         onStart: () => {},
         onEnd: () => {
-          setTutorState('LISTENING');
+          setTutorState(activeAssessmentQuestion ? 'WAITING_FOR_STUDENT' : 'LISTENING');
           speechToTextService.resumeCapture();
         },
         onError: () => {
-          setTutorState('LISTENING');
+          setTutorState(activeAssessmentQuestion ? 'WAITING_FOR_STUDENT' : 'LISTENING');
           speechToTextService.resumeCapture();
         },
       });
     }
-  }, [lastSpokenText, tutorState]);
+  }, [lastSpokenText, tutorState, activeAssessmentQuestion]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -317,17 +482,28 @@ export function useLiveTutor({
     sessionContext,
     teachingState,
     teacherResponse,
+    activeAssessmentQuestion,
+    activeTutorAction,
     isListening: tutorState === 'LISTENING',
     isSpeaking: tutorState === 'SPEAKING',
     isInterrupting: tutorState === 'INTERRUPTING',
+    isWaitingForStudent: tutorState === 'WAITING_FOR_STUDENT',
     isLoading: tutorState === 'CONNECTING' || tutorState === 'THINKING',
     error,
     interimTranscript,
     finalTranscript,
     latencies,
+    micEnabled,
+    setMicEnabled: setMicrophoneEnabled,
+    toggleMic,
     startSession,
+    resumeSession,
+    pauseSession,
     endSession,
     submitTypedMessage,
+    requestAssessmentHint,
+    giveUpAssessment,
+    submitAssessmentAnswer,
     replaySpeech,
     isSttSupported: speechToTextService.isSupported(),
     isTtsSupported: textToSpeechService.isSupported(),

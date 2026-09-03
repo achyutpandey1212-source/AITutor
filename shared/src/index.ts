@@ -168,11 +168,30 @@ export const TeachingActionSchema = z.enum([
 ]);
 export type TeachingAction = z.infer<typeof TeachingActionSchema>;
 
+export const TutorActionTypeSchema = z.enum([
+  'SPEAK',
+  'ASK_ASSESSMENT',
+  'WAIT_FOR_ANSWER',
+  'EXPLAIN',
+  'CONTINUE_TEACHING',
+]);
+export type TutorActionType = z.infer<typeof TutorActionTypeSchema>;
+
+export const TutorActionSchema = z.object({
+  type: TutorActionTypeSchema,
+  questionType: z.enum(['MCQ', 'SHORT_ANSWER', 'LONG_ANSWER', 'NUMERICAL', 'IMAGE_SOLUTION']).optional(),
+  difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
+  reason: z.string().optional(),
+  questionId: z.string().optional(),
+});
+export type TutorAction = z.infer<typeof TutorActionSchema>;
+
 export const TeacherResponseSchema = z.object({
   responseText: z.string().min(1),
   language: z.enum(['english', 'hindi', 'hinglish']).default('english'),
   intent: TeacherIntentSchema,
   teachingAction: TeachingActionSchema,
+  action: TutorActionSchema.optional(),
   assessment: AssessmentResultSchema.optional(),
   stateUpdate: TeachingStateSchema.partial().optional(),
 });
@@ -206,8 +225,32 @@ export const KnowledgeContextSchema = z.object({
 export type KnowledgeContext = z.infer<typeof KnowledgeContextSchema>;
 
 // F. Teaching Session
-export const TeachingSessionStatusSchema = z.enum(['active', 'completed']);
+export const TeachingSessionStatusSchema = z.enum(['created', 'active', 'paused', 'completed']);
 export type TeachingSessionStatus = z.infer<typeof TeachingSessionStatusSchema>;
+
+export const AssessmentInteractionStatusSchema = z.enum([
+  'NONE',
+  'GENERATING',
+  'WAITING_FOR_STUDENT',
+  'SUBMITTING',
+  'EVALUATING',
+  'COMPLETED',
+]);
+export type AssessmentInteractionStatus = z.infer<typeof AssessmentInteractionStatusSchema>;
+
+export const TutorConversationMessageSchema = z.object({
+  id: z.string().optional(),
+  turnId: z.string().optional(),
+  role: z.enum(['student', 'tutor']),
+  type: z.enum(['voice', 'text', 'assessment', 'system']).default('text'),
+  text: z.string().min(1),
+  intent: TeacherIntentSchema.optional(),
+  concept: z.string().optional(),
+  questionId: z.string().optional(),
+  assessmentSessionId: z.string().optional(),
+  timestamp: z.string(),
+});
+export type TutorConversationMessage = z.infer<typeof TutorConversationMessageSchema>;
 
 export const TeachingSessionSchema = z.object({
   id: z.string(),
@@ -224,15 +267,9 @@ export const TeachingSessionSchema = z.object({
   currentMode: z.enum(['TEACHING', 'ASSESSMENT', 'FEEDBACK', 'REVIEW']).default('TEACHING'),
   assessmentSessionId: z.string().optional(),
   currentQuestionId: z.string().optional(),
-  conversationHistory: z.array(
-    z.object({
-      id: z.string().optional(),
-      role: z.enum(['student', 'tutor']),
-      text: z.string().min(1),
-      intent: TeacherIntentSchema.optional(),
-      timestamp: z.string(),
-    })
-  ).default([]),
+  assessmentStatus: AssessmentInteractionStatusSchema.optional(),
+  progressSummary: z.string().optional(),
+  conversationHistory: z.array(TutorConversationMessageSchema).default([]),
   startedAt: z.string(),
   updatedAt: z.string(),
 });
@@ -246,15 +283,6 @@ export const TutorSessionModeSchema = z.enum([
   'REVIEW',
 ]);
 export type TutorSessionMode = z.infer<typeof TutorSessionModeSchema>;
-
-export const TutorConversationMessageSchema = z.object({
-  id: z.string().optional(),
-  role: z.enum(['student', 'tutor']),
-  text: z.string().min(1),
-  intent: TeacherIntentSchema.optional(),
-  timestamp: z.string(),
-});
-export type TutorConversationMessage = z.infer<typeof TutorConversationMessageSchema>;
 
 export const TutorSessionContextSchema = z.object({
   sessionId: z.string().min(1),
@@ -270,6 +298,8 @@ export const TutorSessionContextSchema = z.object({
   assessmentSessionId: z.string().optional(),
   currentQuestionId: z.string().optional(),
   currentMode: TutorSessionModeSchema.default('TEACHING'),
+  assessmentStatus: AssessmentInteractionStatusSchema.default('NONE'),
+  turnId: z.string().optional(),
   updatedAt: z.string(),
 });
 export type TutorSessionContext = z.infer<typeof TutorSessionContextSchema>;
@@ -345,6 +375,9 @@ export const VoiceInteractionResponseSchema = z.object({
   teachingState: TeachingStateSchema,
   normalizedSpeechText: z.string(),
   sessionContext: TutorSessionContextSchema.optional(),
+  assessmentQuestion: z.lazy(() => ClientAssessmentQuestionSchema).optional(),
+  tutorAction: TutorActionSchema.optional(),
+  turnId: z.string().optional(),
   latency: LatencyMetricsSchema.optional(),
 });
 export type VoiceInteractionResponse = z.infer<typeof VoiceInteractionResponseSchema>;
@@ -359,11 +392,31 @@ export const CreateSessionRequestSchema = z.object({
 });
 export type CreateSessionRequest = z.infer<typeof CreateSessionRequestSchema>;
 
+export const UpdateSessionRequestSchema = z.object({
+  status: TeachingSessionStatusSchema.optional(),
+  currentConcept: z.string().optional(),
+  currentMode: TutorSessionModeSchema.optional(),
+  assessmentStatus: AssessmentInteractionStatusSchema.optional(),
+  progressSummary: z.string().optional(),
+});
+export type UpdateSessionRequest = z.infer<typeof UpdateSessionRequestSchema>;
+
 export const RespondSessionRequestSchema = z.object({
   message: z.string().min(1, 'Student message is required'),
   knowledgeContext: KnowledgeContextSchema.optional(),
+  turnId: z.string().optional(),
 });
 export type RespondSessionRequest = z.infer<typeof RespondSessionRequestSchema>;
+
+export const RespondSessionResponseSchema = z.object({
+  teacherResponse: TeacherResponseSchema,
+  teachingState: TeachingStateSchema,
+  sessionContext: TutorSessionContextSchema.optional(),
+  assessmentQuestion: z.lazy(() => ClientAssessmentQuestionSchema).optional(),
+  tutorAction: TutorActionSchema.optional(),
+  turnId: z.string().optional(),
+});
+export type RespondSessionResponse = z.infer<typeof RespondSessionResponseSchema>;
 
 export const CreateLessonPlanRequestSchema = z.object({
   topic: z.string().min(1, 'Topic is required'),

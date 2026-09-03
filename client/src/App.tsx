@@ -21,7 +21,7 @@ export const App: React.FC = () => {
   const [idToken, setIdToken] = useState<string>('');
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [currentPath, setCurrentPath] = useState<string>(
-    typeof window !== 'undefined' ? window.location.pathname || '/' : '/'
+    typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` || '/' : '/'
   );
 
   // Sync route with browser history
@@ -34,7 +34,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname || '/');
+      setCurrentPath(`${window.location.pathname}${window.location.search}` || '/');
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -97,15 +97,19 @@ export const App: React.FC = () => {
 
   const isAuthenticated = Boolean(currentUser && idToken);
 
+  const pathname = currentPath.split('?')[0] || '/';
+  const searchStr = currentPath.includes('?') ? currentPath.slice(currentPath.indexOf('?')) : '';
+  const queryParams = new URLSearchParams(searchStr);
+
   // Protected Route Guards
   const protectedRoutes = ['/dashboard', '/tutor', '/practice', '/bookmarks', '/mistakes', '/analytics', '/documents'];
-  if (!isAuthenticated && protectedRoutes.includes(currentPath)) {
+  if (!isAuthenticated && protectedRoutes.includes(pathname)) {
     return <SignInPage onNavigate={navigate} onSuccess={() => navigate('/dashboard')} />;
   }
 
   // Render appropriate page view
   const renderCurrentPage = () => {
-    switch (currentPath) {
+    switch (pathname) {
       case '/':
         return <LandingPage isAuthenticated={isAuthenticated} onNavigate={navigate} />;
 
@@ -130,7 +134,7 @@ export const App: React.FC = () => {
         return <TutorPage idToken={idToken} onNavigate={navigate} />;
 
       case '/practice':
-        return <PracticePage idToken={idToken} onNavigate={navigate} />;
+        return <PracticePage idToken={idToken} onNavigate={navigate} initialQuestionId={queryParams.get('questionId') || undefined} />;
 
       case '/bookmarks':
         return <BookmarksPage idToken={idToken} onNavigate={navigate} />;

@@ -4,9 +4,13 @@ import { AssessmentPracticeScreen } from '../assessment/AssessmentPracticeScreen
 export interface PracticePageProps {
   idToken: string;
   onNavigate: (path: string) => void;
+  initialQuestionId?: string;
 }
 
-export const PracticePage: React.FC<PracticePageProps> = ({ idToken, onNavigate }) => {
+export const PracticePage: React.FC<PracticePageProps> = ({ idToken, onNavigate, initialQuestionId }) => {
+  const queryParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const effectiveQuestionId = initialQuestionId || queryParams?.get('questionId') || undefined;
+
   return (
     <div style={{ maxWidth: '800px', margin: '1.5rem auto', padding: '1rem', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -19,7 +23,7 @@ export const PracticePage: React.FC<PracticePageProps> = ({ idToken, onNavigate 
         </button>
       </div>
 
-      <AssessmentPracticeScreen idToken={idToken} />
+      <AssessmentPracticeScreen idToken={idToken} initialQuestionId={effectiveQuestionId} />
     </div>
   );
 };

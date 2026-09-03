@@ -416,6 +416,73 @@ export class LiveTutorApiClient {
     return json.data;
   }
 
+  async listTeachingSessions(
+    idToken: string
+  ): Promise<TeachingSession[]> {
+    const res = await fetch('/api/teaching/sessions', {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: ApiResponse<TeachingSession[]> = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return [];
+    }
+
+    return json.data;
+  }
+
+  async updateTeachingSession(
+    idToken: string,
+    sessionId: string,
+    data: import('@ai-tutor/shared').UpdateSessionRequest
+  ): Promise<TeachingSession | null> {
+    const res = await fetch(`/api/teaching/sessions/${sessionId}`, {
+      method: 'PATCH',
+      headers: this.getHeaders(idToken),
+      body: JSON.stringify(data),
+    });
+
+    const json: ApiResponse<TeachingSession> = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      return null;
+    }
+
+    return json.data;
+  }
+
+  async resumeTeachingSession(
+    idToken: string,
+    sessionId: string
+  ): Promise<{ session: TeachingSession; context: import('@ai-tutor/shared').TutorSessionContext }> {
+    const res = await fetch(`/api/teaching/sessions/${sessionId}/resume`, {
+      method: 'POST',
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: ApiResponse<{ session: TeachingSession; context: import('@ai-tutor/shared').TutorSessionContext }> = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Failed to resume session (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
+
+  async getQuestion(
+    idToken: string,
+    questionId: string
+  ): Promise<import('@ai-tutor/shared').ClientAssessmentQuestion> {
+    const res = await fetch(`/api/assessments/questions/${questionId}`, {
+      headers: this.getHeaders(idToken),
+    });
+
+    const json: ApiResponse<import('@ai-tutor/shared').ClientAssessmentQuestion> = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Failed to fetch question (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
+
   async getQuestionHistory(
     idToken: string,
     filter?: { subject?: string; concept?: string; sessionId?: string }

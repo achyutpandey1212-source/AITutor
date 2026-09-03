@@ -49,10 +49,24 @@ export class TextToSpeechService {
     return matched || this.voices[0] || null;
   }
 
+  private splitSentences(text: string): string[] {
+    const raw = text.trim();
+    if (!raw) return [];
+    // Split by punctuation followed by space or newline, while keeping sensible chunk sizes
+    const chunks = raw
+      .replace(/([.!?])\s+/g, '$1|~|')
+      .split('|~|')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    return chunks.length > 0 ? chunks : [raw];
+  }
+
   public speak(
     normalizedText: string,
     language: 'english' | 'hindi' | 'hinglish' = 'english',
-    callbacks?: TTSPlaybackCallbacks
+    callbacks?: TTSPlaybackCallbacks,
+    _turnId?: string
   ): void {
     if (!this.isSupported() || !this.synth) {
       callbacks?.onError?.('Speech synthesis is not supported in this browser.');
@@ -64,50 +78,64 @@ export class TextToSpeechService {
       return;
     }
 
-    // Cancel any previous active playback and increment generation ID
+    // Cancel any previous playback and invalidate stale generation IDs
     this.cancel();
     const currentUtteranceId = ++this.activeUtteranceId;
 
-    const utterance = new SpeechSynthesisUtterance(normalizedText);
+    const sentences = this.splitSentences(normalizedText);
     const voice = this.getBestVoice(language);
-    if (voice) {
-      utterance.voice = voice;
-      utterance.lang = voice.lang;
-    } else {
-      utterance.lang = language === 'hindi' ? 'hi-IN' : language === 'hinglish' ? 'en-IN' : 'en-US';
-    }
+    const langCode = language === 'hindi' ? 'hi-IN' : language === 'hinglish' ? 'en-IN' : 'en-US';
 
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+    let hasStarted = false;
 
-    utterance.onstart = () => {
-      if (currentUtteranceId !== this.activeUtteranceId) return;
-      this.isSpeaking = true;
-      callbacks?.onStart?.();
-    };
+    sentences.forEach((sentence, idx) => {
+      const isFirst = idx === 0;
+      const isLast = idx === sentences.length - 1;
 
-    utterance.onend = () => {
-      if (currentUtteranceId !== this.activeUtteranceId) return;
-      this.isSpeaking = false;
-      callbacks?.onEnd?.();
-    };
-
-    utterance.onerror = (e: any) => {
-      if (currentUtteranceId !== this.activeUtteranceId) return;
-      this.isSpeaking = false;
-      // Stale or cancelled utterances must NOT invoke callbacks or resume previous loops
-      if (e.error !== 'interrupted' && e.error !== 'canceled') {
-        callbacks?.onError?.(`Audio playback failed: ${e.error}`);
+      const utterance = new SpeechSynthesisUtterance(sentence);
+      if (voice) {
+        utterance.voice = voice;
+        utterance.lang = voice.lang;
+      } else {
+        utterance.lang = langCode;
       }
-    };
 
-    try {
-      this.synth.speak(utterance);
-    } catch (err: any) {
-      if (currentUtteranceId !== this.activeUtteranceId) return;
-      this.isSpeaking = false;
-      callbacks?.onError?.(err.message || 'Failed to speak text');
-    }
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      utterance.onstart = () => {
+        if (currentUtteranceId !== this.activeUtteranceId) return;
+        this.isSpeaking = true;
+        if (isFirst && !hasStarted) {
+          hasStarted = true;
+          callbacks?.onStart?.();
+        }
+      };
+
+      utterance.onend = () => {
+        if (currentUtteranceId !== this.activeUtteranceId) return;
+        if (isLast) {
+          this.isSpeaking = false;
+          callbacks?.onEnd?.();
+        }
+      };
+
+      utterance.onerror = (e: any) => {
+        if (currentUtteranceId !== this.activeUtteranceId) return;
+        this.isSpeaking = false;
+        if (e.error !== 'interrupted' && e.error !== 'canceled') {
+          callbacks?.onError?.(`Audio playback failed: ${e.error}`);
+        }
+      };
+
+      try {
+        this.synth?.speak(utterance);
+      } catch (err: any) {
+        if (currentUtteranceId !== this.activeUtteranceId) return;
+        this.isSpeaking = false;
+        callbacks?.onError?.(err.message || 'Failed to speak text');
+      }
+    });
   }
 
   public cancel(): void {

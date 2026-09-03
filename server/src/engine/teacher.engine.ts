@@ -66,6 +66,9 @@ export class TeacherEngine {
       if (!rawData.updatedState) {
         rawData.updatedState = currentState;
       }
+      if (!rawData.action) {
+        rawData.action = { type: 'CONTINUE_TEACHING' };
+      }
     }
 
     // Validate structured AI output with Zod contract
