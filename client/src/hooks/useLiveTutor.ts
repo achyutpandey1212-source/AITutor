@@ -176,7 +176,12 @@ export function useLiveTutor({
 
         if (response.assessmentQuestion) {
           setActiveAssessmentQuestion(response.assessmentQuestion);
-        } else if (response.tutorAction?.type === 'EXPLAIN' || response.tutorAction?.type === 'CONTINUE_TEACHING') {
+        } else if (
+          response.tutorAction?.type === 'EXPLAIN' ||
+          response.tutorAction?.type === 'CONTINUE_TEACHING' ||
+          response.tutorAction?.type === 'ASK_CONVERSATIONAL' ||
+          response.tutorAction?.type === 'SPEAK'
+        ) {
           setActiveAssessmentQuestion(null);
         }
 
@@ -205,7 +210,35 @@ export function useLiveTutor({
             lastUpdated: new Date().toISOString(),
           }));
         } else {
-          if (/\b(snell|formula|equation|sin\b|ratio|\b=|\blaw of refraction)\b/i.test(textLower)) {
+          // Check blueprint visual requirements first as single source of truth
+          const bp = response.sessionContext?.lessonBlueprint;
+          const currentConceptId =
+            response.sessionContext?.lessonProgress?.currentConceptId ||
+            bp?.conceptSequence?.[0]?.id;
+          const bpVisualReq = bp?.visualRequirements?.find(
+            (v: any) => v.conceptId === currentConceptId && v.visualType !== 'NONE'
+          );
+
+          if (bpVisualReq?.visualType === 'FORMULA') {
+            nextVisualType = 'FORMULA';
+            nextVisualData = {
+              formulaLabel: bpVisualReq.purpose.toUpperCase(),
+              formula: bpVisualReq.keyElements?.[0] || 'Formula',
+              concept: response.sessionContext?.activeConcept || "Mathematical Formula",
+              explanation: bpVisualReq.purpose,
+              variables: (bpVisualReq.keyElements || []).map((el: string) => ({
+                symbol: el,
+                meaning: el,
+              })),
+            };
+          } else if (bpVisualReq?.visualType === 'DIAGRAM') {
+            nextVisualType = 'DIAGRAM';
+            nextVisualData = {
+              heading: bpVisualReq.purpose,
+              concept: response.sessionContext?.activeConcept || 'Visual Diagram',
+              elements: bpVisualReq.keyElements || [],
+            };
+          } else if (/\b(snell|formula|equation|sin\b|ratio|\b=|\blaw of refraction)\b/i.test(textLower)) {
             nextVisualType = 'FORMULA';
             nextVisualData = {
               formulaLabel: "SNELL'S LAW OF REFRACTION",

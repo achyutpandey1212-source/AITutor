@@ -1,5 +1,7 @@
 import http from 'http';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import { createApp } from './app.js';
 import * as firebaseConfig from './config/firebase.js';
@@ -10,6 +12,10 @@ import { evaluateAssessmentTrigger } from './assessment/assessment-triggers.util
 import { assessmentSubmissionService } from './assessment/assessment-submission.service.js';
 import type { AssessmentQuestion, TeachingState } from '@ai-tutor/shared';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config();
 
 let server: http.Server;

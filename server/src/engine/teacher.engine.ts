@@ -63,11 +63,26 @@ export class TeacherEngine {
       if (rawData.assessment && typeof rawData.assessment === 'object' && !rawData.assessment.correctness) {
         rawData.assessment.correctness = 'unclear';
       }
+      if (rawData.stateUpdate && typeof rawData.stateUpdate === 'object') {
+        const validActions = ['explain', 'give_example', 'ask_question', 'clarify', 'advance', 'review'];
+        if (['assess', 'test', 'quiz', 'question'].includes(rawData.stateUpdate.recommendedNextAction)) {
+          rawData.stateUpdate.recommendedNextAction = 'ask_question';
+        } else if (!validActions.includes(rawData.stateUpdate.recommendedNextAction)) {
+          rawData.stateUpdate.recommendedNextAction = 'explain';
+        }
+      }
       if (!rawData.updatedState) {
         rawData.updatedState = currentState;
       }
       if (!rawData.action) {
-        rawData.action = { type: 'CONTINUE_TEACHING' };
+        if (
+          rawData.intent === 'question' ||
+          (typeof rawData.responseText === 'string' && /\?\s*$/i.test(rawData.responseText.trim()))
+        ) {
+          rawData.action = { type: 'ASK_CONVERSATIONAL', reason: 'conversational_question' };
+        } else {
+          rawData.action = { type: 'CONTINUE_TEACHING' };
+        }
       }
     }
 

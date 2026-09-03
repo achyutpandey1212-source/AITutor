@@ -1,5 +1,7 @@
 import http from 'http';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import { createApp } from './app.js';
 import * as firebaseConfig from './config/firebase.js';
@@ -9,6 +11,10 @@ import { AssessmentQuestionModel } from './models/assessment-question.model.js';
 import { isValidObjectId } from './utils/objectid.util.js';
 import { isMeaningfulBargeIn } from '@ai-tutor/shared';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config();
 
 let server: http.Server;

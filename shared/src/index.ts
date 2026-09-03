@@ -170,6 +170,7 @@ export type TeachingAction = z.infer<typeof TeachingActionSchema>;
 
 export const TutorActionTypeSchema = z.enum([
   'SPEAK',
+  'ASK_CONVERSATIONAL',
   'ASK_ASSESSMENT',
   'WAIT_FOR_ANSWER',
   'EXPLAIN',
@@ -250,7 +251,355 @@ export const TutorConversationMessageSchema = z.object({
   assessmentSessionId: z.string().optional(),
   timestamp: z.string(),
 });
-export type TutorConversationMessage = z.infer<typeof TutorConversationMessageSchema>;
+// ==========================================
+// 4b. Lesson Planner 2.0 Contracts (Adaptive Teaching Blueprint)
+// ==========================================
+
+export const ConceptDepthSchema = z.enum(['INTRODUCTORY', 'STANDARD', 'DEEP']);
+export type ConceptDepth = z.infer<typeof ConceptDepthSchema>;
+
+export const LessonSegmentTypeSchema = z.enum([
+  'HOOK',
+  'EXPLANATION',
+  'EXAMPLE',
+  'VISUAL_DEMONSTRATION',
+  'CONVERSATIONAL_CHECK',
+  'FORMAL_ASSESSMENT',
+  'RECAP',
+  'APPLICATION',
+]);
+export type LessonSegmentType = z.infer<typeof LessonSegmentTypeSchema>;
+
+export const VisualRetentionTechniqueSchema = z.enum([
+  'REAL_WORLD_HOOK',
+  'ANALOGY',
+  'STEP_BY_STEP_REVEAL',
+  'CONTRAST',
+  'HIGHLIGHT',
+  'PROGRESSIVE_DIAGRAM',
+  'EXAMPLE',
+  'MISCONCEPTION_REVEAL',
+  'RECAP',
+  'QUICK_CHECK',
+]);
+export type VisualRetentionTechnique = z.infer<typeof VisualRetentionTechniqueSchema>;
+
+export const BlueprintVisualTypeSchema = z.enum([
+  'TITLE',
+  'TEXT',
+  'DIAGRAM',
+  'FORMULA',
+  'EXAMPLE',
+  'COMPARISON',
+  'PROCESS',
+  'HIGHLIGHT',
+  'RECAP',
+  'QUESTION_PROMPT',
+  'ILLUSTRATION',
+  'TIMELINE',
+  'GRAPH',
+  'NONE',
+]);
+export type BlueprintVisualType = z.infer<typeof BlueprintVisualTypeSchema>;
+
+export const VisualSegmentSchema = z.object({
+  id: z.string(),
+  conceptId: z.string(),
+  purpose: z.string(),
+  visualType: BlueprintVisualTypeSchema,
+  retentionTechnique: VisualRetentionTechniqueSchema.default('STEP_BY_STEP_REVEAL'),
+  keyElements: z.array(z.string()).default([]),
+  continuityNote: z.string().optional(),
+  buildsUponSegmentId: z.string().optional(),
+});
+export type VisualSegment = z.infer<typeof VisualSegmentSchema>;
+
+export const AssessmentOpportunityReasonSchema = z.enum([
+  'CONCEPT_CHECK',
+  'MISCONCEPTION_CHECK',
+  'APPLICATION_CHECK',
+  'EXAM_PRACTICE',
+  'STUDENT_REQUEST',
+  'HIGH_YIELD',
+]);
+export type AssessmentOpportunityReason = z.infer<typeof AssessmentOpportunityReasonSchema>;
+
+export const LessonSegmentSchema = z.object({
+  id: z.string(),
+  conceptId: z.string(),
+  title: z.string(),
+  type: LessonSegmentTypeSchema,
+  purpose: z.string(),
+  teachingObjective: z.string(),
+  teachingIntent: z.string().optional(),
+  estimatedMinutes: z.number().positive(),
+  estimatedDuration: z.number().positive().optional(),
+  teacherFocus: z.string(),
+  keyTeachingPoints: z.array(z.string()).default([]),
+  visualRequirementIds: z.array(z.string()).default([]),
+  visualSequence: z.array(VisualSegmentSchema).default([]),
+  assessmentOpportunityIds: z.array(z.string()).default([]),
+  conversationalCheck: z.object({
+    possible: z.boolean().default(false),
+    promptHint: z.string().optional(),
+    promptQuestion: z.string().optional(),
+  }).optional(),
+  formalAssessmentOpportunity: z.object({
+    possible: z.boolean().default(false),
+    reason: AssessmentOpportunityReasonSchema.optional(),
+    recommendedType: z.string().optional(),
+  }).optional(),
+  completionCriteria: z.string(),
+});
+export type LessonSegment = z.infer<typeof LessonSegmentSchema>;
+export type TeachingSegment = LessonSegment;
+export const TeachingSegmentSchema = LessonSegmentSchema;
+
+export const LessonLearningObjectiveSchema = z.object({
+  primary: z.string(),
+  secondary: z.array(z.string()).default([]),
+  measurableOutcomes: z.array(z.string()).default([]),
+});
+export type LessonLearningObjective = z.infer<typeof LessonLearningObjectiveSchema>;
+
+export const LessonTimeModeSchema = z.enum(['RAPID', 'STANDARD', 'DEEP']);
+export type LessonTimeMode = z.infer<typeof LessonTimeModeSchema>;
+
+export const LessonTimePlanSchema = z.object({
+  requestedMinutes: z.number().positive(),
+  estimatedMinutes: z.number().positive(),
+  mode: LessonTimeModeSchema,
+});
+export type LessonTimePlan = z.infer<typeof LessonTimePlanSchema>;
+
+export const TeachingApproachSchema = z.enum([
+  'CONCEPT_FIRST',
+  'EXAM_FIRST',
+  'EXAMPLE_FIRST',
+  'PROBLEM_FIRST',
+  'MIXED',
+]);
+export type TeachingApproach = z.infer<typeof TeachingApproachSchema>;
+
+export const ExplanationDepthSchema = z.enum(['MINIMAL', 'STANDARD', 'DETAILED']);
+export type ExplanationDepth = z.infer<typeof ExplanationDepthSchema>;
+
+export const InteractionLevelSchema = z.enum(['LOW', 'MEDIUM', 'HIGH']);
+export type InteractionLevel = z.infer<typeof InteractionLevelSchema>;
+
+export const TeachingStrategySchema = z.object({
+  approach: TeachingApproachSchema,
+  explanationDepth: ExplanationDepthSchema,
+  interactionLevel: InteractionLevelSchema,
+  examFocus: z.number().min(0).max(1),
+  conceptualFocus: z.number().min(0).max(1),
+});
+export type TeachingStrategy = z.infer<typeof TeachingStrategySchema>;
+
+export const ConceptImportanceSchema = z.enum([
+  'CORE',
+  'IMPORTANT',
+  'SUPPORTING',
+  'OPTIONAL',
+]);
+export type ConceptImportance = z.infer<typeof ConceptImportanceSchema>;
+
+export const ExamRelevanceSchema = z.enum(['HIGH', 'MEDIUM', 'LOW', 'UNKNOWN']);
+export type ExamRelevance = z.infer<typeof ExamRelevanceSchema>;
+
+export const LessonConceptSchema = z.object({
+  id: z.string(),
+  conceptId: z.string().optional(),
+  title: z.string(),
+  summary: z.string(),
+  purpose: z.string().optional(),
+  importance: ConceptImportanceSchema,
+  prerequisiteConceptIds: z.array(z.string()).default([]),
+  prerequisites: z.array(z.string()).default([]),
+  estimatedMinutes: z.number().positive(),
+  depth: ConceptDepthSchema.default('STANDARD'),
+  teachingApproach: TeachingApproachSchema.default('CONCEPT_FIRST'),
+  examRelevance: ExamRelevanceSchema.default('HIGH'),
+  keyPoints: z.array(z.string()).default([]),
+  commonMisconceptions: z.array(z.string()).default([]),
+  conversationalCheckOpportunity: z.boolean().default(false),
+  formalAssessmentOpportunity: z.boolean().default(false),
+  sourceReferences: z.array(z.string()).default([]),
+  visualRequirements: z.array(z.string()).default([]),
+  visualSegmentIds: z.array(z.string()).default([]),
+  visualSegments: z.array(VisualSegmentSchema).default([]),
+  assessmentOpportunity: z.boolean().default(false),
+  segments: z.array(LessonSegmentSchema).default([]),
+});
+export type LessonConcept = z.infer<typeof LessonConceptSchema>;
+
+export const LessonAssessmentOpportunitySchema = z.object({
+  id: z.string().optional(),
+  conceptId: z.string(),
+  reason: AssessmentOpportunityReasonSchema,
+  recommendedQuestionTypes: z.array(
+    z.enum([
+      'MCQ',
+      'SHORT_ANSWER',
+      'LONG_ANSWER',
+      'NUMERICAL',
+      'IMAGE_SOLUTION',
+    ])
+  ),
+  priority: z.enum(['HIGH', 'MEDIUM', 'LOW']),
+});
+export type LessonAssessmentOpportunity = z.infer<typeof LessonAssessmentOpportunitySchema>;
+
+export const VisualPrioritySchema = z.enum(['ESSENTIAL', 'HELPFUL', 'OPTIONAL']);
+export type VisualPriority = z.infer<typeof VisualPrioritySchema>;
+
+export const LessonVisualRequirementSchema = z.object({
+  id: z.string().optional(),
+  conceptId: z.string(),
+  required: z.boolean(),
+  priority: VisualPrioritySchema,
+  visualType: BlueprintVisualTypeSchema,
+  purpose: z.string(),
+  keyElements: z.array(z.string()).default([]),
+});
+export type LessonVisualRequirement = z.infer<typeof LessonVisualRequirementSchema>;
+
+export const MarksPotentialSchema = z.enum([
+  'VERY_HIGH',
+  'HIGH',
+  'MEDIUM',
+  'LOW',
+  'UNKNOWN',
+]);
+export type MarksPotential = z.infer<typeof MarksPotentialSchema>;
+
+export const LessonPrioritySchema = z.object({
+  conceptId: z.string(),
+  conceptualImportance: z.number().min(0).max(1),
+  examImportance: z.number().min(0).max(1),
+  marksPotential: MarksPotentialSchema,
+  priorityReason: z.string(),
+});
+export type LessonPriority = z.infer<typeof LessonPrioritySchema>;
+
+export const OpeningStrategySchema = z.enum([
+  'CONTEXT_HOOK',
+  'DIRECT_EXPLANATION',
+  'EXAM_HOOK',
+  'QUESTION_HOOK',
+  'REAL_WORLD_EXAMPLE',
+]);
+export type OpeningStrategy = z.infer<typeof OpeningStrategySchema>;
+
+export const ClosingStrategySchema = z.enum([
+  'RECAP',
+  'FORMAL_ASSESSMENT',
+  'EXAM_PRACTICE',
+  'NEXT_TOPIC',
+  'REVISION_RECOMMENDATION',
+]);
+export type ClosingStrategy = z.infer<typeof ClosingStrategySchema>;
+
+export const AssessmentStrategySchema = z.object({
+  conversationalCheckFrequency: z.string().default('PERIODIC'),
+  formalAssessmentThreshold: z.string().default('AT_KEY_CHECKPOINTS'),
+  restrictedConditions: z.array(z.string()).default([
+    'IMMEDIATELY_AFTER_EVERY_CONCEPT',
+    'DURING_EXPLANATION',
+    'WHEN_STUDENT_IS_STRUGGLING',
+    'WHILE_ASSESSMENT_ACTIVE',
+  ]),
+  highYieldCheckpoints: z.array(z.string()).default([]),
+});
+export type AssessmentStrategy = z.infer<typeof AssessmentStrategySchema>;
+
+export const ConceptVisualPlanSchema = z.object({
+  conceptId: z.string(),
+  segments: z.array(VisualSegmentSchema),
+});
+export type ConceptVisualPlan = z.infer<typeof ConceptVisualPlanSchema>;
+
+export const VisualLessonPlanSchema = z.object({
+  conceptVisualPlans: z.array(ConceptVisualPlanSchema).default([]),
+  continuityGuidelines: z.string().default('Maintain visual continuity across scenes and progressive reveals.'),
+  overallPacingStrategy: z.string().default('Change visual scenes on pedagogical events rather than arbitrary timers.'),
+});
+export type VisualLessonPlan = z.infer<typeof VisualLessonPlanSchema>;
+
+export const LessonBlueprintSchema = z.object({
+  id: z.string(),
+  sessionId: z.string().optional(),
+  topic: z.string().min(1),
+  subject: z.string().default('General'),
+  language: z.enum(['english', 'hindi', 'hinglish']).default('english'),
+  learnerLevel: z.string().default('General'),
+  learningObjective: LessonLearningObjectiveSchema,
+  availableTime: LessonTimePlanSchema.optional(),
+  timePlan: LessonTimePlanSchema,
+  teachingStrategy: TeachingStrategySchema,
+  conceptSequence: z.array(LessonConceptSchema).min(1),
+  importantConcepts: z.array(z.string()).default([]),
+  highYieldPriorities: z.array(LessonPrioritySchema).default([]),
+  examPriorities: z.array(LessonPrioritySchema).default([]),
+  assessmentStrategy: AssessmentStrategySchema.default({}),
+  visualLessonPlan: VisualLessonPlanSchema.default({}),
+  assessmentOpportunities: z.array(LessonAssessmentOpportunitySchema).default([]),
+  visualRequirements: z.array(LessonVisualRequirementSchema).default([]),
+  openingStrategy: OpeningStrategySchema,
+  closingStrategy: ClosingStrategySchema,
+  sourceDocumentIds: z.array(z.string()).default([]),
+  version: z.number().int().default(1),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type LessonBlueprint = z.infer<typeof LessonBlueprintSchema>;
+
+export const LessonProgressStateSchema = z.object({
+  currentConceptId: z.string().optional(),
+  currentSegmentId: z.string().optional(),
+  completedConceptIds: z.array(z.string()).default([]),
+  completedSegmentIds: z.array(z.string()).default([]),
+  skippedConceptIds: z.array(z.string()).default([]),
+  conceptsNeedingWork: z.array(z.string()).default([]),
+  remainingMinutes: z.number().nonnegative().optional(),
+  usedAssessmentOpportunityConceptIds: z.array(z.string()).default([]),
+  shownVisualRequirementConceptIds: z.array(z.string()).default([]),
+  replanningHistory: z.array(
+    z.object({
+      reason: z.string(),
+      timestamp: z.string(),
+      previousConceptId: z.string().optional(),
+      adjustedConceptIds: z.array(z.string()),
+    })
+  ).default([]),
+});
+export type LessonProgressState = z.infer<typeof LessonProgressStateSchema>;
+
+export const CreateLessonBlueprintRequestSchema = z.object({
+  topic: z.string().min(1, 'Topic is required'),
+  subject: z.string().optional(),
+  learnerProfile: LearnerProfileSchema.optional(),
+  sessionId: z.string().optional(),
+  availableMinutes: z.number().positive().default(30),
+  learningGoal: z.string().optional(),
+  documentId: z.string().optional(),
+  knowledgeContext: KnowledgeContextSchema.optional(),
+});
+export type CreateLessonBlueprintRequest = z.infer<typeof CreateLessonBlueprintRequestSchema>;
+
+export const ReplanLessonRequestSchema = z.object({
+  reason: z.string().min(1, 'Reason for replanning is required'),
+  remainingMinutes: z.number().positive().optional(),
+  studentFeedback: z.string().optional(),
+  focusAdjustment: z.enum([
+    'DEEPER_UNDERSTANDING',
+    'EXAM_FOCUS',
+    'SIMPLIFIED',
+    'SPEED_UP',
+    'REVISIT_MISCONCEPTIONS',
+  ]).optional(),
+});
+export type ReplanLessonRequest = z.infer<typeof ReplanLessonRequestSchema>;
 
 export const TeachingSessionSchema = z.object({
   id: z.string(),
@@ -265,6 +614,8 @@ export const TeachingSessionSchema = z.object({
   documentTitle: z.string().optional(),
   teachingState: TeachingStateSchema,
   currentMode: z.enum(['TEACHING', 'ASSESSMENT', 'FEEDBACK', 'REVIEW']).default('TEACHING'),
+  lessonBlueprint: LessonBlueprintSchema.optional(),
+  lessonProgress: LessonProgressStateSchema.optional(),
   assessmentSessionId: z.string().optional(),
   currentQuestionId: z.string().optional(),
   assessmentStatus: AssessmentInteractionStatusSchema.optional(),
@@ -295,6 +646,8 @@ export const TutorSessionContextSchema = z.object({
   conversationHistory: z.array(TutorConversationMessageSchema).default([]),
   activeConcept: z.string().min(1),
   teachingState: TeachingStateSchema,
+  lessonBlueprint: LessonBlueprintSchema.optional(),
+  lessonProgress: LessonProgressStateSchema.optional(),
   assessmentSessionId: z.string().optional(),
   currentQuestionId: z.string().optional(),
   currentMode: TutorSessionModeSchema.default('TEACHING'),
@@ -335,7 +688,7 @@ export const LessonSceneSchema = z.object({
 });
 export type LessonScene = z.infer<typeof LessonSceneSchema>;
 
-export const LessonPlanSchema = z.object({
+export const LegacyLessonPlanSchema = z.object({
   id: z.string(),
   sessionId: z.string().optional(),
   title: z.string().min(1),
@@ -345,6 +698,16 @@ export const LessonPlanSchema = z.object({
   learningObjectives: z.array(z.string()).min(1),
   estimatedDurationSeconds: z.number().min(10),
   scenes: z.array(LessonSceneSchema).min(1),
+});
+export type LegacyLessonPlan = z.infer<typeof LegacyLessonPlanSchema>;
+
+export const LessonPlanSchema = LessonBlueprintSchema.extend({
+  // Backward-compatibility aliases and optional legacy fields
+  title: z.string().optional(),
+  targetLevel: z.string().optional(),
+  learningObjectives: z.array(z.string()).optional(),
+  estimatedDurationSeconds: z.number().optional(),
+  scenes: z.array(LessonSceneSchema).optional(),
 });
 export type LessonPlan = z.infer<typeof LessonPlanSchema>;
 
@@ -389,6 +752,9 @@ export const CreateSessionRequestSchema = z.object({
   documentId: z.string().optional(),
   documentTitle: z.string().optional(),
   learnerProfile: LearnerProfileSchema.optional(),
+  availableMinutes: z.number().positive().optional(),
+  learningGoal: z.string().optional(),
+  planBlueprint: z.boolean().optional(),
 });
 export type CreateSessionRequest = z.infer<typeof CreateSessionRequestSchema>;
 

@@ -25,7 +25,7 @@ Your pedagogical principles:
 2. LANGUAGE: Teach strictly in ${language.toUpperCase()}. If hinglish, blend conversational Hindi in Latin script with English terminology naturally.
 3. CONVERSATIONAL TEACHING: Explain concepts step-by-step. Do not overwhelm the learner with massive walls of text.
 4. MISCONCEPTION DETECTION: Actively detect misconceptions or wrong assumptions. Never pretend the learner understands something they have not demonstrated.
-5. PEDAGOGICAL ACTIONS: Use examples when helpful, ask checking questions when assessment is useful, clarify doubts gently, and encourage curiosity.
+5. CONVERSATIONAL TEACHING VS FORMAL ASSESSMENT: You are a real human-like teacher, not an assessment machine. A question asked during teaching is NOT automatically a formal assessment. During normal teaching, you frequently ask conversational questions to engage the student, check intuition, or prompt thinking (e.g., "What do you think happens when light enters glass?", "Does that make sense?"). These are normal dialogue (ASK_CONVERSATIONAL) and must NOT trigger formal assessment widgets. Use formal assessment (ASK_ASSESSMENT) ONLY when the student explicitly asks to be tested ("test me", "quiz me", "give me an MCQ") or when a formal graded check is pedagogically necessary.
 6. OUTPUT FORMAT: Respond strictly with the requested JSON schema.`;
   }
 
@@ -90,6 +90,36 @@ Knowledge Grounding Rules:
 - Do NOT fabricate facts or claim details exist in the document if they do not.`;
     }
 
+    let blueprintGuidance = '';
+    if (session.lessonBlueprint) {
+      const bp = session.lessonBlueprint;
+      const progress = session.lessonProgress;
+      const currentConceptId = progress?.currentConceptId || bp.conceptSequence[0]?.id;
+      const activeConcept =
+        bp.conceptSequence.find((c) => c.id === currentConceptId) || bp.conceptSequence[0];
+      const activeSegment =
+        activeConcept?.segments?.find((s) => s.id === progress?.currentSegmentId) ||
+        activeConcept?.segments?.[0];
+      const upcoming = bp.conceptSequence
+        .filter((c) => c.id !== activeConcept?.id && !(progress?.completedConceptIds || []).includes(c.id))
+        .map((c) => c.title);
+      const visualReqs = (bp.visualRequirements || []).filter((v) => v.conceptId === activeConcept?.id);
+      const opps = (bp.assessmentOpportunities || []).filter((o) => o.conceptId === activeConcept?.id);
+
+      blueprintGuidance = `
+--- ACTIVE PEDAGOGICAL BLUEPRINT (Lesson Planner 2.0 Roadmap) ---
+- Objective: ${bp.learningObjective.primary}
+- Teaching Strategy: ${bp.teachingStrategy.approach} | Depth: ${bp.teachingStrategy.explanationDepth} | Mode: ${bp.timePlan.mode}
+- Remaining Time: ~${progress?.remainingMinutes ?? bp.timePlan.estimatedMinutes} minutes
+- ACTIVE CONCEPT: "${activeConcept?.title || session.topic}" (Importance: ${activeConcept?.importance || 'CORE'})
+  Summary: ${activeConcept?.summary || 'Core concept'}
+  Active Segment: "${activeSegment?.title || 'Core Explanation'}" (Type: ${activeSegment?.type || 'EXPLANATION'}, Focus: ${activeSegment?.teacherFocus || 'Explanation'})
+  Active Visual Requirement: ${visualReqs.map((v) => `${v.visualType}: ${v.purpose}`).join('; ') || 'Classroom Blackboard'}
+  Assessment Opportunities: ${opps.map((o) => `${o.reason} (${o.recommendedQuestionTypes.join('/')})`).join('; ') || 'None this turn'}
+- Upcoming Concepts: ${upcoming.slice(0, 3).join(' -> ') || 'Concluding session'}
+-----------------------------------------------------------------`;
+    }
+
     return `Topic: "${session.topic}"
 Current Concept: "${currentState.currentConcept || session.currentConcept || session.topic}"
 Learner Level: ${session.learnerProfile.educationLevel || 'General'}
@@ -103,17 +133,21 @@ Current Teaching State:
 - Concepts Needing Work: ${JSON.stringify(currentState.conceptsNeedingWork)}
 - Last Student Action: ${currentState.lastStudentAction}
 - Recommended Next Action: ${currentState.recommendedNextAction}
+${blueprintGuidance}
 ${knowledgeStr}
 Student's Latest Message:
 "${studentMessage}"
 
 Instructions:
-1. Analyze the student's message in context of the topic, current state, and any retrieved study material.${ragGuidance}
+1. Analyze the student's message in context of the topic, current state, active blueprint, and any retrieved study material.${ragGuidance}
 2. Determine if the student asked a question, requested an example, gave an answer to evaluate, or has a misconception.
 3. Formulate an engaging, pedagogically sound response adhering to your persona.
 4. Provide an updated understanding of the student's mastery in stateUpdate (adjust understanding, misconceptions, conceptsMastered, conceptsNeedingWork, and recommendedNextAction).
-5. If the student answered a question, include the "assessment" field with correctness and feedback.
-6. If the student explicitly asked to be tested/quizzed, or if you've explained a key concept and need to verify understanding, set action to {"type": "ASK_ASSESSMENT", "questionType": "MCQ" | "SHORT_ANSWER" | "LONG_ANSWER" | "NUMERICAL" | "IMAGE_SOLUTION", "difficulty": "easy" | "medium" | "hard"}. Introduce the question naturally in responseText (e.g., "Let's check your understanding with a quick problem!"), but NEVER invent or print the question yourself. Otherwise set action to {"type": "CONTINUE_TEACHING"} or {"type": "EXPLAIN"}.`;
+5. If the student answered a previous question or offered an explanation, provide warm, constructive feedback and update the "assessment" field (evaluated: true, correctness: ...).
+6. ACTION SELECTION RULES (STRICT SEPARATION OF CONVERSATIONAL QUESTIONS VS FORMAL ASSESSMENT):
+   - CONVERSATIONAL QUESTION: If you are asking a conversational question to engage the student, check intuition, or prompt reasoning (e.g., "What do you think happens when light enters glass?", "Can you explain that in your own words?", "Does this make sense?"), set action to {"type": "ASK_CONVERSATIONAL", "reason": "conversational engagement"}. The student will answer naturally in voice/text dialogue. This MUST NOT trigger an assessment widget.
+   - FORMAL ASSESSMENT: If the student explicitly asked to be tested/quizzed/given an MCQ/practice (e.g., "test me", "quiz me", "give me an MCQ", "let me practice"), OR if you have finished teaching a major concept and determine a formal scored assessment is pedagogically necessary right now, set action to {"type": "ASK_ASSESSMENT", "questionType": "MCQ" | "SHORT_ANSWER" | "LONG_ANSWER" | "NUMERICAL" | "IMAGE_SOLUTION", "difficulty": "easy" | "medium" | "hard"}. In responseText, warmly introduce the upcoming question (e.g., "Alright, let's test your understanding with a quick problem!"), but NEVER formulate or invent the question text in responseText because AssessmentEngine generates and displays the formal question on the right panel.
+   - Otherwise, set action to {"type": "CONTINUE_TEACHING"} or {"type": "EXPLAIN"}.`;
   }
 
   /**
@@ -126,7 +160,7 @@ Instructions:
   "intent": "explanation" | "example" | "question" | "clarification" | "feedback" | "encouragement",
   "teachingAction": "explain" | "demonstrate" | "assess" | "clarify" | "advance" | "review",
   "action": {
-    "type": "SPEAK" | "ASK_ASSESSMENT" | "WAIT_FOR_ANSWER" | "EXPLAIN" | "CONTINUE_TEACHING",
+    "type": "SPEAK" | "ASK_CONVERSATIONAL" | "ASK_ASSESSMENT" | "WAIT_FOR_ANSWER" | "EXPLAIN" | "CONTINUE_TEACHING",
     "questionType": "MCQ" | "SHORT_ANSWER" | "LONG_ANSWER" | "NUMERICAL" | "IMAGE_SOLUTION",
     "difficulty": "easy" | "medium" | "hard",
     "reason": "string (optional)"

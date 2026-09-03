@@ -3,7 +3,9 @@ import type { Request, Response } from 'express';
 import type {
   ApiResponse,
   ClientAssessmentQuestion,
+  LessonBlueprint,
   LessonPlan,
+  LessonProgressState,
   RespondSessionResponse,
   TeacherResponse,
   TeachingSession,
@@ -13,8 +15,10 @@ import type {
   VoiceInteractionResponse,
 } from '@ai-tutor/shared';
 import {
+  CreateLessonBlueprintRequestSchema,
   CreateLessonPlanRequestSchema,
   CreateSessionRequestSchema,
+  ReplanLessonRequestSchema,
   RespondSessionRequestSchema,
   TeachingStateSchema,
   UpdateSessionRequestSchema,
@@ -32,6 +36,7 @@ import { assessmentEngine } from '../assessment/assessment.engine.js';
 import { assessmentSubmissionService } from '../assessment/assessment-submission.service.js';
 import { wrongQuestionService } from '../assessment/wrong-question.service.js';
 import { evaluateAssessmentTrigger } from '../assessment/assessment-triggers.util.js';
+import { lessonPlannerService } from '../lesson/lesson-planner.service.js';
 
 export const teachingRouter = Router();
 
@@ -47,6 +52,8 @@ function buildSessionContext(sessionDoc: any): TutorSessionContext {
     conversationHistory: sessionDoc.conversationHistory || [],
     activeConcept: sessionDoc.currentConcept || sessionDoc.topic,
     teachingState: sessionDoc.teachingState,
+    lessonBlueprint: sessionDoc.lessonBlueprint,
+    lessonProgress: sessionDoc.lessonProgress,
     assessmentSessionId: sessionDoc.assessmentSessionId,
     currentQuestionId: sessionDoc.currentQuestionId,
     currentMode: sessionDoc.currentMode || 'TEACHING',
@@ -69,6 +76,8 @@ function mapSessionDoc(sessionDoc: any): TeachingSession {
     language: sessionDoc.language || 'english',
     teachingState: sessionDoc.teachingState,
     currentMode: sessionDoc.currentMode || 'TEACHING',
+    lessonBlueprint: sessionDoc.lessonBlueprint,
+    lessonProgress: sessionDoc.lessonProgress,
     assessmentSessionId: sessionDoc.assessmentSessionId,
     currentQuestionId: sessionDoc.currentQuestionId,
     assessmentStatus: sessionDoc.assessmentStatus || 'NONE',
@@ -107,7 +116,16 @@ teachingRouter.post(
         return;
       }
 
-      const { topic, subject, documentId, documentTitle, learnerProfile } = bodyParse.data;
+      const {
+        topic,
+        subject,
+        documentId,
+        documentTitle,
+        learnerProfile,
+        availableMinutes,
+        learningGoal,
+        planBlueprint,
+      } = bodyParse.data;
       let effectiveTopic = topic?.trim();
       let effectiveSubject = subject || req.body?.subject || 'General';
       let effectiveDocTitle = documentTitle;
@@ -142,21 +160,28 @@ teachingRouter.post(
           return;
         }
 
-        effectiveDocTitle = doc.filename;
+        // If topic omitted, fall back to document filename
         if (!effectiveTopic) {
-          effectiveTopic = doc.filename.replace(/\.[^/.]+$/, '');
+          effectiveTopic = doc.filename.replace(/\.[^/.]+$/, '') || 'Document Study Session';
+        }
+        if (!effectiveDocTitle) {
+          effectiveDocTitle = doc.filename;
         }
       }
 
       if (!effectiveTopic) {
-        effectiveTopic = 'General Topic';
+        res.status(400).json({
+          success: false,
+          error: { message: 'Topic is required when no document is provided', code: 'TOPIC_REQUIRED' },
+        });
+        return;
       }
 
       const initialProfile = {
         userId,
         preferredLanguage: learnerProfile?.preferredLanguage || 'english',
-        educationLevel: learnerProfile?.educationLevel || 'beginner',
-        learningGoal: learnerProfile?.learningGoal || `Understand fundamentals of ${effectiveTopic}`,
+        educationLevel: learnerProfile?.educationLevel || 'General',
+        learningGoal: learningGoal || learnerProfile?.learningGoal || 'General understanding',
         explanationStyle: learnerProfile?.explanationStyle || 'simple',
       };
 
@@ -171,6 +196,26 @@ teachingRouter.post(
         recommendedNextAction: 'explain',
       });
 
+      // Optional initial blueprint generation
+      let lessonBlueprint: LessonBlueprint | undefined = undefined;
+      let lessonProgress: LessonProgressState | undefined = undefined;
+      if (availableMinutes || planBlueprint) {
+        try {
+          lessonBlueprint = await lessonPlannerService.planLesson({
+            topic: effectiveTopic,
+            subject: effectiveSubject,
+            learnerProfile: initialProfile,
+            availableMinutes: availableMinutes || 30,
+            learningGoal: initialProfile.learningGoal,
+            documentId: documentId || undefined,
+            userId,
+          });
+          lessonProgress = lessonPlannerService.initializeProgress(lessonBlueprint);
+        } catch (planErr) {
+          console.warn('[SessionRoute] Initial blueprint generation warning:', planErr);
+        }
+      }
+
       // Deterministic MongoDB persistence
       const sessionDoc = await TeachingSessionModel.create({
         userId,
@@ -180,10 +225,12 @@ teachingRouter.post(
         documentTitle: effectiveDocTitle || undefined,
         learnerProfile: initialProfile,
         status: 'active',
-        currentConcept: effectiveTopic,
+        currentConcept: lessonBlueprint?.conceptSequence[0]?.title || effectiveTopic,
         language: initialProfile.preferredLanguage,
         teachingState: initialTeachingState,
         currentMode: 'TEACHING',
+        lessonBlueprint: lessonBlueprint || undefined,
+        lessonProgress: lessonProgress || undefined,
         conversationHistory: [],
       });
 
@@ -648,11 +695,18 @@ async function processTurnCore(params: {
         reason: triggerResult.reason,
       };
 
+      // Ensure spoken introduction naturally introduces the formal question
+      // without asking a competing conversational question at the same time
+      let spokenAssessmentIntro = teacherResponse.responseText;
+      if (/\?\s*$/i.test(spokenAssessmentIntro.trim())) {
+        spokenAssessmentIntro = `${spokenAssessmentIntro.replace(/\?[^?]*$/i, '.')}. Let's check your understanding with this question!`;
+      }
+
       sessionDoc.conversationHistory.push(
         { role: 'student', text: message, type: mode, turnId: effectiveTurnId, timestamp: now },
         {
           role: 'tutor',
-          text: teacherResponse.responseText,
+          text: spokenAssessmentIntro,
           type: 'assessment',
           intent: 'question',
           concept: updatedState.currentConcept,
@@ -670,11 +724,24 @@ async function processTurnCore(params: {
       );
     }
   } else {
+    // Normal teaching mode (including conversational questions)
+    if (action.type !== 'ASK_CONVERSATIONAL' && teacherResponse.intent === 'question') {
+      action = { type: 'ASK_CONVERSATIONAL', reason: 'conversational_question' };
+    }
+
     sessionDoc.currentMode = 'TEACHING';
     sessionDoc.assessmentStatus = 'NONE';
     sessionDoc.conversationHistory.push(
       { role: 'student', text: message, type: mode, turnId: effectiveTurnId, timestamp: now },
-      { role: 'tutor', text: teacherResponse.responseText, type: mode, intent: teacherResponse.intent, turnId: effectiveTurnId, timestamp: new Date().toISOString() }
+      {
+        role: 'tutor',
+        text: teacherResponse.responseText,
+        type: mode,
+        intent: teacherResponse.intent,
+        concept: updatedState.currentConcept,
+        turnId: effectiveTurnId,
+        timestamp: new Date().toISOString(),
+      }
     );
   }
 
@@ -682,17 +749,49 @@ async function processTurnCore(params: {
   if (updatedState.currentConcept) {
     sessionDoc.currentConcept = updatedState.currentConcept;
   }
+  if (sessionDoc.lessonBlueprint && sessionDoc.lessonProgress) {
+    const currentConceptId = sessionDoc.lessonProgress.currentConceptId;
+    const currentConcept = sessionDoc.lessonBlueprint.conceptSequence?.find(
+      (c: any) => c.id === currentConceptId
+    );
+    let conceptCompleted: string | undefined = undefined;
+    if (
+      currentConcept &&
+      Array.isArray(updatedState.conceptsMastered) &&
+      updatedState.conceptsMastered.includes(currentConcept.title)
+    ) {
+      conceptCompleted = currentConcept.id;
+    }
+    sessionDoc.lessonProgress = lessonPlannerService.advanceProgress(
+      sessionDoc.lessonBlueprint,
+      sessionDoc.lessonProgress,
+      {
+        conceptCompleted,
+        minutesSpent: 1,
+        assessmentUsed: clientAssessmentQuestion ? currentConceptId : undefined,
+      }
+    );
+    sessionDoc.markModified('lessonProgress');
+  }
   sessionDoc.language = targetLanguage;
   await sessionDoc.save();
 
+  const finalResponseText =
+    clientAssessmentQuestion && /\?\s*$/i.test(teacherResponse.responseText.trim())
+      ? `${teacherResponse.responseText.replace(/\?[^?]*$/i, '.')}. Let's check your understanding with this question!`
+      : teacherResponse.responseText;
+
   return {
-    teacherResponse,
+    teacherResponse: {
+      ...teacherResponse,
+      responseText: finalResponseText,
+    },
     teachingState: updatedState,
     sessionContext: buildSessionContext(sessionDoc),
     assessmentQuestion: clientAssessmentQuestion,
     tutorAction: action,
     turnId: effectiveTurnId,
-    normalizedSpeechText: normalizeTextForSpeech(teacherResponse.responseText),
+    normalizedSpeechText: normalizeTextForSpeech(finalResponseText),
     aiGenerationMs,
   };
 }
@@ -961,6 +1060,242 @@ teachingRouter.post(
       res.status(500).json({
         success: false,
         error: { message: error.message || 'Failed to generate lesson plan', code: 'LESSON_PLAN_ERROR' },
+      });
+    }
+  }
+);
+
+// 10. POST /api/teaching/sessions/:id/blueprint - Generates/binds a LessonBlueprint to session
+teachingRouter.post(
+  '/sessions/:id/blueprint',
+  requireAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.uid;
+      const { id } = req.params;
+
+      if (!isValidObjectId(id)) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
+      const sessionDoc = await TeachingSessionModel.findById(id);
+      if (!sessionDoc) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
+      if (sessionDoc.userId !== userId) {
+        res.status(403).json({
+          success: false,
+          error: { message: 'Forbidden: You do not own this session', code: 'FORBIDDEN' },
+        });
+        return;
+      }
+
+      const availableMinutes =
+        typeof req.body?.availableMinutes === 'number' && req.body.availableMinutes > 0
+          ? req.body.availableMinutes
+          : 30;
+      const learningGoal = req.body?.learningGoal || sessionDoc.learnerProfile?.learningGoal;
+
+      const blueprint = await lessonPlannerService.planLesson({
+        topic: sessionDoc.topic,
+        subject: sessionDoc.subject,
+        learnerProfile: sessionDoc.learnerProfile,
+        availableMinutes,
+        learningGoal,
+        documentId: sessionDoc.documentId,
+        sessionId: sessionDoc._id.toString(),
+        userId,
+      });
+
+      const progress = lessonPlannerService.initializeProgress(blueprint);
+
+      sessionDoc.lessonBlueprint = blueprint;
+      sessionDoc.lessonProgress = progress;
+      if (blueprint.conceptSequence[0]?.title) {
+        sessionDoc.currentConcept = blueprint.conceptSequence[0].title;
+      }
+      sessionDoc.markModified('lessonBlueprint');
+      sessionDoc.markModified('lessonProgress');
+      await sessionDoc.save();
+
+      res.status(200).json({
+        success: true,
+        data: blueprint,
+        progress,
+      });
+    } catch (error: any) {
+      console.error('Error generating lesson blueprint for session:', error);
+      res.status(500).json({
+        success: false,
+        error: { message: error.message || 'Failed to generate blueprint', code: 'BLUEPRINT_ERROR' },
+      });
+    }
+  }
+);
+
+// 11. GET /api/teaching/sessions/:id/blueprint - Retrieves active LessonBlueprint for session
+teachingRouter.get(
+  '/sessions/:id/blueprint',
+  requireAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.uid;
+      const { id } = req.params;
+
+      if (!isValidObjectId(id)) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
+      const sessionDoc = await TeachingSessionModel.findById(id);
+      if (!sessionDoc) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
+      if (sessionDoc.userId !== userId) {
+        res.status(403).json({
+          success: false,
+          error: { message: 'Forbidden: You do not own this session', code: 'FORBIDDEN' },
+        });
+        return;
+      }
+
+      if (!sessionDoc.lessonBlueprint) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'No blueprint exists for this session', code: 'BLUEPRINT_NOT_FOUND' },
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: sessionDoc.lessonBlueprint,
+        progress: sessionDoc.lessonProgress,
+      });
+    } catch (error: any) {
+      console.error('Error fetching lesson blueprint:', error);
+      res.status(500).json({
+        success: false,
+        error: { message: error.message || 'Failed to fetch blueprint', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// 12. POST /api/teaching/sessions/:id/replan - Dynamically replans remaining concepts
+teachingRouter.post(
+  '/sessions/:id/replan',
+  requireAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.uid;
+      const { id } = req.params;
+
+      if (!isValidObjectId(id)) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
+      const sessionDoc = await TeachingSessionModel.findById(id);
+      if (!sessionDoc) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
+      if (sessionDoc.userId !== userId) {
+        res.status(403).json({
+          success: false,
+          error: { message: 'Forbidden: You do not own this session', code: 'FORBIDDEN' },
+        });
+        return;
+      }
+
+      if (!sessionDoc.lessonBlueprint) {
+        res.status(400).json({
+          success: false,
+          error: {
+            message: 'Cannot replan a session that has no initial blueprint',
+            code: 'NO_BLUEPRINT',
+          },
+        });
+        return;
+      }
+
+      const bodyParse = ReplanLessonRequestSchema.safeParse(req.body);
+      if (!bodyParse.success) {
+        res.status(400).json({
+          success: false,
+          error: {
+            message: 'Invalid replanning request',
+            code: 'VALIDATION_ERROR',
+            details: bodyParse.error.format(),
+          },
+        });
+        return;
+      }
+
+      const { reason, remainingMinutes, studentFeedback, focusAdjustment } = bodyParse.data;
+
+      const replanResult = await lessonPlannerService.replanLesson({
+        currentBlueprint: sessionDoc.lessonBlueprint,
+        currentProgress:
+          sessionDoc.lessonProgress ||
+          lessonPlannerService.initializeProgress(sessionDoc.lessonBlueprint),
+        triggerReason: reason,
+        remainingMinutes,
+        studentFeedback,
+        focusAdjustment,
+        teachingState: sessionDoc.teachingState,
+      });
+
+      sessionDoc.lessonBlueprint = replanResult.blueprint;
+      sessionDoc.lessonProgress = replanResult.updatedProgress;
+      if (replanResult.updatedProgress.currentConceptId) {
+        const nextConcept = replanResult.blueprint.conceptSequence.find(
+          (c: any) => c.id === replanResult.updatedProgress.currentConceptId
+        );
+        if (nextConcept?.title) {
+          sessionDoc.currentConcept = nextConcept.title;
+        }
+      }
+      sessionDoc.markModified('lessonBlueprint');
+      sessionDoc.markModified('lessonProgress');
+      await sessionDoc.save();
+
+      res.status(200).json({
+        success: true,
+        data: replanResult.blueprint,
+        progress: replanResult.updatedProgress,
+        changeSummary: replanResult.changeSummary,
+      });
+    } catch (error: any) {
+      console.error('Error replanning session:', error);
+      res.status(500).json({
+        success: false,
+        error: { message: error.message || 'Failed to replan lesson', code: 'REPLAN_ERROR' },
       });
     }
   }

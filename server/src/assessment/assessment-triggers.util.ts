@@ -51,6 +51,16 @@ export function evaluateAssessmentTrigger(params: {
     };
   }
 
+  // 1b. GUARD: Teacher asking a conversational question in teaching dialogue must NEVER trigger formal assessment
+  if (teacherResponse?.action?.type === 'ASK_CONVERSATIONAL') {
+    return {
+      shouldAssess: false,
+      questionType: 'MCQ',
+      difficulty: 'medium',
+      reason: 'conversational_question_not_assessment',
+    };
+  }
+
   const normalizedMsg = studentMessage.trim().toLowerCase();
 
   // Helper to determine question type from text context
@@ -105,8 +115,12 @@ export function evaluateAssessmentTrigger(params: {
     };
   }
 
-  // 5. TRIGGER D: Weak understanding or recommendedNextAction is 'ask_question'
-  if (teachingState.recommendedNextAction === 'ask_question' || teachingState.understanding === 'weak') {
+  const isTeacherAskingConversational =
+    teacherResponse?.intent === 'question' ||
+    (typeof teacherResponse?.responseText === 'string' && /\?\s*$/i.test(teacherResponse.responseText.trim()));
+
+  // 5. TRIGGER D: Weak understanding or recommendedNextAction is 'ask_question' (when not in conversational dialogue)
+  if (!isTeacherAskingConversational && (teachingState.recommendedNextAction === 'ask_question' || teachingState.understanding === 'weak')) {
     // Check if we haven't assessed in the last 2 turns
     const recentAssessments = conversationHistory
       .slice(-3)
@@ -122,11 +136,11 @@ export function evaluateAssessmentTrigger(params: {
     }
   }
 
-  // 6. TRIGGER E: Periodic concept validation (> 5 student-tutor conversation turns without an assessment)
+  // 6. TRIGGER E: Periodic concept validation (> 5 student-tutor conversation turns without an assessment, when not in conversational dialogue)
   const turnsSinceLastAssessment = [...conversationHistory].reverse().findIndex((t) => t.type === 'assessment' || Boolean(t.questionId));
   const effectiveTurnsCount = turnsSinceLastAssessment === -1 ? conversationHistory.length : turnsSinceLastAssessment;
 
-  if (effectiveTurnsCount >= 6 && conversationHistory.length >= 6) {
+  if (!isTeacherAskingConversational && effectiveTurnsCount >= 6 && conversationHistory.length >= 6) {
     return {
       shouldAssess: true,
       questionType: inferQuestionType(teachingState.currentConcept),

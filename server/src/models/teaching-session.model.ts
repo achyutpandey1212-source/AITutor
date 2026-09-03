@@ -13,6 +13,8 @@ export interface ITeachingSessionDocument extends Document {
   documentTitle?: string;
   teachingState: TeachingState;
   currentMode: 'TEACHING' | 'ASSESSMENT' | 'FEEDBACK' | 'REVIEW';
+  lessonBlueprint?: any;
+  lessonProgress?: any;
   assessmentSessionId?: string;
   currentQuestionId?: string;
   assessmentStatus?: 'NONE' | 'GENERATING' | 'WAITING_FOR_STUDENT' | 'SUBMITTING' | 'EVALUATING' | 'COMPLETED';
@@ -143,6 +145,12 @@ const TeachingSessionMongooseSchema = new Schema<ITeachingSessionDocument>(
       type: String,
       enum: ['TEACHING', 'ASSESSMENT', 'FEEDBACK', 'REVIEW'],
       default: 'TEACHING',
+    },
+    lessonBlueprint: {
+      type: Schema.Types.Mixed,
+    },
+    lessonProgress: {
+      type: Schema.Types.Mixed,
     },
     assessmentSessionId: {
       type: String,
