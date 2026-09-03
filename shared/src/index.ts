@@ -229,6 +229,28 @@ export const TeachingVisualPayloadSchema = z.object({
 });
 export type TeachingVisualPayload = z.infer<typeof TeachingVisualPayloadSchema>;
 
+// Phase 2.6: Single visual beat within a multi-beat concept sequence
+export const VisualBeatSchema = z.object({
+  beatIndex: z.number().int().min(0),
+  type: TutorVisualTypeSchema,
+  data: TutorVisualDataSchema,
+  // Suggested milliseconds to display this beat before auto-advancing (0 = no auto-advance)
+  durationHint: z.number().min(0).default(0),
+  transitionIn: z.enum(['fade', 'slide', 'pop']).default('fade'),
+  // Optional term to emphasize (used by HighlightScene and FormulaScene)
+  emphasis: z.string().optional(),
+});
+export type VisualBeat = z.infer<typeof VisualBeatSchema>;
+
+// Phase 2.6: Ordered sequence of visual beats for a single teaching turn
+export const VisualBeatSequenceSchema = z.object({
+  turnId: z.string(),
+  conceptId: z.string().optional(),
+  beats: z.array(VisualBeatSchema).min(1),
+  activeBeatIndex: z.number().int().min(0).default(0),
+});
+export type VisualBeatSequence = z.infer<typeof VisualBeatSequenceSchema>;
+
 export const TeacherResponseSchema = z.object({
   responseText: z.string().min(1),
   language: z.enum(['english', 'hindi', 'hinglish']).default('english'),
@@ -242,6 +264,9 @@ export const TeacherResponseSchema = z.object({
   captionText: z.string().optional(),
   visual: TeachingVisualPayloadSchema.optional(),
   teachingContent: z.lazy(() => TeachingContentSchema).optional(),
+  // Phase 2.6: Display & multi-beat channels
+  displayText: z.string().optional(),
+  visualBeats: z.array(VisualBeatSchema).optional(),
 });
 export type TeacherResponse = z.infer<typeof TeacherResponseSchema>;
 
@@ -794,6 +819,9 @@ export const VoiceInteractionResponseSchema = z.object({
   visualPayload: z.record(z.unknown()).optional(),
   teachingContent: z.lazy(() => TeachingContentSchema).optional(),
   latency: LatencyMetricsSchema.optional(),
+  // Phase 2.6: Display channel + multi-beat orchestration
+  displayText: z.string().optional(),
+  visualBeats: z.array(VisualBeatSchema).optional(),
 });
 export type VoiceInteractionResponse = z.infer<typeof VoiceInteractionResponseSchema>;
 
@@ -840,6 +868,9 @@ export const RespondSessionResponseSchema = z.object({
   teachingContent: z.lazy(() => TeachingContentSchema).optional(),
   normalizedSpeechText: z.string().optional(),
   aiGenerationMs: z.number().optional(),
+  // Phase 2.6: Display channel + multi-beat orchestration
+  displayText: z.string().optional(),
+  visualBeats: z.array(VisualBeatSchema).optional(),
 });
 export type RespondSessionResponse = z.infer<typeof RespondSessionResponseSchema>;
 
@@ -859,6 +890,8 @@ export {
   normalizeTextForSpeech,
   formatFormulaForSpeech,
   cleanCaptionText,
+  normalizeTextForDisplay,
+  convertLatexToDisplay,
 } from './speech-normalizer.js';
 
 // ==========================================
@@ -1568,22 +1601,33 @@ export const TutorVisualStateSchema = z.object({
   visualType: TutorVisualTypeSchema.default('TITLE'),
   visualData: TutorVisualDataSchema,
   captionText: z.string().optional(),
+  // Phase 2.6: caption segmentation — array of sentence segments, cycled one at a time
+  captionSegments: z.array(z.string()).optional(),
+  activeCaptionIndex: z.number().default(0),
   highlightedText: z.string().optional(),
   turnId: z.string().optional(),
   lastUpdated: z.string().optional(),
+  // Phase 2.6: multi-beat visual orchestration
+  activeBeatIndex: z.number().default(0),
+  totalBeats: z.number().default(1),
 });
 export type TutorVisualState = z.infer<typeof TutorVisualStateSchema>;
 
 // ==========================================
-// 12. Phase 2.5: Teaching Content & Multi-Channel Turn Pipeline
+// 12. Phase 2.5 + 2.6: Teaching Content & Multi-Channel Turn Pipeline
 // ==========================================
+// Note: VisualBeatSchema and VisualBeatSequenceSchema are defined above (section 5b)
+// to avoid forward-reference issues.
 
 export const TeachingContentSchema = z.object({
   turnId: z.string().optional(),
   concept: z.string().optional(),
   speechText: z.string().min(1),
   captionText: z.string().optional(),
+  // Phase 2.6: clean human-readable transcript text (no raw LaTeX, no phonetics)
   displayText: z.string().optional(),
   visual: TeachingVisualPayloadSchema.optional(),
+  // Phase 2.6: multi-beat visual sequence
+  visualBeats: z.array(VisualBeatSchema).optional(),
 });
 export type TeachingContent = z.infer<typeof TeachingContentSchema>;

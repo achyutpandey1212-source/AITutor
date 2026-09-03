@@ -24,6 +24,7 @@ import {
   UpdateSessionRequestSchema,
   VoiceInteractionRequestSchema,
   normalizeTextForSpeech,
+  normalizeTextForDisplay,
   cleanCaptionText,
   sanitizeQuestionForClient,
 } from '@ai-tutor/shared';
@@ -850,13 +851,16 @@ async function processTurnCore(params: {
     };
   }
 
+  const normalizedDisplay = normalizeTextForDisplay(finalResponseText);
+
   const teachingContent = {
     turnId: effectiveTurnId,
     concept: updatedState.currentConcept || sessionDoc.topic,
     speechText: normalizedSpeech,
     captionText: caption,
-    displayText: finalResponseText,
+    displayText: normalizedDisplay,
     visual: effectiveVisual,
+    visualBeats: teacherResponse.visualBeats,
   };
 
   return {
@@ -878,6 +882,8 @@ async function processTurnCore(params: {
     visualPayload: effectiveVisual ? { type: effectiveVisual.type, ...effectiveVisual.data } : undefined,
     teachingContent,
     normalizedSpeechText: normalizedSpeech,
+    displayText: normalizedDisplay,
+    visualBeats: teacherResponse.visualBeats,
     aiGenerationMs,
   };
 }

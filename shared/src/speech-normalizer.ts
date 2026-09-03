@@ -262,3 +262,189 @@ export function cleanCaptionText(text: string, maxLength = 140): string {
 
   return clean.trim();
 }
+
+/**
+ * Normalizes text for human-readable transcript display.
+ * This is the THIRD content channel (distinct from speechText and captionText):
+ *
+ *   speechText:   "one over f equals one over v plus one over u"   (TTS phonetics)
+ *   captionText:  "Mirror formula: links focal and image distances." (subtitle)
+ *   displayText:  "1/f = 1/v + 1/u"                               (readable transcript)
+ *
+ * Rules:
+ * - Strip LaTeX delimiters ($$...$$, $...$) but PRESERVE mathematical meaning
+ * - Convert \frac{a}{b} → a/b
+ * - Convert \sqrt{x} → √x
+ * - Convert \sin, \cos, \tan → sin, cos, tan
+ * - Convert Greek: \theta → θ, \alpha → α, \beta → β, \pi → π, \lambda → λ, \Delta → Δ
+ * - Convert superscripts: ^2 → ², ^3 → ³, ^n → ^n (keep readable)
+ * - Convert subscripts: _1 → ₁, _2 → ₂, _i → ᵢ
+ * - Strip Markdown (headers, bold, italics, bullets) — keep the text content
+ * - Strip code fences but keep code content
+ * - NEVER produce spoken phonetics (no "one over", "squared", "sine")
+ * - Result should be readable in a chat transcript as plain text math
+ */
+export function normalizeTextForDisplay(text: string): string {
+  if (!text || typeof text !== 'string') return '';
+
+  let display = text;
+
+  // 1. Remove code blocks (```...```) — keep the content
+  display = display.replace(/```[\s\S]*?```/g, (m) => {
+    const inner = m.replace(/^```[^\n]*\n?/, '').replace(/```$/, '').trim();
+    return inner;
+  });
+
+  // 2. Remove inline code ticks — keep content
+  display = display.replace(/`([^`]+)`/g, '$1');
+
+  // 3. Remove HTML tags
+  display = display.replace(/<[^>]*>/g, ' ');
+
+  // 4. Remove Markdown images
+  display = display.replace(/!\[([^\]]*)\]\([^)]*\)/g, '');
+
+  // 5. Remove Markdown links — keep display text
+  display = display.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+
+  // 6. Process display LaTeX $$...$$ blocks
+  display = display.replace(/\$\$([\s\S]*?)\$\$/g, (_match, formula) => {
+    return ' ' + convertLatexToDisplay(formula.trim()) + ' ';
+  });
+
+  // 7. Process inline LaTeX $...$ blocks
+  display = display.replace(/\$([^$\n]+)\$/g, (_match, formula) => {
+    return convertLatexToDisplay(formula.trim());
+  });
+
+  // 8. Strip remaining Markdown structural elements
+  // Headers (## Heading → Heading)
+  display = display.replace(/^#{1,6}\s+/gm, '');
+  // Blockquotes
+  display = display.replace(/^\s*>\s*/gm, '');
+  // Horizontal rules
+  display = display.replace(/^[-*_]{3,}\s*$/gm, '');
+  // Bullets (keep text)
+  display = display.replace(/^\s*[-*+]\s+/gm, '');
+  // Numbered lists (keep text)
+  display = display.replace(/^\s*\d+\.\s+/gm, '');
+  // Bold and italic (keep text)
+  display = display.replace(/(\*\*|__)(.*?)\1/g, '$2');
+  display = display.replace(/(\*|_)(.*?)\1/g, '$2');
+  // Stray markdown chars
+  display = display.replace(/[*_~#]/g, '');
+
+  // 9. Apply display conversion to any remaining raw LaTeX notation
+  display = convertLatexToDisplay(display);
+
+  // 10. Clean up whitespace
+  display = display.replace(/[ \t]+/g, ' ');
+  display = display.replace(/\n{3,}/g, '\n\n');
+  display = display.trim();
+
+  return display;
+}
+
+/**
+ * Converts raw LaTeX mathematical notation to clean human-readable display form.
+ * Called internally by normalizeTextForDisplay.
+ *
+ * This does NOT produce spoken phonetics — it produces compact display notation:
+ *   \frac{1}{f} → 1/f    (not "one over f")
+ *   \sin(\theta) → sin(θ) (not "sine theta")
+ *   x^2 → x²             (not "x squared")
+ */
+export function convertLatexToDisplay(formula: string): string {
+  if (!formula || typeof formula !== 'string') return '';
+
+  let display = formula;
+
+  // Remove LaTeX styling wrappers
+  display = display.replace(/\\text\{([^}]*)\}/g, '$1');
+  display = display.replace(/\\mathrm\{([^}]*)\}/g, '$1');
+  display = display.replace(/\\mathbf\{([^}]*)\}/g, '$1');
+  display = display.replace(/\\mathit\{([^}]*)\}/g, '$1');
+
+  // Remove sizing and grouping modifiers
+  display = display.replace(/\\(left|right|Big|big|Bigg|bigg)[([[\]{}|.]/g, '');
+
+  // Convert \frac{a}{b} → a/b (iteratively for nested fractions)
+  let prev = '';
+  let guard = 0;
+  while (display !== prev && guard < 6) {
+    prev = display;
+    guard++;
+    display = display.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, (_m, num, den) => {
+      return `${num.trim()}/${den.trim()}`;
+    });
+  }
+
+  // Inline a/b patterns where grouping was explicit {a}/{b}
+  display = display.replace(/\{([^{}]+)\}\/\{([^{}]+)\}/g, '$1/$2');
+
+  // Square root
+  display = display.replace(/\\sqrt\[3\]\{([^{}]+)\}/g, '∛$1');
+  display = display.replace(/\\sqrt\{([^{}]+)\}/g, '√$1');
+  display = display.replace(/\\sqrt\s*([a-zA-Z0-9])/g, '√$1');
+
+  // Trig functions → clean names (no trailing space)
+  display = display.replace(/\\sin\b/g, 'sin');
+  display = display.replace(/\\cos\b/g, 'cos');
+  display = display.replace(/\\tan\b/g, 'tan');
+  display = display.replace(/\\log\b/g, 'log');
+  display = display.replace(/\\ln\b/g, 'ln');
+
+  // Greek letters → Unicode symbols (match with word boundary or subscript boundary)
+  display = display.replace(/\\theta(?=[^a-zA-Z]|$)/g, 'θ');
+  display = display.replace(/\\alpha(?=[^a-zA-Z]|$)/g, 'α');
+  display = display.replace(/\\beta(?=[^a-zA-Z]|$)/g, 'β');
+  display = display.replace(/\\gamma(?=[^a-zA-Z]|$)/g, 'γ');
+  display = display.replace(/\\delta(?=[^a-zA-Z]|$)/g, 'δ');
+  display = display.replace(/\\Delta(?=[^a-zA-Z]|$)/g, 'Δ');
+  display = display.replace(/\\lambda(?=[^a-zA-Z]|$)/g, 'λ');
+  display = display.replace(/\\pi(?=[^a-zA-Z]|$)/g, 'π');
+  display = display.replace(/\\mu(?=[^a-zA-Z]|$)/g, 'μ');
+  display = display.replace(/\\omega(?=[^a-zA-Z]|$)/g, 'ω');
+  display = display.replace(/\\Omega(?=[^a-zA-Z]|$)/g, 'Ω');
+  display = display.replace(/\\phi(?=[^a-zA-Z]|$)/g, 'φ');
+  display = display.replace(/\\sigma(?=[^a-zA-Z]|$)/g, 'σ');
+  display = display.replace(/\\epsilon(?=[^a-zA-Z]|$)/g, 'ε');
+  display = display.replace(/\\eta(?=[^a-zA-Z]|$)/g, 'η');
+
+  // Superscripts → Unicode where possible, otherwise ^n notation
+  display = display.replace(/\^\{\\circ\}|\^\\circ|°/g, '°');
+  display = display.replace(/\^\{2\}|\^2/g, '²');
+  display = display.replace(/\^\{3\}|\^3/g, '³');
+  display = display.replace(/\^\{([^{}]+)\}/g, '^$1');
+  display = display.replace(/\^([a-zA-Z0-9])/g, '^$1');
+
+  // Subscripts → Unicode numerals where possible
+  display = display.replace(/_\{1\}|_1|₁/g, '₁');
+  display = display.replace(/_\{2\}|_2|₂/g, '₂');
+  display = display.replace(/_\{3\}|_3/g, '₃');
+  display = display.replace(/_\{i\}|_i/g, 'ᵢ');
+  display = display.replace(/_\{r\}|_r/g, 'ᵣ');
+  display = display.replace(/_\{([^{}]+)\}/g, '_$1');
+  display = display.replace(/_([a-zA-Z0-9])/g, '_$1');
+
+  // Mathematical operators → clean Unicode
+  display = display.replace(/\\pm|±/g, '±');
+  display = display.replace(/\\times|×/g, '×');
+  display = display.replace(/\\cdot|·/g, '·');
+  display = display.replace(/\\approx|≈/g, '≈');
+  display = display.replace(/\\neq|≠|!=/g, '≠');
+  display = display.replace(/\\leq|≤|<=/g, '≤');
+  display = display.replace(/\\geq|≥|>=/g, '≥');
+  display = display.replace(/\\to|\\rightarrow|→/g, '→');
+  display = display.replace(/\\infty|∞/g, '∞');
+  display = display.replace(/\\div|÷/g, '÷');
+
+  // Strip remaining backslash macros and grouping
+  display = display.replace(/\\[a-zA-Z]+/g, '');
+  display = display.replace(/[{}[\]$\\|]/g, '');
+
+  // Clean up spaces
+  display = display.replace(/\s+/g, ' ').trim();
+
+  return display;
+}

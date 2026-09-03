@@ -10,6 +10,8 @@ import type {
   TutorVisualState,
   TutorAvatarState,
   TutorVisualType,
+  TutorVisualData,
+  VisualBeat,
 } from '@ai-tutor/shared';
 import { speechToTextService } from '../services/stt.service';
 import { textToSpeechService } from '../services/tts.service';
@@ -86,6 +88,10 @@ export function useLiveTutor({
       title: defaultTopic,
       subtitle: 'Interactive AI Visual Classroom',
     },
+    // Phase 2.6: beat and caption segmentation defaults
+    activeBeatIndex: 0,
+    activeCaptionIndex: 0,
+    totalBeats: 1,
   });
 
   // Synchronize avatarState with voice tutor state (IDLE, SPEAKING, LISTENING, THINKING, INTERRUPTING)
@@ -115,6 +121,131 @@ export function useLiveTutor({
   micEnabledRef.current = micEnabled;
 
   const activeTurnIdRef = useRef<string | null>(null);
+
+  // Phase 2.6: Visual beat orchestration refs
+  const beatTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const activeBeatSequenceRef = useRef<VisualBeat[]>([]);
+  const activeBeatIndexRef = useRef<number>(0);
+
+  // Phase 2.6: Caption segment cycling refs
+  const captionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const captionSegmentsRef = useRef<string[]>([]);
+  const activeCaptionIndexRef = useRef<number>(0);
+
+  /** Cancel all pending beat advancement timers (called on barge-in or new turn) */
+  const cancelBeatTimers = useCallback(() => {
+    beatTimersRef.current.forEach((t) => clearTimeout(t));
+    beatTimersRef.current = [];
+    if (captionTimerRef.current) {
+      clearTimeout(captionTimerRef.current);
+      captionTimerRef.current = null;
+    }
+  }, []);
+
+  /** Apply a single beat to the visual state */
+  const applyBeat = useCallback((beat: VisualBeat, beatIndex: number, totalBeats: number) => {
+    setVisualState((prev) => ({
+      ...prev,
+      visualType: beat.type,
+      visualData: (beat.data || {}) as TutorVisualData,
+      activeBeatIndex: beatIndex,
+      totalBeats,
+      lastUpdated: new Date().toISOString(),
+    }));
+  }, []);
+
+  /**
+   * Phase 2.6: Start the visual beat sequence for a turn.
+   * Beat 0 is applied immediately, then subsequent beats are queued on timers.
+   * Each beat with durationHint > 0 auto-advances to the next beat.
+   */
+  const startBeatSequence = useCallback((beats: VisualBeat[], turnId: string) => {
+    // Cancel any currently running beat timers from the previous turn
+    cancelBeatTimers();
+    if (!beats || beats.length === 0) return;
+
+    activeBeatSequenceRef.current = beats;
+    activeBeatIndexRef.current = 0;
+
+    // Apply beat 0 immediately
+    applyBeat(beats[0], 0, beats.length);
+
+    // Schedule subsequent beats
+    let cumulativeDelay = 0;
+    for (let i = 1; i < beats.length; i++) {
+      const prevBeat = beats[i - 1];
+      if (!prevBeat.durationHint || prevBeat.durationHint <= 0) {
+        // No auto-advance from this beat — stop scheduling
+        break;
+      }
+      cumulativeDelay += prevBeat.durationHint;
+      const beatIndex = i;
+      const timer = setTimeout(() => {
+        // Only advance if this turn is still active
+        if (activeTurnIdRef.current !== turnId) return;
+        activeBeatIndexRef.current = beatIndex;
+        applyBeat(beats[beatIndex], beatIndex, beats.length);
+      }, cumulativeDelay);
+      beatTimersRef.current.push(timer);
+    }
+  }, [cancelBeatTimers, applyBeat]);
+
+  /**
+   * Phase 2.6: Split captionText into sentence segments and cycle them.
+   * E.g. "When light enters glass. It slows down. The angle changes." → 3 captions.
+   */
+  const startCaptionCycle = useCallback((captionText: string, turnId: string) => {
+    if (captionTimerRef.current) {
+      clearTimeout(captionTimerRef.current);
+      captionTimerRef.current = null;
+    }
+
+    if (!captionText || captionText.trim().length === 0) {
+      setVisualState((prev) => ({ ...prev, captionText: '', captionSegments: [], activeCaptionIndex: 0 }));
+      return;
+    }
+
+    // Split on sentence boundaries (. ! ?) while preserving the delimiter
+    const rawSegments = captionText.match(/[^.!?]+[.!?]?/g) || [captionText];
+    const segments = rawSegments
+      .map((s) => s.trim())
+      .filter((s) => s.length > 2);
+
+    if (segments.length === 0) {
+      setVisualState((prev) => ({ ...prev, captionText: captionText.trim(), captionSegments: [captionText.trim()], activeCaptionIndex: 0 }));
+      return;
+    }
+
+    captionSegmentsRef.current = segments;
+    activeCaptionIndexRef.current = 0;
+
+    // Display segment 0 immediately
+    setVisualState((prev) => ({
+      ...prev,
+      captionText: segments[0],
+      captionSegments: segments,
+      activeCaptionIndex: 0,
+    }));
+
+    // Cycle through subsequent segments
+    if (segments.length > 1) {
+      const cycleNext = (idx: number) => {
+        if (activeTurnIdRef.current !== turnId) return;
+        if (idx >= segments.length) return;
+        activeCaptionIndexRef.current = idx;
+        setVisualState((prev) => ({
+          ...prev,
+          captionText: segments[idx],
+          activeCaptionIndex: idx,
+        }));
+        if (idx + 1 < segments.length) {
+          // ~3 seconds per segment
+          captionTimerRef.current = setTimeout(() => cycleNext(idx + 1), 3000);
+        }
+      };
+      captionTimerRef.current = setTimeout(() => cycleNext(1), 3000);
+    }
+  }, []);
 
   const setMicrophoneEnabled = useCallback((enabled: boolean) => {
     setMicEnabled(enabled);
@@ -191,20 +322,17 @@ export function useLiveTutor({
           setActiveTutorAction(response.tutorAction);
         }
 
-        // Synchronize Remotion Visual Classroom with pedagogical state
-        const textLower = response.teacherResponse.responseText.toLowerCase();
-        let nextVisualType: TutorVisualType = 'TEXT';
-        let nextVisualData: any = {
-          heading: response.sessionContext?.activeConcept || response.teachingState?.currentConcept || 'Core Concept',
-          text: response.teacherResponse.responseText.slice(0, 240),
-          bullets: [
-            'Teacher explanation synchronized with live speech.',
-            'Interrupt anytime to ask questions or request examples.',
-          ],
-        };
+        // ── Phase 2.6: Visual Classroom Orchestration ──────────────────────────────
+        // All visual selection is now driven by the server-provided visualBeats or
+        // primary visual. No regex fallbacks. No teacher script on the blackboard.
+        // ─────────────────────────────────────────────────────────────────────────
+
+        const currentTurnId = response.turnId || `turn_${Date.now()}`;
+        activeTurnIdRef.current = currentTurnId;
 
         if (response.assessmentQuestion || response.tutorAction?.type === 'ASK_ASSESSMENT') {
-          // Assessment mode: keep current visual board intact on left panel!
+          // Assessment mode: cancel beats, keep current visual board intact on left panel
+          cancelBeatTimers();
           setVisualState((prev) => ({
             ...prev,
             mode: 'ASSESSMENT',
@@ -212,82 +340,48 @@ export function useLiveTutor({
             lastUpdated: new Date().toISOString(),
           }));
         } else {
-          // Check if teacher produced structured visual or fallback to blueprint
-          const teacherVisual = response.visualPayload || response.teacherResponse?.visual;
-          if (teacherVisual && teacherVisual.type) {
-            nextVisualType = (teacherVisual.type as any) || 'TITLE';
-            nextVisualData = teacherVisual.data || teacherVisual;
-          } else {
-            // Check blueprint visual requirements first as single source of truth
-            const bp = response.sessionContext?.lessonBlueprint;
-            const currentConceptId =
-              response.sessionContext?.lessonProgress?.currentConceptId ||
-              bp?.conceptSequence?.[0]?.id;
-            const bpVisualReq = bp?.visualRequirements?.find(
-              (v: any) => v.conceptId === currentConceptId && v.visualType !== 'NONE'
-            );
+          // Teaching mode: orchestrate visual beats
+          const teachingContent = response.teachingContent;
+          const responseBeats: any[] = response.visualBeats || teachingContent?.visualBeats || [];
+          const primaryVisual = response.visualPayload || response.teacherResponse?.visual || teachingContent?.visual;
 
-            if (bpVisualReq?.visualType === 'FORMULA') {
-              nextVisualType = 'FORMULA';
-              nextVisualData = {
-                formulaLabel: bpVisualReq.purpose.toUpperCase(),
-                formula: bpVisualReq.keyElements?.[0] || 'Formula',
-                concept: response.sessionContext?.activeConcept || "Mathematical Formula",
-                explanation: bpVisualReq.purpose,
-                variables: (bpVisualReq.keyElements || []).map((el: string) => ({
-                  symbol: el,
-                  meaning: el,
-                })),
-              };
-            } else if (bpVisualReq?.visualType === 'DIAGRAM') {
-              nextVisualType = 'DIAGRAM';
-              nextVisualData = {
-                heading: bpVisualReq.purpose,
-                concept: response.sessionContext?.activeConcept || 'Visual Diagram',
-                elements: bpVisualReq.keyElements || [],
-              };
-            } else if (/\b(snell|formula|equation|sin\b|ratio|\b=|\blaw of refraction)\b/i.test(textLower)) {
-              nextVisualType = 'FORMULA';
-              nextVisualData = {
-                formulaLabel: "SNELL'S LAW OF REFRACTION",
-                formula: 'n₁ · sin(θ₁) = n₂ · sin(θ₂)',
-                concept: response.sessionContext?.activeConcept || "Snell's Law",
-                explanation: 'The ratio of sine of incidence to sine of refraction is constant across media.',
-                variables: [
-                  { symbol: 'n₁', meaning: 'Index of medium 1 (Air ≈ 1.0)' },
-                  { symbol: 'θ₁', meaning: 'Angle of incidence' },
-                  { symbol: 'n₂', meaning: 'Index of medium 2 (Glass ≈ 1.5)' },
-                  { symbol: 'θ₂', meaning: 'Angle of refraction' },
-                ],
-              };
-            } else if (/\b(diagram|ray|normal|incident|refract|angle|interface|boundary)\b/i.test(textLower)) {
-              nextVisualType = 'DIAGRAM';
-              nextVisualData = {
-                heading: 'Ray Diagram: Air-Glass Interface',
-                concept: response.sessionContext?.activeConcept || 'Light Refraction',
-              };
-            }
+          if (responseBeats.length > 0) {
+            // Server provided multi-beat sequence → start beat orchestration
+            startBeatSequence(responseBeats as any, currentTurnId);
+          } else if (primaryVisual && primaryVisual.type) {
+            // Single visual from server → apply directly as one beat
+            setVisualState((prev) => ({
+              ...prev,
+              sessionId: targetSessionId,
+              topic: response.sessionContext?.topic || prev.topic,
+              concept: response.sessionContext?.activeConcept || response.teachingState?.currentConcept || prev.concept,
+              mode: (response.sessionContext?.currentMode as any) || 'TEACHING',
+              visualType: (primaryVisual.type as TutorVisualType),
+              visualData: ((primaryVisual.data && typeof primaryVisual.data === 'object') ? primaryVisual.data : {}) as TutorVisualData,
+              turnId: currentTurnId,
+              activeBeatIndex: 0,
+              totalBeats: 1,
+              lastUpdated: new Date().toISOString(),
+            }));
           }
+          // Note: if no visual was provided, the previous visual remains — intentional persistence
 
-          const currentTurnId = response.turnId || `turn_${Date.now()}`;
-          activeTurnIdRef.current = currentTurnId;
-
-          const captionToDisplay =
+          // Caption cycle: segment and cycle captionText sentence by sentence
+          const captionText =
             response.captionText ||
             response.teacherResponse?.captionText ||
+            teachingContent?.captionText ||
             '';
+          startCaptionCycle(captionText, currentTurnId);
 
+          // Update concept and mode independently of visual
           setVisualState((prev) => ({
             ...prev,
             sessionId: targetSessionId,
             topic: response.sessionContext?.topic || prev.topic,
             concept: response.sessionContext?.activeConcept || response.teachingState?.currentConcept || prev.concept,
             mode: (response.sessionContext?.currentMode as any) || 'TEACHING',
-            visualType: nextVisualType,
-            visualData: nextVisualData,
-            captionText: captionToDisplay || undefined,
             turnId: currentTurnId,
-            lastUpdated: new Date().toISOString(),
           }));
         }
 
@@ -311,9 +405,7 @@ export function useLiveTutor({
           response.tutorAction?.type === 'WAIT_FOR_ANSWER' ||
           Boolean(response.assessmentQuestion);
 
-        const currentTurnId = response.turnId || `turn_${Date.now()}`;
-        activeTurnIdRef.current = currentTurnId;
-
+        // currentTurnId is already assigned above in the visual orchestration block
         const speechToSpeak =
           response.speechText ||
           response.normalizedSpeechText ||
@@ -329,6 +421,8 @@ export function useLiveTutor({
           },
           onEnd: () => {
             if (activeTurnIdRef.current !== currentTurnId) return;
+            // Phase 2.6: clear captions and beat timers when TTS finishes
+            cancelBeatTimers();
             setVisualState((prev) => ({ ...prev, captionText: undefined }));
             if (stateRef.current === 'SPEAKING') {
               setTutorState(isWaitingForAnswer ? 'WAITING_FOR_STUDENT' : 'LISTENING');
@@ -343,6 +437,8 @@ export function useLiveTutor({
           },
           onError: (ttsErr) => {
             if (activeTurnIdRef.current !== currentTurnId) return;
+            // Phase 2.6: clear captions and beat timers on TTS error
+            cancelBeatTimers();
             setVisualState((prev) => ({ ...prev, captionText: undefined }));
             console.warn('[LiveTutor] TTS audio warning:', ttsErr);
             if (stateRef.current === 'SPEAKING') {
@@ -378,6 +474,7 @@ export function useLiveTutor({
         setInterimTranscript(interim);
         if (stateRef.current === 'SPEAKING' && isMeaningfulBargeIn(interim, lastSpokenTextRef.current)) {
           activeTurnIdRef.current = null;
+          cancelBeatTimers();
           textToSpeechService.cancel();
           setVisualState((prev) => ({ ...prev, captionText: undefined }));
           setTutorState('INTERRUPTING');
@@ -388,6 +485,7 @@ export function useLiveTutor({
         setFinalTranscript(final);
         if (stateRef.current === 'SPEAKING' && isMeaningfulBargeIn(final, lastSpokenTextRef.current)) {
           activeTurnIdRef.current = null;
+          cancelBeatTimers();
           textToSpeechService.cancel();
           setVisualState((prev) => ({ ...prev, captionText: undefined }));
           setTutorState('INTERRUPTING');
@@ -403,6 +501,7 @@ export function useLiveTutor({
             return;
           }
           activeTurnIdRef.current = null;
+          cancelBeatTimers();
           textToSpeechService.cancel();
           setVisualState((prev) => ({ ...prev, captionText: undefined }));
         }
@@ -495,6 +594,9 @@ export function useLiveTutor({
             subtitle: `Subject: ${targetSubject} • Interactive AI Classroom`,
           },
           lastUpdated: new Date().toISOString(),
+          activeBeatIndex: 0,
+          activeCaptionIndex: 0,
+          totalBeats: 1,
         });
 
         startListeningLoop();
@@ -541,6 +643,9 @@ export function useLiveTutor({
             subtitle: `Resumed Session • Concept: ${resumedSession.currentConcept || resumedSession.topic}`,
           },
           lastUpdated: new Date().toISOString(),
+          activeBeatIndex: 0,
+          activeCaptionIndex: 0,
+          totalBeats: 1,
         });
 
         // If there was an active assessment question in the session, restore it

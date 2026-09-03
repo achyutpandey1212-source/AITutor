@@ -9,13 +9,9 @@ export interface TextSceneProps {
 }
 
 export const TextScene: React.FC<TextSceneProps> = ({
-  heading = 'REFRACTION',
-  text = 'The bending of light when it passes from one transparent medium to another due to a change in optical speed.',
-  bullets = [
-    'Light travels slower in optically denser mediums.',
-    'Bends towards normal when entering glass from air.',
-    'Bends away from normal when exiting glass into air.',
-  ],
+  heading = 'Core Concept',
+  text,
+  bullets = [],
   concept,
 }) => {
   const frame = useCurrentFrame();
@@ -73,29 +69,31 @@ export const TextScene: React.FC<TextSceneProps> = ({
       </div>
 
       {/* Main explanation card */}
-      <div
-        style={{
-          background: 'rgba(30, 41, 59, 0.7)',
-          border: '1px solid rgba(148, 163, 184, 0.2)',
-          borderRadius: '12px',
-          padding: '1.25rem 1.5rem',
-          marginBottom: '1.25rem',
-          opacity: textOpacity,
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
-        }}
-      >
-        <p
+      {text && (
+        <div
           style={{
-            color: '#e2e8f0',
-            fontSize: '1.15rem',
-            lineHeight: 1.6,
-            margin: 0,
-            fontWeight: 500,
+            background: 'rgba(30, 41, 59, 0.7)',
+            border: '1px solid rgba(148, 163, 184, 0.2)',
+            borderRadius: '12px',
+            padding: '1.25rem 1.5rem',
+            marginBottom: '1.25rem',
+            opacity: textOpacity,
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
           }}
         >
-          {text}
-        </p>
-      </div>
+          <p
+            style={{
+              color: '#e2e8f0',
+              fontSize: '1.15rem',
+              lineHeight: 1.6,
+              margin: 0,
+              fontWeight: 500,
+            }}
+          >
+            {text}
+          </p>
+        </div>
+      )}
 
       {/* Key points / bullets */}
       {bullets && bullets.length > 0 && (

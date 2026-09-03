@@ -6,6 +6,9 @@ import { TitleScene } from '../scenes/TitleScene';
 import { TextScene } from '../scenes/TextScene';
 import { DiagramScene } from '../scenes/DiagramScene';
 import { FormulaScene } from '../scenes/FormulaScene';
+import { HighlightScene } from '../scenes/HighlightScene';
+import { RecapScene } from '../scenes/RecapScene';
+import { IllustrationScene } from '../scenes/IllustrationScene';
 
 export interface LiveClassroomCompositionProps {
   visualState?: TutorVisualState;
@@ -22,6 +25,8 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
     visualType = 'TITLE',
     visualData,
     captionText,
+    activeBeatIndex = 0,
+    totalBeats = 1,
   } = visualState;
 
   const renderScene = () => {
@@ -34,11 +39,35 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
             concept={concept}
           />
         );
+      case 'HIGHLIGHT':
+        return (
+          <HighlightScene
+            heading={visualData?.heading || 'Key Term'}
+            text={visualData?.text || concept}
+            subtitle={visualData?.subtitle}
+            concept={concept}
+          />
+        );
+      case 'RECAP':
+        return (
+          <RecapScene
+            heading={visualData?.heading || 'Quick Recap'}
+            bullets={visualData?.bullets}
+            concept={concept}
+          />
+        );
+      case 'ILLUSTRATION':
+        return (
+          <IllustrationScene
+            heading={visualData?.heading || 'Real-World Hook'}
+            text={visualData?.text}
+            subtitle={visualData?.subtitle}
+            concept={concept}
+          />
+        );
       case 'TEXT':
       case 'COMPARISON':
       case 'PROCESS':
-      case 'HIGHLIGHT':
-      case 'RECAP':
       case 'EXAMPLE':
         return (
           <TextScene
@@ -49,7 +78,6 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
           />
         );
       case 'DIAGRAM':
-      case 'ILLUSTRATION':
         return (
           <DiagramScene
             concept={concept || 'Optical Physics'}
@@ -59,7 +87,7 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
       case 'FORMULA':
         return (
           <FormulaScene
-            formulaLabel={visualData?.formulaLabel || visualData?.heading || "MATHEMATICAL FORMULA"}
+            formulaLabel={visualData?.formulaLabel || visualData?.heading || 'MATHEMATICAL FORMULA'}
             formula={visualData?.formula}
             concept={concept}
             variables={visualData?.variables}
@@ -246,6 +274,22 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
           <span>🎓 AI Tutor Visual Classroom</span>
           <span style={{ margin: '0 0.5rem' }}>•</span>
           <span style={{ color: '#94a3b8' }}>Scene: {visualType}</span>
+          {totalBeats > 1 && (
+            <span
+              style={{
+                marginLeft: '0.65rem',
+                background: 'rgba(99, 102, 241, 0.25)',
+                color: '#a5b4fc',
+                border: '1px solid rgba(99, 102, 241, 0.4)',
+                borderRadius: '4px',
+                padding: '0.1rem 0.4rem',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+              }}
+            >
+              Beat {activeBeatIndex + 1} / {totalBeats}
+            </span>
+          )}
         </div>
 
         {mode === 'ASSESSMENT' ? (

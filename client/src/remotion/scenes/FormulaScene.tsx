@@ -10,16 +10,11 @@ export interface FormulaSceneProps {
 }
 
 export const FormulaScene: React.FC<FormulaSceneProps> = ({
-  formulaLabel = "SNELL'S LAW OF REFRACTION",
-  formula = 'n₁ · sin(θ₁) = n₂ · sin(θ₂)',
-  concept = "Snell's Law",
-  variables = [
-    { symbol: 'n₁', meaning: 'Refractive index of first medium (Air ≈ 1.0)' },
-    { symbol: 'θ₁', meaning: 'Angle of incidence relative to normal' },
-    { symbol: 'n₂', meaning: 'Refractive index of second medium (Glass ≈ 1.5)' },
-    { symbol: 'θ₂', meaning: 'Angle of refraction relative to normal' },
-  ],
-  explanation = 'The ratio of the sine of the angle of incidence to the sine of the angle of refraction is constant for a given pair of media.',
+  formulaLabel = 'FORMULA',
+  formula = '1/f = 1/v + 1/u',
+  concept,
+  variables = [],
+  explanation,
 }) => {
   const frame = useCurrentFrame();
 
@@ -102,72 +97,66 @@ export const FormulaScene: React.FC<FormulaSceneProps> = ({
         >
           {formula}
         </div>
-        <div
-          style={{
-            color: '#cbd5e1',
-            fontSize: '0.85rem',
-            marginTop: '0.5rem',
-            fontStyle: 'italic',
-          }}
-        >
-          or: sin(i) / sin(r) = n₂ / n₁ = constant
-        </div>
       </div>
 
       {/* Variables Definition Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '0.6rem',
-          marginBottom: '0.8rem',
-          opacity: tableOpacity,
-        }}
-      >
-        {variables.map((item, idx) => (
-          <div
-            key={idx}
-            style={{
-              background: 'rgba(15, 23, 42, 0.65)',
-              border: '1px solid rgba(148, 163, 184, 0.15)',
-              borderRadius: '8px',
-              padding: '0.5rem 0.75rem',
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: '0.5rem',
-            }}
-          >
-            <span
+      {variables && variables.length > 0 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '0.6rem',
+            marginBottom: '0.8rem',
+            opacity: tableOpacity,
+          }}
+        >
+          {variables.map((item, idx) => (
+            <div
+              key={idx}
               style={{
-                fontFamily: 'monospace',
-                fontSize: '1rem',
-                fontWeight: 700,
-                color: '#38bdf8',
-                minWidth: '24px',
+                background: 'rgba(15, 23, 42, 0.65)',
+                border: '1px solid rgba(148, 163, 184, 0.15)',
+                borderRadius: '8px',
+                padding: '0.5rem 0.75rem',
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '0.5rem',
               }}
             >
-              {item.symbol}
-            </span>
-            <span style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: '1.2' }}>
-              {item.meaning}
-            </span>
-          </div>
-        ))}
-      </div>
+              <span
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  color: '#38bdf8',
+                  minWidth: '24px',
+                }}
+              >
+                {item.symbol}
+              </span>
+              <span style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: '1.2' }}>
+                {item.meaning}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Meaning note */}
-      <div
-        style={{
-          color: '#94a3b8',
-          fontSize: '0.82rem',
-          lineHeight: '1.4',
-          borderLeft: '2px solid #64748b',
-          paddingLeft: '0.6rem',
-          opacity: tableOpacity,
-        }}
-      >
-        {explanation}
-      </div>
+      {explanation && (
+        <div
+          style={{
+            color: '#94a3b8',
+            fontSize: '0.82rem',
+            lineHeight: '1.4',
+            borderLeft: '2px solid #64748b',
+            paddingLeft: '0.6rem',
+            opacity: tableOpacity,
+          }}
+        >
+          {explanation}
+        </div>
+      )}
     </div>
   );
 };

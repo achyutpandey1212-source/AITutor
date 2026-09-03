@@ -18,4 +18,8 @@ export const DEFAULT_VISUAL_STATE: TutorVisualState = {
     title: 'Light: Reflection & Refraction',
     subtitle: 'Understanding the Behavior of Light Waves and Rays',
   },
+  // Phase 2.6: beat and caption segmentation
+  activeBeatIndex: 0,
+  activeCaptionIndex: 0,
+  totalBeats: 1,
 };

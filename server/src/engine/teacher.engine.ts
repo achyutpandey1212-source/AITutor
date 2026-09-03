@@ -6,12 +6,14 @@ import type {
   TeacherResponse,
   TeachingSession,
   TeachingState,
+  VisualBeat,
 } from '@ai-tutor/shared';
 import {
   LessonPlanSchema,
   TeacherResponseSchema,
   TeachingStateSchema,
   normalizeTextForSpeech,
+  normalizeTextForDisplay,
   cleanCaptionText,
 } from '@ai-tutor/shared';
 import { aiService, AIService } from '../ai/ai.service.js';
@@ -72,6 +74,15 @@ export class TeacherEngine {
         } else if (!validActions.includes(rawData.stateUpdate.recommendedNextAction)) {
           rawData.stateUpdate.recommendedNextAction = 'explain';
         }
+
+        const validStudentActions = ['question', 'answer', 'request_example', 'request_explanation', 'unknown'];
+        if (rawData.stateUpdate.lastStudentAction && !validStudentActions.includes(rawData.stateUpdate.lastStudentAction)) {
+          if (['request_assessment', 'request_test', 'request_quiz'].includes(rawData.stateUpdate.lastStudentAction)) {
+            rawData.stateUpdate.lastStudentAction = 'question';
+          } else {
+            rawData.stateUpdate.lastStudentAction = 'unknown';
+          }
+        }
       }
       if (!rawData.updatedState) {
         rawData.updatedState = currentState;
@@ -99,6 +110,9 @@ export class TeacherEngine {
         : cleanSpeech;
       rawData.captionText = cleanCaptionText(rawCaption);
 
+      // Phase 2.6: displayText — clean human-readable transcript (NOT phonetics, NOT raw LaTeX)
+      rawData.displayText = normalizeTextForDisplay(rawData.responseText || '');
+
       if (rawData.visual && typeof rawData.visual === 'object') {
         const validTypes = [
           'NONE', 'TITLE', 'TEXT', 'DIAGRAM', 'FORMULA', 'EXAMPLE',
@@ -110,6 +124,13 @@ export class TeacherEngine {
         if (!rawData.visual.data || typeof rawData.visual.data !== 'object') {
           rawData.visual.data = {};
         }
+        // Phase 2.6: NEVER put teacher script into visual.data.text
+        // If the AI accidentally set text to the full responseText or speechText, clear it
+        const scriptLike = rawData.visual.data.text;
+        if (typeof scriptLike === 'string' && scriptLike.length > 200) {
+          // Long prose = teacher script leaked into board — strip it
+          rawData.visual.data.text = undefined;
+        }
       } else {
         const conceptTitle = rawData.stateUpdate?.currentConcept || currentState.currentConcept || 'Core Concepts';
         const isFormula = /\b(\d+\/[a-zA-Z]|\b[a-zA-Z]\s*=\s*|\\frac|sin\b|cos\b|snell|mirror|lens)\b/i.test(rawData.responseText || '');
@@ -118,18 +139,60 @@ export class TeacherEngine {
           data: {
             title: conceptTitle,
             heading: conceptTitle,
+            // Phase 2.6: use caption (concise key idea), NOT teacher script
             text: rawData.captionText,
             formula: isFormula ? '1/f = 1/v + 1/u' : undefined,
           },
         };
       }
 
+      // Phase 2.6: Process visualBeats from AI response
+      // If AI provided multi-beat sequence, validate each beat and store them.
+      // Otherwise, build a default single-beat from the primary visual.
+      const rawBeats = Array.isArray(rawData.visualBeats) ? rawData.visualBeats : null;
+      const validVisualTypes = [
+        'NONE', 'TITLE', 'TEXT', 'DIAGRAM', 'FORMULA', 'EXAMPLE',
+        'COMPARISON', 'PROCESS', 'HIGHLIGHT', 'RECAP', 'QUESTION_PROMPT', 'ILLUSTRATION'
+      ];
+      if (rawBeats && rawBeats.length > 0) {
+        rawData.visualBeats = rawBeats
+          .filter((b: any) => b && typeof b === 'object' && validVisualTypes.includes(b.type))
+          .map((b: any, idx: number): VisualBeat => ({
+            beatIndex: idx,
+            type: b.type,
+            data: (b.data && typeof b.data === 'object') ? b.data : {},
+            durationHint: typeof b.durationHint === 'number' ? Math.max(0, b.durationHint) : 4000,
+            transitionIn: ['fade', 'slide', 'pop'].includes(b.transitionIn) ? b.transitionIn : 'fade',
+            emphasis: typeof b.emphasis === 'string' ? b.emphasis : undefined,
+          }));
+        // Guarantee at least one beat
+        if (rawData.visualBeats.length === 0) {
+          rawData.visualBeats = [{
+            beatIndex: 0,
+            type: rawData.visual?.type || 'TEXT',
+            data: rawData.visual?.data || {},
+            durationHint: 0,
+            transitionIn: 'fade',
+          }];
+        }
+      } else {
+        // Single-beat fallback — primary visual becomes beat 0
+        rawData.visualBeats = [{
+          beatIndex: 0,
+          type: rawData.visual?.type || 'TEXT',
+          data: rawData.visual?.data || {},
+          durationHint: 0,
+          transitionIn: 'fade',
+        }];
+      }
+
       rawData.teachingContent = {
         speechText: rawData.speechText,
         captionText: rawData.captionText,
-        displayText: rawData.responseText,
+        displayText: rawData.displayText,
         concept: rawData.stateUpdate?.currentConcept || currentState.currentConcept,
         visual: rawData.visual,
+        visualBeats: rawData.visualBeats,
       };
     }
 

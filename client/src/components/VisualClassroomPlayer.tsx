@@ -77,11 +77,11 @@ export const VisualClassroomPlayer: React.FC<VisualClassroomPlayerProps> = ({
           gap: '0.5rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8' }}>
             SCENE:
           </span>
-          {(['TITLE', 'TEXT', 'DIAGRAM', 'FORMULA'] as TutorVisualType[]).map((sceneType) => {
+          {(['TITLE', 'TEXT', 'DIAGRAM', 'FORMULA', 'HIGHLIGHT', 'RECAP', 'ILLUSTRATION'] as TutorVisualType[]).map((sceneType) => {
             const isActive = visualState.visualType === sceneType;
             return (
               <button
@@ -89,12 +89,12 @@ export const VisualClassroomPlayer: React.FC<VisualClassroomPlayerProps> = ({
                 type="button"
                 onClick={() => onSelectScene?.(sceneType)}
                 style={{
-                  padding: '0.2rem 0.55rem',
+                  padding: '0.2rem 0.5rem',
                   borderRadius: '4px',
                   border: isActive ? '1px solid #38bdf8' : '1px solid #475569',
                   background: isActive ? '#0284c7' : '#334155',
                   color: '#ffffff',
-                  fontSize: '0.72rem',
+                  fontSize: '0.7rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.15s',
@@ -104,6 +104,18 @@ export const VisualClassroomPlayer: React.FC<VisualClassroomPlayerProps> = ({
               </button>
             );
           })}
+          {(visualState.totalBeats || 1) > 1 && (
+            <span
+              style={{
+                marginLeft: '0.5rem',
+                fontSize: '0.72rem',
+                color: '#a5b4fc',
+                fontWeight: 600,
+              }}
+            >
+              Beat {(visualState.activeBeatIndex || 0) + 1} of {visualState.totalBeats}
+            </span>
+          )}
         </div>
 
         {onRunDemoFlow && (

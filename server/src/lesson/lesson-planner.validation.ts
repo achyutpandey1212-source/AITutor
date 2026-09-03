@@ -291,7 +291,7 @@ export class LessonPlannerValidation {
             conversationalCheckOpportunity: Boolean(c.conversationalCheckOpportunity ?? true),
             formalAssessmentOpportunity: Boolean(c.formalAssessmentOpportunity ?? c.assessmentOpportunity),
             sourceReferences: Array.isArray(c.sourceReferences) && c.sourceReferences.length > 0
-              ? c.sourceReferences
+              ? Array.from(new Set([...c.sourceReferences, ...(Array.isArray(rawBlueprint.sourceDocumentIds) ? rawBlueprint.sourceDocumentIds : [])]))
               : Array.isArray(rawBlueprint.sourceDocumentIds) && rawBlueprint.sourceDocumentIds.length > 0
               ? rawBlueprint.sourceDocumentIds
               : [],
