@@ -9,13 +9,20 @@ import { FormulaScene } from '../scenes/FormulaScene';
 import { HighlightScene } from '../scenes/HighlightScene';
 import { RecapScene } from '../scenes/RecapScene';
 import { IllustrationScene } from '../scenes/IllustrationScene';
+// Phase 3 scenes:
+import { FlowchartScene } from '../scenes/FlowchartScene';
+import { ComparisonScene } from '../scenes/ComparisonScene';
+import { ProcessAnimationScene } from '../scenes/ProcessAnimationScene';
+import { WorkedExampleScene } from '../scenes/WorkedExampleScene';
 
 export interface LiveClassroomCompositionProps {
   visualState?: TutorVisualState;
+  captionsEnabled?: boolean;
 }
 
 export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> = ({
   visualState = DEFAULT_VISUAL_STATE,
+  captionsEnabled: propCaptionsEnabled,
 }) => {
   const {
     topic = 'AI Tutor Classroom',
@@ -27,7 +34,11 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
     captionText,
     activeBeatIndex = 0,
     totalBeats = 1,
+    captionsEnabled = false,
   } = visualState;
+
+  // Prop takes precedence if provided, otherwise check state (default: false)
+  const showCaptions = propCaptionsEnabled !== undefined ? propCaptionsEnabled : captionsEnabled;
 
   const renderScene = () => {
     switch (visualType) {
@@ -65,8 +76,76 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
             concept={concept}
           />
         );
-      case 'TEXT':
+      case 'FLOWCHART':
+        return <FlowchartScene data={visualData} />;
       case 'COMPARISON':
+        return <ComparisonScene data={visualData} />;
+      case 'PROCESS_ANIMATION':
+        return <ProcessAnimationScene data={visualData} />;
+      case 'WORKED_EXAMPLE':
+        return <WorkedExampleScene data={visualData} />;
+      case 'PDF_ASSET':
+      case 'IMAGE_ASSET':
+        return (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '24px',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '11px',
+                color: '#38bdf8',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+                marginBottom: '8px',
+              }}
+            >
+              Document Learning Asset
+            </div>
+            <h3 style={{ color: '#f8fafc', margin: '0 0 12px 0' }}>
+              {visualData?.title || concept}
+            </h3>
+            {visualData?.assetUrl ? (
+              <img
+                src={visualData.assetUrl}
+                alt={visualData.title || 'Document figure'}
+                style={{
+                  maxWidth: '85%',
+                  maxHeight: '60%',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  objectFit: 'contain',
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '80%',
+                  height: '180px',
+                  background: 'rgba(30, 41, 59, 0.6)',
+                  border: '1px dashed rgba(56, 189, 248, 0.4)',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#94a3b8',
+                  fontSize: '13px',
+                }}
+              >
+                📄 {visualData?.text || 'Textbook Figure / Diagram Reference'}
+              </div>
+            )}
+          </div>
+        );
+      case 'TEXT':
       case 'PROCESS':
       case 'EXAMPLE':
         return (
@@ -228,8 +307,8 @@ export const LiveClassroomComposition: React.FC<LiveClassroomCompositionProps> =
         >
           {renderScene()}
 
-          {/* Subtitle / Caption Layer (Phase 2.5) */}
-          {captionText && avatarState === 'SPEAKING' && (
+          {/* Subtitle / Caption Layer (Phase 2.5 + Phase 3 Optional Toggle) */}
+          {showCaptions && captionText && avatarState === 'SPEAKING' && (
             <div
               style={{
                 position: 'absolute',

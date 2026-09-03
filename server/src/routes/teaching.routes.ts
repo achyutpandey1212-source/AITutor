@@ -39,6 +39,9 @@ import { assessmentSubmissionService } from '../assessment/assessment-submission
 import { wrongQuestionService } from '../assessment/wrong-question.service.js';
 import { evaluateAssessmentTrigger } from '../assessment/assessment-triggers.util.js';
 import { lessonPlannerService } from '../lesson/lesson-planner.service.js';
+import { defaultVisualStrategyEngine } from '../visual/visual-strategy.engine.js';
+import { defaultVisualHistoryService } from '../visual/visual-history.service.js';
+import { defaultVisualAssetRepository } from '../visual/visual-asset.repository.js';
 
 export const teachingRouter = Router();
 
@@ -853,6 +856,53 @@ async function processTurnCore(params: {
 
   const normalizedDisplay = normalizeTextForDisplay(finalResponseText);
 
+  // Phase 3: Visual Intelligence & Strategy Selection
+  let visualPlan: any = undefined;
+  try {
+    const recentHistory = await defaultVisualHistoryService.getSessionVisualHistory(sessionDoc._id.toString());
+    const recentStrategies = recentHistory.slice(-5).map((h) => h.strategy);
+
+    visualPlan = await defaultVisualStrategyEngine.planVisual({
+      topic: sessionDoc.topic,
+      concept: updatedState.currentConcept || sessionDoc.currentConcept,
+      teachingContent: {
+        turnId: effectiveTurnId,
+        speechText: normalizedSpeech,
+        captionText: caption,
+        displayText: normalizedDisplay,
+        visual: effectiveVisual,
+      },
+      teachingState: updatedState,
+      documentId: sessionDoc.documentId,
+      turnId: effectiveTurnId,
+      recentStrategies,
+    });
+
+    // If teacherResponse did not provide multi-beat sequence, adopt the visualPlan beats
+    if (!teacherResponse.visualBeats || teacherResponse.visualBeats.length <= 1) {
+      if (visualPlan.beats && visualPlan.beats.length > 0) {
+        teacherResponse.visualBeats = visualPlan.beats;
+        effectiveVisual = {
+          type: visualPlan.beats[0].type,
+          data: visualPlan.beats[0].data,
+        };
+      }
+    }
+
+    // Persist to session visual history
+    await defaultVisualHistoryService.recordVisualTurn({
+      sessionId: sessionDoc._id.toString(),
+      turnId: effectiveTurnId,
+      conceptId: updatedState.currentConcept || sessionDoc.currentConcept,
+      visualPlan,
+      speechText: normalizedSpeech,
+      displayText: normalizedDisplay,
+      captionText: caption,
+    });
+  } catch (visErr) {
+    console.warn('[TeachingRoute] Visual strategy planning warning:', visErr);
+  }
+
   const teachingContent = {
     turnId: effectiveTurnId,
     concept: updatedState.currentConcept || sessionDoc.topic,
@@ -861,6 +911,7 @@ async function processTurnCore(params: {
     displayText: normalizedDisplay,
     visual: effectiveVisual,
     visualBeats: teacherResponse.visualBeats,
+    visualPlan,
   };
 
   return {
@@ -884,6 +935,7 @@ async function processTurnCore(params: {
     normalizedSpeechText: normalizedSpeech,
     displayText: normalizedDisplay,
     visualBeats: teacherResponse.visualBeats,
+    visualPlan,
     aiGenerationMs,
   };
 }
@@ -1385,6 +1437,110 @@ teachingRouter.post(
       res.status(500).json({
         success: false,
         error: { message: error.message || 'Failed to replan lesson', code: 'REPLAN_ERROR' },
+      });
+    }
+  }
+);
+
+// ==========================================
+// Phase 3: Visual Intelligence & Asset Routes
+// ==========================================
+
+// 8. GET /api/teaching/sessions/:sessionId/visual-history - Retrieves complete visual history for a session
+teachingRouter.get(
+  '/sessions/:sessionId/visual-history',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { sessionId } = req.params;
+      const history = await defaultVisualHistoryService.getSessionVisualHistory(sessionId);
+      res.status(200).json({
+        success: true,
+        data: history,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to retrieve visual history', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// 9. GET /api/teaching/sessions/:sessionId/visual-timeline - Retrieves chronological visual timeline for a session
+teachingRouter.get(
+  '/sessions/:sessionId/visual-timeline',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { sessionId } = req.params;
+      const timeline = await defaultVisualHistoryService.getSessionTimeline(sessionId);
+      res.status(200).json({
+        success: true,
+        data: timeline,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to retrieve visual timeline', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// 10. POST /api/teaching/sessions/:sessionId/visual-history/:visualId/replay - Returns deterministic replay payload
+teachingRouter.post(
+  '/sessions/:sessionId/visual-history/:visualId/replay',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { visualId } = req.params;
+      const replayPayload = await defaultVisualHistoryService.getReplayPayload(visualId);
+      if (!replayPayload) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Visual history record not found for replay', code: 'NOT_FOUND' },
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: replayPayload,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to reconstruct replay', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// 11. GET /api/teaching/visual-assets/:assetId - Retrieves visual asset metadata
+teachingRouter.get(
+  '/visual-assets/:assetId',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { assetId } = req.params;
+      const asset = await defaultVisualAssetRepository.getAsset(assetId);
+      if (!asset) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Visual asset not found', code: 'NOT_FOUND' },
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: asset,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to retrieve visual asset', code: 'SERVER_ERROR' },
       });
     }
   }

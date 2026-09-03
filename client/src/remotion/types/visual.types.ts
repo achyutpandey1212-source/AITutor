@@ -3,9 +3,10 @@ import type {
   TutorAvatarState,
   TutorVisualType,
   TutorVisualMode,
+  TutorVisualData,
 } from '@ai-tutor/shared';
 
-export type { TutorVisualState, TutorAvatarState, TutorVisualType, TutorVisualMode };
+export type { TutorVisualState, TutorAvatarState, TutorVisualType, TutorVisualMode, TutorVisualData };
 
 export const DEFAULT_VISUAL_STATE: TutorVisualState = {
   sessionId: '',
@@ -22,4 +23,6 @@ export const DEFAULT_VISUAL_STATE: TutorVisualState = {
   activeBeatIndex: 0,
   activeCaptionIndex: 0,
   totalBeats: 1,
+  // Phase 3: Accessibility toggle (default: false)
+  captionsEnabled: false,
 };

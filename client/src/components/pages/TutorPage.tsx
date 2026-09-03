@@ -80,6 +80,9 @@ export const TutorPage: React.FC<TutorPageProps> = ({ idToken, onNavigate }) => 
     replaySpeech,
     visualState,
     setVisualState,
+    captionsEnabled,
+    toggleCaptions,
+    replayVisualSegment,
   } = useLiveTutor({
     idToken,
     defaultTopic: topicInput,
@@ -317,6 +320,9 @@ export const TutorPage: React.FC<TutorPageProps> = ({ idToken, onNavigate }) => 
             onSelectScene={handleSelectScene}
             onRunDemoFlow={runDemoFlow}
             isDemoRunning={isDemoRunning}
+            onToggleCaptions={toggleCaptions}
+            captionsEnabled={captionsEnabled}
+            onReplaySegment={replayVisualSegment}
           />
         </div>
 

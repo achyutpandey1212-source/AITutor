@@ -92,7 +92,19 @@ export function useLiveTutor({
     activeBeatIndex: 0,
     activeCaptionIndex: 0,
     totalBeats: 1,
+    // Phase 3: Accessibility toggle (default: false)
+    captionsEnabled: false,
   });
+
+  const [captionsEnabled, setCaptionsEnabled] = useState(false);
+
+  const toggleCaptions = useCallback(() => {
+    setCaptionsEnabled((prev) => {
+      const next = !prev;
+      setVisualState((vs) => ({ ...vs, captionsEnabled: next }));
+      return next;
+    });
+  }, []);
 
   // Synchronize avatarState with voice tutor state (IDLE, SPEAKING, LISTENING, THINKING, INTERRUPTING)
   useEffect(() => {
@@ -597,6 +609,7 @@ export function useLiveTutor({
           activeBeatIndex: 0,
           activeCaptionIndex: 0,
           totalBeats: 1,
+          captionsEnabled: false,
         });
 
         startListeningLoop();
@@ -646,6 +659,7 @@ export function useLiveTutor({
           activeBeatIndex: 0,
           activeCaptionIndex: 0,
           totalBeats: 1,
+          captionsEnabled: false,
         });
 
         // If there was an active assessment question in the session, restore it
@@ -784,6 +798,63 @@ export function useLiveTutor({
     }
   }, [lastSpokenText, tutorState, activeAssessmentQuestion]);
 
+  // Phase 3: Replays a stored visual history segment deterministically
+  const replayVisualSegment = useCallback(
+    async (visualId: string) => {
+      const currentSessionId = sessionRef.current?.id;
+      if (!idToken || !currentSessionId) return;
+      try {
+        const token = idToken;
+        const res = await fetch(
+          `/api/teaching/sessions/${currentSessionId}/visual-history/${visualId}/replay`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        const json = await res.json();
+        if (json.success && json.data) {
+          const replayData = json.data;
+          // Set visual state to initial replay beat
+          if (replayData.visualBeats && replayData.visualBeats.length > 0) {
+            const firstBeat = replayData.visualBeats[0];
+            setVisualState((prev) => ({
+              ...prev,
+              visualType: firstBeat.type,
+              visualData: firstBeat.data,
+              activeBeatIndex: 0,
+              totalBeats: replayData.visualBeats.length,
+            }));
+            startBeatSequence(replayData.visualBeats, replayData.turnId || `replay_${visualId}`);
+          }
+
+          // If speech exists, trigger playback
+          if (replayData.speechText) {
+            speechToTextService.pauseCapture();
+            setTutorState('SPEAKING');
+            textToSpeechService.speak(replayData.speechText, languageRef.current, {
+              onStart: () => {},
+              onEnd: () => {
+                setTutorState('LISTENING');
+                speechToTextService.resumeCapture();
+              },
+              onError: () => {
+                setTutorState('LISTENING');
+                speechToTextService.resumeCapture();
+              },
+            });
+          }
+        }
+      } catch (err: any) {
+        console.warn('[useLiveTutor] Replay segment failed:', err);
+      }
+    },
+    [idToken, startBeatSequence]
+  );
+
   // Clean up on unmount
   useEffect(() => {
     return () => {
@@ -823,6 +894,9 @@ export function useLiveTutor({
     replaySpeech,
     visualState,
     setVisualState,
+    captionsEnabled,
+    toggleCaptions,
+    replayVisualSegment,
     isSttSupported: speechToTextService.isSupported(),
     isTtsSupported: textToSpeechService.isSupported(),
   };
