@@ -5,6 +5,7 @@ import type {
 } from '@ai-tutor/shared';
 
 export interface IAssessmentSessionDocument extends Document {
+  sessionId: string;
   userId: string;
   subject: string;
   grade?: string;
@@ -31,6 +32,12 @@ export interface IAssessmentSessionDocument extends Document {
 
 const AssessmentSessionMongooseSchema = new Schema<IAssessmentSessionDocument>(
   {
+    sessionId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
     userId: {
       type: String,
       required: true,

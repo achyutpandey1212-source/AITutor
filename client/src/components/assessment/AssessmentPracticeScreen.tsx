@@ -172,6 +172,7 @@ export const AssessmentPracticeScreen: React.FC<AssessmentPracticeScreenProps> =
         questionType: qTypeEnum,
         evaluationMode: evalModeEnum,
         marks: marksNum,
+        assessmentSessionId: session?.id || activeSession?.id,
         sessionId: session?.id || activeSession?.id,
       });
 

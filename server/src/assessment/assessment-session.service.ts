@@ -51,7 +51,7 @@ export class AssessmentSessionService {
       try {
         await AssessmentSessionModel.create({
           ...validated,
-          _id: sessionId,
+          sessionId,
         });
       } catch {
         this.inMemorySessions.set(sessionId, validated);
@@ -69,10 +69,10 @@ export class AssessmentSessionService {
   async getSession(userId: string, sessionId: string): Promise<AssessmentSession | null> {
     if (this.isMongoConnected()) {
       try {
-        const doc = await AssessmentSessionModel.findOne({ _id: sessionId, userId }).lean();
+        const doc = await AssessmentSessionModel.findOne({ sessionId, userId }).lean();
         if (doc) {
           return AssessmentSessionSchema.parse({
-            id: (doc as any)._id?.toString() || (doc as any).id,
+            id: doc.sessionId || (doc as any)._id?.toString() || (doc as any).id,
             userId: doc.userId,
             subject: doc.subject,
             grade: doc.grade,
@@ -122,7 +122,7 @@ export class AssessmentSessionService {
         if (docs && docs.length > 0) {
           return docs.map((doc) =>
             AssessmentSessionSchema.parse({
-              id: (doc as any)._id?.toString() || (doc as any).id,
+              id: doc.sessionId || (doc as any)._id?.toString() || (doc as any).id,
               userId: doc.userId,
               subject: doc.subject,
               grade: doc.grade,
@@ -177,7 +177,7 @@ export class AssessmentSessionService {
     if (this.isMongoConnected()) {
       try {
         await AssessmentSessionModel.updateOne(
-          { _id: sessionId, userId },
+          { sessionId, userId },
           {
             $addToSet: { questionIds: questionId },
             currentQuestionId: questionId,
@@ -221,7 +221,7 @@ export class AssessmentSessionService {
     if (this.isMongoConnected()) {
       try {
         await AssessmentSessionModel.updateOne(
-          { _id: sessionId, userId },
+          { sessionId, userId },
           {
             $inc: {
               attemptedQuestionCount: 1,
@@ -256,7 +256,7 @@ export class AssessmentSessionService {
     if (this.isMongoConnected()) {
       try {
         await AssessmentSessionModel.updateOne(
-          { _id: sessionId, userId },
+          { sessionId, userId },
           { status: 'PAUSED', lastActivityAt: new Date() }
         );
       } catch {
@@ -282,7 +282,7 @@ export class AssessmentSessionService {
     if (this.isMongoConnected()) {
       try {
         await AssessmentSessionModel.updateOne(
-          { _id: sessionId, userId },
+          { sessionId, userId },
           { status: 'IN_PROGRESS', lastActivityAt: new Date() }
         );
       } catch {
@@ -309,7 +309,7 @@ export class AssessmentSessionService {
     if (this.isMongoConnected()) {
       try {
         await AssessmentSessionModel.updateOne(
-          { _id: sessionId, userId },
+          { sessionId, userId },
           {
             status: 'COMPLETED',
             completedAt: new Date(),

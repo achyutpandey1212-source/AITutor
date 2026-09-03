@@ -218,6 +218,8 @@ export const TeachingSessionSchema = z.object({
   status: TeachingSessionStatusSchema.default('active'),
   currentConcept: z.string().optional(),
   language: z.enum(['english', 'hindi', 'hinglish']).default('english'),
+  documentId: z.string().optional(),
+  documentTitle: z.string().optional(),
   teachingState: TeachingStateSchema,
   currentMode: z.enum(['TEACHING', 'ASSESSMENT', 'FEEDBACK', 'REVIEW']).default('TEACHING'),
   assessmentSessionId: z.string().optional(),
@@ -260,6 +262,8 @@ export const TutorSessionContextSchema = z.object({
   subject: z.string().default('General'),
   topic: z.string().min(1),
   language: z.enum(['english', 'hindi', 'hinglish']).default('english'),
+  documentId: z.string().optional(),
+  documentTitle: z.string().optional(),
   conversationHistory: z.array(TutorConversationMessageSchema).default([]),
   activeConcept: z.string().min(1),
   teachingState: TeachingStateSchema,
@@ -347,7 +351,10 @@ export type VoiceInteractionResponse = z.infer<typeof VoiceInteractionResponseSc
 
 // DTO Schemas for API Requests
 export const CreateSessionRequestSchema = z.object({
-  topic: z.string().min(1, 'Topic is required'),
+  topic: z.string().optional(),
+  subject: z.string().optional(),
+  documentId: z.string().optional(),
+  documentTitle: z.string().optional(),
   learnerProfile: LearnerProfileSchema.optional(),
 });
 export type CreateSessionRequest = z.infer<typeof CreateSessionRequestSchema>;
@@ -415,6 +422,54 @@ export function normalizeTextForSpeech(text: string): string {
   sanitized = sanitized.replace(/\s+/g, ' ').trim();
 
   return sanitized;
+}
+
+// ==========================================
+// 6b. Conversational Voice Barge-In & State Rules
+// ==========================================
+
+export const VOICE_CONFIG = {
+  // Minimum characters for a student utterance to trigger barge-in during speech
+  BARGE_IN_MIN_TRANSCRIPT_LENGTH: 4,
+  // Minimum words for standard barge-in
+  BARGE_IN_MIN_WORDS: 1,
+  // Instant trigger words that immediately stop tutor speech
+  BARGE_IN_TRIGGER_WORDS: [
+    'wait', 'stop', 'hold', 'pause', 'why', 'what', 'no', 'listen',
+    'can', 'explain', 'but', 'how', 'sir', 'maam', 'question', 'doubt',
+    'repeat', 'again', 'sorry', 'excuse', 'one sec', 'hold on'
+  ],
+  // Conversational silence interval marking end of student turn (ms)
+  SILENCE_DEBOUNCE_MS: 1300,
+  // Barge-in debounce before stopping TTS (ms)
+  BARGE_IN_DEBOUNCE_MS: 200,
+};
+
+/**
+ * Determines whether student speech during SPEAKING represents a meaningful interruption (barge-in)
+ * or accidental background noise / audio bleed.
+ */
+export function isMeaningfulBargeIn(transcript: string, lastSpokenText?: string): boolean {
+  const trimmed = transcript.trim().toLowerCase();
+  if (!trimmed || trimmed.length < 2) return false;
+
+  // Echo Prevention: If recognized speech is an exact substring of what tutor is currently saying, ignore
+  if (lastSpokenText) {
+    const normalizedSpoken = lastSpokenText.toLowerCase();
+    if (normalizedSpoken.includes(trimmed) && trimmed.length < 15) {
+      return false;
+    }
+  }
+
+  // Check for trigger words
+  const words = trimmed.split(/\s+/);
+  const hasTriggerWord = words.some((w) => VOICE_CONFIG.BARGE_IN_TRIGGER_WORDS.includes(w));
+  if (hasTriggerWord) {
+    return true;
+  }
+
+  // Check length threshold
+  return trimmed.length >= VOICE_CONFIG.BARGE_IN_MIN_TRANSCRIPT_LENGTH;
 }
 
 // ==========================================
@@ -885,6 +940,8 @@ export const CreateAssessmentRequestSchema = z.object({
   evaluationMode: AssessmentEvaluationModeSchema.optional(),
   marks: z.number().int().positive().optional(),
   goal: AssessmentGoalSchema.optional(),
+  teachingSessionId: z.string().optional(),
+  assessmentSessionId: z.string().optional(),
   sessionId: z.string().optional(),
   targetSkill: z.string().optional(),
   targetMisconception: z.string().optional(),

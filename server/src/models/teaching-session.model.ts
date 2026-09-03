@@ -9,6 +9,8 @@ export interface ITeachingSessionDocument extends Document {
   status: TeachingSessionStatus;
   currentConcept: string;
   language: 'english' | 'hindi' | 'hinglish';
+  documentId?: string;
+  documentTitle?: string;
   teachingState: TeachingState;
   currentMode: 'TEACHING' | 'ASSESSMENT' | 'FEEDBACK' | 'REVIEW';
   assessmentSessionId?: string;
@@ -113,6 +115,13 @@ const TeachingSessionMongooseSchema = new Schema<ITeachingSessionDocument>(
       type: String,
       enum: ['english', 'hindi', 'hinglish'],
       default: 'english',
+    },
+    documentId: {
+      type: String,
+      index: true,
+    },
+    documentTitle: {
+      type: String,
     },
     teachingState: {
       type: TeachingStateMongooseSchema,

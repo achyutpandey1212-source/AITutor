@@ -9,18 +9,22 @@ import type {
 import { speechToTextService } from '../services/stt.service';
 import { textToSpeechService } from '../services/tts.service';
 import { liveTutorApiClient } from '../services/api.service';
+import { isMeaningfulBargeIn } from '../config/voice.config';
 
 export type VoiceTutorState =
   | 'IDLE'
   | 'CONNECTING'
   | 'LISTENING'
   | 'THINKING'
-  | 'SPEAKING';
+  | 'SPEAKING'
+  | 'INTERRUPTING';
 
 export interface UseLiveTutorProps {
   idToken: string | null;
   defaultTopic?: string;
   defaultSubject?: string;
+  defaultDocumentId?: string;
+  defaultDocumentTitle?: string;
   language?: 'english' | 'hindi' | 'hinglish';
 }
 
@@ -28,6 +32,8 @@ export function useLiveTutor({
   idToken,
   defaultTopic = "Newton's Laws",
   defaultSubject = "Physics",
+  defaultDocumentId,
+  defaultDocumentTitle,
   language = 'english',
 }: UseLiveTutorProps) {
   const [tutorState, setTutorState] = useState<VoiceTutorState>('IDLE');
@@ -53,6 +59,9 @@ export function useLiveTutor({
   const languageRef = useRef(language);
   languageRef.current = language;
 
+  const lastSpokenTextRef = useRef<string>(lastSpokenText);
+  lastSpokenTextRef.current = lastSpokenText;
+
   // Internal turn submitter
   const submitTurn = useCallback(
     async (textToSend: string, activeSessionId?: string, selectedLang = languageRef.current) => {
@@ -73,6 +82,7 @@ export function useLiveTutor({
 
       setTutorState('THINKING');
       setError(null);
+      // Pause microphone capture during active backend network call
       speechToTextService.pauseCapture();
 
       const t3 = Date.now();
@@ -101,8 +111,9 @@ export function useLiveTutor({
           totalPerceivedLatencyMs: totalPerceived,
         });
 
-        // Trigger TTS Output
+        // Trigger TTS Output and resume STT in Barge-In listening mode
         setTutorState('SPEAKING');
+        speechToTextService.resumeCapture();
         const t6 = Date.now();
 
         textToSpeechService.speak(response.normalizedSpeechText, selectedLang, {
@@ -111,18 +122,20 @@ export function useLiveTutor({
             setLatencies((prev) => ({ ...prev, ttsDurationMs: t7 - t6 }));
           },
           onEnd: () => {
-            // After TTS finishes speaking, return strictly to LISTENING
-            setTutorState('LISTENING');
-            setInterimTranscript('');
-            setFinalTranscript('');
-            speechToTextService.resumeCapture();
+            // Only transition to LISTENING if tutor hasn't been interrupted into another turn
+            if (stateRef.current === 'SPEAKING') {
+              setTutorState('LISTENING');
+              setInterimTranscript('');
+              setFinalTranscript('');
+            }
           },
           onError: (ttsErr) => {
             console.warn('[LiveTutor] TTS audio warning:', ttsErr);
-            setTutorState('LISTENING');
-            setInterimTranscript('');
-            setFinalTranscript('');
-            speechToTextService.resumeCapture();
+            if (stateRef.current === 'SPEAKING') {
+              setTutorState('LISTENING');
+              setInterimTranscript('');
+              setFinalTranscript('');
+            }
           },
         });
       } catch (err: any) {
@@ -134,33 +147,49 @@ export function useLiveTutor({
     [idToken, timestamps]
   );
 
-  // Starts the continuous STT listener
+  // Starts the continuous STT listener with Barge-In capability
   const startListeningLoop = useCallback(() => {
     speechToTextService.setLanguage(languageRef.current);
 
     speechToTextService.start({
       onInterimTranscript: (interim) => {
         setInterimTranscript(interim);
+        // Live Barge-In Interruption Detection
+        if (stateRef.current === 'SPEAKING' && isMeaningfulBargeIn(interim, lastSpokenTextRef.current)) {
+          textToSpeechService.cancel();
+          setTutorState('INTERRUPTING');
+        }
       },
       onFinalTranscript: (final) => {
         setFinalTranscript(final);
+        // Live Barge-In Interruption Detection on finalized segment
+        if (stateRef.current === 'SPEAKING' && isMeaningfulBargeIn(final, lastSpokenTextRef.current)) {
+          textToSpeechService.cancel();
+          setTutorState('INTERRUPTING');
+        }
       },
       onSpeechTurnDetected: (turnTranscript) => {
-        // Conversational turn boundary triggered by ~1.3s silence
-        if (stateRef.current === 'LISTENING' && turnTranscript.trim()) {
+        const trimmed = turnTranscript.trim();
+        if (!trimmed) return;
+
+        // If student spoke during SPEAKING or INTERRUPTING, verify meaningful utterance
+        if (stateRef.current === 'SPEAKING') {
+          if (!isMeaningfulBargeIn(trimmed, lastSpokenTextRef.current)) {
+            return; // Ignore accidental noise/audio bleed
+          }
+          textToSpeechService.cancel();
+        }
+
+        if (['LISTENING', 'SPEAKING', 'INTERRUPTING'].includes(stateRef.current)) {
           const t0 = Date.now();
           setTimestamps({ t0 });
-          submitTurn(turnTranscript);
+          submitTurn(trimmed);
         }
       },
       onError: (errMessage) => {
         setError(errMessage);
       },
-      onStateChange: (listening) => {
-        if (!listening && stateRef.current === 'LISTENING') {
-          // keep state synced
-        }
-      },
+      onStateChange: () => {},
     });
 
     setTutorState('LISTENING');
@@ -168,7 +197,13 @@ export function useLiveTutor({
 
   // Starts or Restarts a Teaching Session
   const startSession = useCallback(
-    async (topicToTeach = defaultTopic, targetLang = language, targetSubject = defaultSubject) => {
+    async (
+      topicToTeach = defaultTopic,
+      targetLang = language,
+      targetSubject = defaultSubject,
+      targetDocumentId?: string,
+      targetDocumentTitle?: string
+    ) => {
       if (!idToken) {
         setError('Authentication required to start a session.');
         return null;
@@ -183,6 +218,9 @@ export function useLiveTutor({
       try {
         const newSession = await liveTutorApiClient.createSession(idToken, {
           topic: topicToTeach,
+          subject: targetSubject,
+          documentId: targetDocumentId || defaultDocumentId,
+          documentTitle: targetDocumentTitle || defaultDocumentTitle,
           learnerProfile: {
             preferredLanguage: targetLang,
             educationLevel: 'beginner',
@@ -201,6 +239,8 @@ export function useLiveTutor({
           subject: targetSubject,
           topic: newSession.topic,
           language: newSession.language,
+          documentId: newSession.documentId,
+          documentTitle: newSession.documentTitle,
           conversationHistory: newSession.conversationHistory || [],
           activeConcept: newSession.currentConcept || newSession.topic,
           teachingState: newSession.teachingState,
@@ -218,7 +258,7 @@ export function useLiveTutor({
         return null;
       }
     },
-    [idToken, defaultTopic, language, defaultSubject, startListeningLoop]
+    [idToken, defaultTopic, language, defaultSubject, defaultDocumentId, defaultDocumentTitle, startListeningLoop]
   );
 
   // Gracefully ends active session
@@ -234,10 +274,13 @@ export function useLiveTutor({
   const submitTypedMessage = useCallback(
     async (msg: string) => {
       if (!msg.trim()) return;
+      if (tutorState === 'SPEAKING') {
+        textToSpeechService.cancel();
+      }
       setFinalTranscript(msg);
       await submitTurn(msg);
     },
-    [submitTurn]
+    [submitTurn, tutorState]
   );
 
   // Replays last audio
@@ -276,6 +319,7 @@ export function useLiveTutor({
     teacherResponse,
     isListening: tutorState === 'LISTENING',
     isSpeaking: tutorState === 'SPEAKING',
+    isInterrupting: tutorState === 'INTERRUPTING',
     isLoading: tutorState === 'CONNECTING' || tutorState === 'THINKING',
     error,
     interimTranscript,

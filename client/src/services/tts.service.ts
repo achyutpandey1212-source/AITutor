@@ -8,6 +8,7 @@ export class TextToSpeechService {
   private synth: SpeechSynthesis | null = null;
   private isSpeaking: boolean = false;
   private voices: SpeechSynthesisVoice[] = [];
+  private activeUtteranceId: number = 0;
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -63,8 +64,9 @@ export class TextToSpeechService {
       return;
     }
 
-    // Cancel any previous active playback
+    // Cancel any previous active playback and increment generation ID
     this.cancel();
+    const currentUtteranceId = ++this.activeUtteranceId;
 
     const utterance = new SpeechSynthesisUtterance(normalizedText);
     const voice = this.getBestVoice(language);
@@ -79,39 +81,50 @@ export class TextToSpeechService {
     utterance.pitch = 1.0;
 
     utterance.onstart = () => {
+      if (currentUtteranceId !== this.activeUtteranceId) return;
       this.isSpeaking = true;
       callbacks?.onStart?.();
     };
 
     utterance.onend = () => {
+      if (currentUtteranceId !== this.activeUtteranceId) return;
       this.isSpeaking = false;
       callbacks?.onEnd?.();
     };
 
     utterance.onerror = (e: any) => {
+      if (currentUtteranceId !== this.activeUtteranceId) return;
       this.isSpeaking = false;
-      console.warn('[TextToSpeechService] utterance error:', e);
-      // 'interrupted' / 'canceled' is common when stopped by user
+      // Stale or cancelled utterances must NOT invoke callbacks or resume previous loops
       if (e.error !== 'interrupted' && e.error !== 'canceled') {
         callbacks?.onError?.(`Audio playback failed: ${e.error}`);
-      } else {
-        callbacks?.onEnd?.();
       }
     };
 
     try {
       this.synth.speak(utterance);
     } catch (err: any) {
+      if (currentUtteranceId !== this.activeUtteranceId) return;
       this.isSpeaking = false;
       callbacks?.onError?.(err.message || 'Failed to speak text');
     }
   }
 
   public cancel(): void {
+    // Increment generation ID to immediately invalidate pending callbacks
+    this.activeUtteranceId++;
+    this.isSpeaking = false;
     if (this.synth) {
-      this.synth.cancel();
-      this.isSpeaking = false;
+      try {
+        this.synth.cancel();
+      } catch {
+        // ignore
+      }
     }
+  }
+
+  public stop(): void {
+    this.cancel();
   }
 
   public getSpeakingState(): boolean {

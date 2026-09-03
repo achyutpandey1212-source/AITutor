@@ -29,6 +29,7 @@ import { assessmentAnalyticsService } from '../assessment/assessment-analytics.s
 import { teachingStateUpdater } from '../assessment/teaching-state-updater.js';
 import { documentService, retrievalService } from '../knowledge/index.js';
 import { TeachingSessionModel } from '../models/teaching-session.model.js';
+import { isValidObjectId } from '../utils/objectid.util.js';
 
 export const assessmentRouter = Router();
 
@@ -89,29 +90,55 @@ assessmentRouter.post(
         evaluationMode,
         marks,
         goal,
+        teachingSessionId,
+        assessmentSessionId,
         sessionId,
         targetSkill,
         targetMisconception,
         adaptiveContext,
       } = bodyParse.data;
 
-      // Extract existing teaching state if sessionId provided
+      // Disambiguate session identifiers:
+      // - AssessmentSession IDs are formatted as "ses_<timestamp>_<random>"
+      // - TeachingSession IDs are 24-character hexadecimal MongoDB ObjectIds
+      const effectiveAssessmentSessionId =
+        assessmentSessionId || (sessionId?.startsWith('ses_') ? sessionId : undefined);
+      const effectiveTeachingSessionId =
+        teachingSessionId || (sessionId && !sessionId.startsWith('ses_') && isValidObjectId(sessionId) ? sessionId : undefined);
+
+      // Extract existing teaching state if valid teachingSessionId provided
       let teachingState = undefined;
-      if (sessionId) {
-        const sessionDoc = await TeachingSessionModel.findById(sessionId);
-        if (sessionDoc && sessionDoc.userId === userId) {
-          teachingState = sessionDoc.teachingState;
+      let sessionDoc = null;
+      if (effectiveTeachingSessionId && isValidObjectId(effectiveTeachingSessionId)) {
+        try {
+          sessionDoc = await TeachingSessionModel.findById(effectiveTeachingSessionId);
+          if (sessionDoc && sessionDoc.userId === userId) {
+            teachingState = sessionDoc.teachingState;
+          }
+        } catch {
+          // Gracefully fallback if session query fails
+        }
+      }
+
+      // Extract assessment session context if provided
+      let assessmentSession = null;
+      if (effectiveAssessmentSessionId) {
+        try {
+          assessmentSession = await assessmentSessionService.getSession(userId, effectiveAssessmentSessionId);
+        } catch {
+          // Gracefully fallback
         }
       }
 
       // Extract persistent student learner state
       const learnerState = await teachingStateUpdater.getLearnerState(userId);
 
-      // Check RAG documents for grounding
+      // Check RAG documents for grounding (filtered by session documentId if set)
       let knowledgeContext = undefined;
       const hasDocs = await documentService.hasReadyDocuments(userId);
       if (hasDocs) {
-        knowledgeContext = await retrievalService.retrieveKnowledgeContext(userId, `${subject} ${concept}`);
+        const retrievalOptions = sessionDoc?.documentId ? { documentIds: [sessionDoc.documentId] } : undefined;
+        knowledgeContext = await retrievalService.retrieveKnowledgeContext(userId, `${subject} ${concept}`, retrievalOptions);
       }
 
       // Deterministically plan strategy with learnerState & adaptive signals
@@ -142,7 +169,8 @@ assessmentRouter.post(
       });
 
       // Persist server-side question with answer key & rubrics intact
-      await assessmentSubmissionService.saveQuestion(serverQuestion, userId, sessionId);
+      const effectiveSessionToSave = effectiveAssessmentSessionId || effectiveTeachingSessionId;
+      await assessmentSubmissionService.saveQuestion(serverQuestion, userId, effectiveSessionToSave);
 
       // Return sanitized question to client
       const clientQuestion = sanitizeQuestionForClient(serverQuestion);

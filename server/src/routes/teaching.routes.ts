@@ -19,6 +19,8 @@ import {
 } from '@ai-tutor/shared';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { TeachingSessionModel } from '../models/teaching-session.model.js';
+import { DocumentModel } from '../models/document.model.js';
+import { isValidObjectId } from '../utils/objectid.util.js';
 import { teacherEngine } from '../engine/teacher.engine.js';
 import { documentService, retrievalService } from '../knowledge/index.js';
 
@@ -31,6 +33,8 @@ function buildSessionContext(sessionDoc: any): TutorSessionContext {
     subject: sessionDoc.subject || 'General',
     topic: sessionDoc.topic,
     language: sessionDoc.language || 'english',
+    documentId: sessionDoc.documentId,
+    documentTitle: sessionDoc.documentTitle,
     conversationHistory: sessionDoc.conversationHistory || [],
     activeConcept: sessionDoc.currentConcept || sessionDoc.topic,
     teachingState: sessionDoc.teachingState,
@@ -69,17 +73,61 @@ teachingRouter.post(
         return;
       }
 
-      const { topic, learnerProfile } = bodyParse.data;
+      const { topic, subject, documentId, documentTitle, learnerProfile } = bodyParse.data;
+      let effectiveTopic = topic?.trim();
+      let effectiveSubject = subject || req.body?.subject || 'General';
+      let effectiveDocTitle = documentTitle;
+
+      // Validate study document selection if provided
+      if (documentId) {
+        if (!isValidObjectId(documentId)) {
+          res.status(404).json({
+            success: false,
+            error: { message: 'Document not found or invalid format', code: 'DOCUMENT_NOT_FOUND' },
+          });
+          return;
+        }
+
+        const doc = await DocumentModel.findOne({ _id: documentId, userId });
+        if (!doc) {
+          res.status(403).json({
+            success: false,
+            error: { message: 'Forbidden: You do not own this document', code: 'FORBIDDEN' },
+          });
+          return;
+        }
+
+        if (doc.status !== 'ready') {
+          res.status(400).json({
+            success: false,
+            error: {
+              message: "Study material isn't ready yet. Please wait for indexing to finish.",
+              code: 'DOCUMENT_NOT_READY',
+            },
+          });
+          return;
+        }
+
+        effectiveDocTitle = doc.filename;
+        if (!effectiveTopic) {
+          effectiveTopic = doc.filename.replace(/\.[^/.]+$/, '');
+        }
+      }
+
+      if (!effectiveTopic) {
+        effectiveTopic = 'General Topic';
+      }
+
       const initialProfile = {
         userId,
         preferredLanguage: learnerProfile?.preferredLanguage || 'english',
         educationLevel: learnerProfile?.educationLevel || 'beginner',
-        learningGoal: learnerProfile?.learningGoal || 'Understand fundamentals',
+        learningGoal: learnerProfile?.learningGoal || `Understand fundamentals of ${effectiveTopic}`,
         explanationStyle: learnerProfile?.explanationStyle || 'simple',
       };
 
       const initialTeachingState: TeachingState = TeachingStateSchema.parse({
-        currentConcept: topic,
+        currentConcept: effectiveTopic,
         understanding: 'unknown',
         confidence: 0.5,
         misconceptions: [],
@@ -92,11 +140,13 @@ teachingRouter.post(
       // Deterministic MongoDB persistence
       const sessionDoc = await TeachingSessionModel.create({
         userId,
-        topic,
-        subject: req.body?.subject || 'General',
+        topic: effectiveTopic,
+        subject: effectiveSubject,
+        documentId: documentId || undefined,
+        documentTitle: effectiveDocTitle || undefined,
         learnerProfile: initialProfile,
         status: 'active',
-        currentConcept: topic,
+        currentConcept: effectiveTopic,
         language: initialProfile.preferredLanguage,
         teachingState: initialTeachingState,
         currentMode: 'TEACHING',
@@ -108,6 +158,8 @@ teachingRouter.post(
         userId: sessionDoc.userId,
         topic: sessionDoc.topic,
         subject: sessionDoc.subject || 'General',
+        documentId: sessionDoc.documentId,
+        documentTitle: sessionDoc.documentTitle,
         learnerProfile: sessionDoc.learnerProfile,
         status: sessionDoc.status,
         currentConcept: sessionDoc.currentConcept,
@@ -150,6 +202,14 @@ teachingRouter.get(
         return;
       }
 
+      if (!isValidObjectId(sessionId)) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Teaching session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
       const sessionDoc = await TeachingSessionModel.findById(sessionId);
       if (!sessionDoc) {
         res.status(404).json({
@@ -172,6 +232,8 @@ teachingRouter.get(
         userId: sessionDoc.userId,
         topic: sessionDoc.topic,
         subject: sessionDoc.subject || 'General',
+        documentId: sessionDoc.documentId,
+        documentTitle: sessionDoc.documentTitle,
         learnerProfile: sessionDoc.learnerProfile,
         status: sessionDoc.status,
         currentConcept: sessionDoc.currentConcept,
@@ -222,6 +284,14 @@ teachingRouter.post(
         return;
       }
 
+      if (!isValidObjectId(sessionId)) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Teaching session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
       const bodyParse = RespondSessionRequestSchema.safeParse(req.body);
       if (!bodyParse.success) {
         res.status(400).json({
@@ -258,6 +328,8 @@ teachingRouter.post(
         userId: sessionDoc.userId,
         topic: sessionDoc.topic,
         subject: sessionDoc.subject || 'General',
+        documentId: sessionDoc.documentId,
+        documentTitle: sessionDoc.documentTitle,
         learnerProfile: sessionDoc.learnerProfile,
         status: sessionDoc.status,
         currentConcept: sessionDoc.currentConcept,
@@ -273,13 +345,14 @@ teachingRouter.post(
 
       const { message, knowledgeContext: explicitKnowledge } = bodyParse.data;
 
-      // Automatically retrieve knowledge context if user has ready documents and none was passed
+      // Automatically retrieve knowledge context (filtered by session documentId if set)
       let effectiveKnowledge = explicitKnowledge;
       if (!effectiveKnowledge) {
         const hasDocs = await documentService.hasReadyDocuments(userId);
         if (hasDocs) {
           const ragStart = Date.now();
-          effectiveKnowledge = await retrievalService.retrieveKnowledgeContext(userId, message);
+          const retrievalOptions = sessionDoc.documentId ? { documentIds: [sessionDoc.documentId] } : undefined;
+          effectiveKnowledge = await retrievalService.retrieveKnowledgeContext(userId, message, retrievalOptions);
           if (effectiveKnowledge) {
             console.info(`[TeachingRoute] Injected ${effectiveKnowledge.retrievedChunks?.length || 0} RAG chunks (took ${Date.now() - ragStart}ms)`);
           }
@@ -358,6 +431,14 @@ teachingRouter.post(
         return;
       }
 
+      if (!isValidObjectId(sessionId)) {
+        res.status(404).json({
+          success: false,
+          error: { message: 'Teaching session not found', code: 'SESSION_NOT_FOUND' },
+        });
+        return;
+      }
+
       const bodyParse = VoiceInteractionRequestSchema.safeParse(req.body);
       if (!bodyParse.success) {
         res.status(400).json({
@@ -398,6 +479,8 @@ teachingRouter.post(
         userId: sessionDoc.userId,
         topic: sessionDoc.topic,
         subject: sessionDoc.subject || 'General',
+        documentId: sessionDoc.documentId,
+        documentTitle: sessionDoc.documentTitle,
         learnerProfile: {
           ...sessionDoc.learnerProfile,
           preferredLanguage: targetLanguage,
@@ -414,13 +497,14 @@ teachingRouter.post(
         updatedAt: sessionDoc.updatedAt.toISOString(),
       };
 
-      // Automatic RAG retrieval for voice question if user has ready documents
+      // Automatic RAG retrieval for voice question (filtered by session documentId if set)
       let effectiveKnowledge = explicitKnowledge;
       if (!effectiveKnowledge) {
         const hasDocs = await documentService.hasReadyDocuments(userId);
         if (hasDocs) {
           const ragStart = Date.now();
-          effectiveKnowledge = await retrievalService.retrieveKnowledgeContext(userId, transcript);
+          const retrievalOptions = sessionDoc.documentId ? { documentIds: [sessionDoc.documentId] } : undefined;
+          effectiveKnowledge = await retrievalService.retrieveKnowledgeContext(userId, transcript, retrievalOptions);
           if (effectiveKnowledge) {
             console.info(`[VoiceRoute] Grounded response with ${effectiveKnowledge.retrievedChunks?.length || 0} RAG chunks (took ${Date.now() - ragStart}ms)`);
           }
