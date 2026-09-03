@@ -966,6 +966,46 @@ export function useLiveTutor({
     }
   }, [idToken, replayTeachingSegment]);
 
+  // Phase 4: Explicit barge-in / tutor interruption
+  const interruptTutor = useCallback(async () => {
+    activeTurnIdRef.current = null;
+    cancelBeatTimers();
+    textToSpeechService.cancel();
+    setVisualState((prev) => ({ ...prev, captionText: undefined }));
+    setTutorState('INTERRUPTING');
+
+    const currentSessionId = sessionRef.current?.id;
+    if (idToken && currentSessionId) {
+      try {
+        await fetch(`/api/teaching/sessions/${currentSessionId}/interrupt`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      } catch {
+        // Safe to ignore network failure during local interruption
+      }
+    }
+
+    setTimeout(() => {
+      setTutorState('LISTENING');
+      if (micEnabledRef.current) {
+        speechToTextService.resumeCapture();
+      }
+    }, 200);
+  }, [cancelBeatTimers, idToken]);
+
+  // Phase 4: "Explain Differently" trigger (instructs tutor to explain previous concept another way)
+  const explainDifferently = useCallback(async () => {
+    const currentConcept = sessionRef.current?.currentConcept || sessionRef.current?.topic;
+    const prompt = currentConcept
+      ? `Can you explain ${currentConcept} in a different way with a different example or visual?`
+      : 'Can you explain that differently?';
+    await submitTypedMessage(prompt);
+  }, [submitTypedMessage]);
+
   // Clean up on unmount
   useEffect(() => {
     return () => {
@@ -1011,6 +1051,8 @@ export function useLiveTutor({
     replayTeachingSegment,
     replayConcept,
     explainAgain,
+    explainDifferently,
+    interruptTutor,
     isSttSupported: speechToTextService.isSupported(),
     isTtsSupported: textToSpeechService.isSupported(),
   };

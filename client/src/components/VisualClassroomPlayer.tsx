@@ -14,6 +14,9 @@ export interface VisualClassroomPlayerProps {
   captionsEnabled?: boolean;
   onReplaySegment?: (visualId: string) => void;
   onExplainAgain?: () => void;
+  onExplainDifferently?: () => void;
+  onInterrupt?: () => void;
+  isSpeaking?: boolean;
 }
 
 export const VisualClassroomPlayer: React.FC<VisualClassroomPlayerProps> = ({
@@ -25,6 +28,9 @@ export const VisualClassroomPlayer: React.FC<VisualClassroomPlayerProps> = ({
   captionsEnabled = false,
   onReplaySegment,
   onExplainAgain,
+  onExplainDifferently,
+  onInterrupt,
+  isSpeaking = false,
 }) => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
@@ -159,10 +165,13 @@ export const VisualClassroomPlayer: React.FC<VisualClassroomPlayerProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {/* Phase 3.5: Deterministic Explain Again / Replay Controls */}
+          {/* Phase 3.5 & 4: Deterministic Replay & Barge-in Controls */}
           {onExplainAgain && (
             <ReplayControls
               onExplainAgain={onExplainAgain}
+              onExplainDifferently={onExplainDifferently}
+              onInterrupt={onInterrupt}
+              isSpeaking={isSpeaking}
               disabled={isDemoRunning}
             />
           )}

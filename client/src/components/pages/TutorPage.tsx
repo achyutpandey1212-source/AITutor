@@ -86,6 +86,8 @@ export const TutorPage: React.FC<TutorPageProps> = ({ idToken, onNavigate }) => 
     replayVisualSegment,
     replayTeachingSegment,
     explainAgain,
+    explainDifferently,
+    interruptTutor,
   } = useLiveTutor({
     idToken,
     defaultTopic: topicInput,
@@ -327,6 +329,9 @@ export const TutorPage: React.FC<TutorPageProps> = ({ idToken, onNavigate }) => 
             captionsEnabled={captionsEnabled}
             onReplaySegment={replayVisualSegment}
             onExplainAgain={explainAgain}
+            onExplainDifferently={explainDifferently}
+            onInterrupt={interruptTutor}
+            isSpeaking={isSpeaking}
           />
         </div>
 

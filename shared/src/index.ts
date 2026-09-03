@@ -1869,3 +1869,78 @@ export const TeachingContentSchema = z.object({
   visualPlan: VisualPlanSchema.optional(),
 });
 export type TeachingContent = z.infer<typeof TeachingContentSchema>;
+
+// ==========================================
+// 13. Phase 4: Live Interactive Classroom & Conversation Orchestration
+// ==========================================
+
+export const StudentIntentSchema = z.enum([
+  'TEACH',
+  'QUESTION',
+  'FOLLOW_UP',
+  'CLARIFICATION',
+  'REPLAY',
+  'RE_EXPLAIN',
+  'ASSESSMENT',
+  'ANSWER',
+  'SKIP',
+  'PAUSE',
+  'RESUME',
+  'END_SESSION',
+  'UNKNOWN',
+]);
+export type StudentIntent = z.infer<typeof StudentIntentSchema>;
+
+export const ClassroomStateSchema = z.enum([
+  'IDLE',
+  'LISTENING',
+  'THINKING',
+  'SPEAKING',
+  'INTERRUPTED',
+  'ASSESSMENT',
+  'REPLAYING',
+  'ERROR',
+]);
+export type ClassroomState = z.infer<typeof ClassroomStateSchema>;
+
+export const TutorEventTypeSchema = z.enum([
+  'SESSION_STARTED',
+  'STUDENT_SPEECH_STARTED',
+  'STUDENT_INPUT_FINALIZED',
+  'TUTOR_THINKING',
+  'TUTOR_RESPONSE_READY',
+  'TUTOR_SPEECH_STARTED',
+  'VISUAL_BEAT_CHANGED',
+  'TUTOR_INTERRUPTED',
+  'TUTOR_SPEECH_COMPLETED',
+  'REPLAY_STARTED',
+  'REPLAY_COMPLETED',
+  'ASSESSMENT_STARTED',
+  'ASSESSMENT_COMPLETED',
+  'SESSION_ENDED',
+]);
+export type TutorEventType = z.infer<typeof TutorEventTypeSchema>;
+
+export const TutorEventSchema = z.object({
+  type: TutorEventTypeSchema,
+  sessionId: z.string(),
+  turnId: z.string().optional(),
+  timestamp: z.string(),
+  payload: z.record(z.any()).optional(),
+});
+export type TutorEvent = z.infer<typeof TutorEventSchema>;
+
+export const SessionSummarySchema = z.object({
+  sessionId: z.string(),
+  topic: z.string(),
+  subject: z.string(),
+  conceptsCovered: z.array(z.string()).default([]),
+  keyFormulas: z.array(z.string()).default([]),
+  weakConcepts: z.array(z.string()).default([]),
+  strongConcepts: z.array(z.string()).default([]),
+  totalDurationMs: z.number().default(0),
+  turnCount: z.number().default(0),
+  startedAt: z.string(),
+  endedAt: z.string().optional(),
+});
+export type SessionSummary = z.infer<typeof SessionSummarySchema>;

@@ -44,6 +44,7 @@ import { defaultVisualHistoryService } from '../visual/visual-history.service.js
 import { defaultVisualAssetRepository } from '../visual/visual-asset.repository.js';
 import { defaultReplayService } from '../memory/replay.service.js';
 import { defaultSessionMemoryService } from '../memory/session-memory.service.js';
+import { defaultConversationOrchestrator } from '../orchestration/conversation.orchestrator.js';
 
 export const teachingRouter = Router();
 
@@ -648,6 +649,125 @@ async function processTurnCore(params: {
         aiGenerationMs,
       };
     }
+  }
+
+  // Phase 4: Unified Intent Routing through ConversationOrchestrator
+  const studentIntent = defaultConversationOrchestrator.classifyIntent(
+    message,
+    sessionDoc.currentMode === 'ASSESSMENT'
+  );
+
+  // CASE 1.5: Deterministic Replay ("Explain that again", "Show me that formula again")
+  if (studentIntent === 'REPLAY') {
+    const replayResult = await defaultConversationOrchestrator.handleReplayRequest(
+      sessionDoc._id.toString(),
+      effectiveTurnId
+    );
+
+    if (replayResult) {
+      sessionDoc.conversationHistory.push(
+        { role: 'student', text: message, type: mode, turnId: effectiveTurnId, timestamp: now },
+        {
+          role: 'tutor',
+          text: replayResult.displayText,
+          type: 'explanation',
+          intent: 'explanation',
+          concept: replayResult.teachingState.currentConcept,
+          turnId: effectiveTurnId,
+          timestamp: new Date().toISOString(),
+        }
+      );
+      await sessionDoc.save();
+
+      const tc = {
+        turnId: effectiveTurnId,
+        concept: replayResult.teachingState.currentConcept,
+        speechText: replayResult.speechText || replayResult.displayText,
+        captionText: replayResult.captionText,
+        displayText: replayResult.displayText,
+        visual: replayResult.visual,
+        visualBeats: replayResult.visualBeats,
+      };
+
+      return {
+        teacherResponse: {
+          responseText: replayResult.displayText,
+          language: targetLanguage,
+          intent: 'explanation' as any,
+          teachingAction: 'explain' as any,
+          action: replayResult.tutorAction,
+          speechText: replayResult.speechText,
+          captionText: replayResult.captionText,
+          teachingContent: tc,
+          visualBeats: replayResult.visualBeats,
+        },
+        teachingState: sessionDoc.teachingState,
+        sessionContext: buildSessionContext(sessionDoc),
+        tutorAction: replayResult.tutorAction,
+        turnId: effectiveTurnId,
+        speechText: replayResult.speechText,
+        captionText: replayResult.captionText,
+        visualPayload: replayResult.visual ? { type: replayResult.visual.type, ...replayResult.visual.data } : undefined,
+        teachingContent: tc,
+        normalizedSpeechText: replayResult.speechText,
+        aiGenerationMs: 5,
+      };
+    }
+  }
+
+  // CASE 1.6: Session Memory Query ("What did we learn today?")
+  if (
+    /what did we learn|summarize what we covered|what concepts did we (do|study|cover)|recap the session/i.test(
+      message
+    )
+  ) {
+    const memResult = await defaultConversationOrchestrator.handleSessionMemoryQuery(
+      sessionDoc._id.toString(),
+      effectiveTurnId
+    );
+
+    sessionDoc.conversationHistory.push(
+      { role: 'student', text: message, type: mode, turnId: effectiveTurnId, timestamp: now },
+      {
+        role: 'tutor',
+        text: memResult.displayText,
+        type: 'explanation',
+        intent: 'explanation',
+        concept: sessionDoc.currentConcept || sessionDoc.topic,
+        turnId: effectiveTurnId,
+        timestamp: new Date().toISOString(),
+      }
+    );
+    await sessionDoc.save();
+
+    const tc = {
+      turnId: effectiveTurnId,
+      concept: sessionDoc.currentConcept || sessionDoc.topic,
+      speechText: memResult.speechText || memResult.displayText,
+      displayText: memResult.displayText,
+      visual: memResult.visual,
+    };
+
+    return {
+      teacherResponse: {
+        responseText: memResult.displayText,
+        language: targetLanguage,
+        intent: 'explanation' as any,
+        teachingAction: 'explain' as any,
+        action: memResult.tutorAction,
+        speechText: memResult.speechText,
+        teachingContent: tc,
+      },
+      teachingState: sessionDoc.teachingState,
+      sessionContext: buildSessionContext(sessionDoc),
+      tutorAction: memResult.tutorAction,
+      turnId: effectiveTurnId,
+      speechText: memResult.speechText,
+      visualPayload: memResult.visual ? { type: memResult.visual.type, ...memResult.visual.data } : undefined,
+      teachingContent: tc,
+      normalizedSpeechText: memResult.speechText,
+      aiGenerationMs: 10,
+    };
   }
 
   // CASE 2: Normal TEACHING mode
@@ -1692,6 +1812,78 @@ teachingRouter.get(
       res.status(500).json({
         success: false,
         error: { message: err.message || 'Failed to retrieve concept history', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// =========================================================================
+// Phase 4: Live Interactive Classroom & Orchestration Endpoints
+// =========================================================================
+
+// 17. POST /api/teaching/sessions/:sessionId/interrupt - Atomic barge-in cancellation
+teachingRouter.post(
+  '/sessions/:sessionId/interrupt',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { sessionId } = req.params;
+      defaultConversationOrchestrator.handleInterruption(sessionId);
+      res.status(200).json({
+        success: true,
+        data: { message: 'Turn interrupted and invalidated', sessionId },
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to interrupt session', code: 'SERVER_ERROR' },
+      });
+    }
+  }
+);
+
+// 18. GET /api/teaching/sessions/:sessionId/summary - Session summary from memory
+teachingRouter.get(
+  '/sessions/:sessionId/summary',
+  requireAuth,
+  async (req: Request, res: Response<ApiResponse<any>>): Promise<void> => {
+    try {
+      const { sessionId } = req.params;
+      const memory = await defaultSessionMemoryService.getSessionMemory(sessionId);
+      const sessionDoc = await TeachingSessionModel.findById(sessionId).lean();
+
+      // Extract formulas and concepts covered
+      const keyFormulas: string[] = [];
+      for (const seg of memory.segments) {
+        for (const beat of seg.visualBeats || []) {
+          if (beat.type === 'FORMULA' && beat.data?.formula) {
+            keyFormulas.push(beat.data.formula);
+          }
+        }
+      }
+
+      const summary = {
+        sessionId,
+        topic: memory.topic,
+        subject: memory.subject,
+        conceptsCovered: memory.conceptsCovered,
+        keyFormulas: Array.from(new Set(keyFormulas)),
+        weakConcepts: sessionDoc?.teachingState?.conceptsNeedingWork || [],
+        strongConcepts: sessionDoc?.teachingState?.conceptsMastered || [],
+        totalDurationMs: memory.totalDurationMs,
+        turnCount: memory.segments.length,
+        startedAt: memory.startedAt,
+        endedAt: new Date().toISOString(),
+      };
+
+      res.status(200).json({
+        success: true,
+        data: summary,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: { message: err.message || 'Failed to generate session summary', code: 'SERVER_ERROR' },
       });
     }
   }
