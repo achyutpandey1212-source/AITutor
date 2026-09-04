@@ -518,7 +518,137 @@ export class LiveTutorApiClient {
 
     return json.data;
   }
+
+  // ==========================================
+  // Lumo AI Workspace API Methods
+  // ==========================================
+
+  async sendAIChat(
+    idToken: string,
+    request: AIChatRequest
+  ): Promise<AIChatResponse> {
+    const res = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: this.getHeaders(idToken),
+      body: JSON.stringify(request),
+    });
+
+    const json: ApiResponse<AIChatResponse> = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Lumo AI chat failed (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
+
+  async streamAIChat(
+    idToken: string,
+    request: AIChatRequest,
+    onChunk: (chunk: string) => void,
+    onStart?: (meta: { modelTier: LumoModelTier; suggestions: string[]; hasDocumentContext: boolean }) => void
+  ): Promise<{ fullText: string; suggestions: string[]; model?: string; provider?: string }> {
+    const res = await fetch('/api/ai/chat/stream', {
+      method: 'POST',
+      headers: this.getHeaders(idToken),
+      body: JSON.stringify(request),
+    });
+
+    if (!res.ok || !res.body) {
+      // Graceful fallback to standard request if SSE stream fails
+      const fallbackData = await this.sendAIChat(idToken, request);
+      onChunk(fallbackData.text);
+      return {
+        fullText: fallbackData.text,
+        suggestions: fallbackData.suggestions,
+        model: fallbackData.model,
+        provider: fallbackData.provider,
+      };
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let fullText = '';
+    let suggestions: string[] = [];
+    let model: string | undefined;
+    let provider: string | undefined;
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+        const payloadStr = trimmed.slice(6);
+        try {
+          const parsed = JSON.parse(payloadStr);
+          if (parsed.type === 'start') {
+            if (parsed.suggestions) suggestions = parsed.suggestions;
+            if (onStart) {
+              onStart({
+                modelTier: parsed.modelTier || request.modelTier || 'light',
+                suggestions: parsed.suggestions || [],
+                hasDocumentContext: !!parsed.hasDocumentContext,
+              });
+            }
+          } else if (parsed.type === 'chunk' && parsed.chunk) {
+            fullText += parsed.chunk;
+            onChunk(parsed.chunk);
+          } else if (parsed.type === 'done') {
+            if (parsed.fullText) fullText = parsed.fullText;
+            if (parsed.suggestions) suggestions = parsed.suggestions;
+            if (parsed.model) model = parsed.model;
+            if (parsed.provider) provider = parsed.provider;
+          } else if (parsed.type === 'error') {
+            throw new Error(parsed.error || 'Streaming error');
+          }
+        } catch {
+          // Ignore json parse error in partial chunk
+        }
+      }
+    }
+
+    return { fullText, suggestions, model, provider };
+  }
+}
+
+export interface AIChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+export interface AIChatContext {
+  subject?: string;
+  topic?: string;
+  concept?: string;
+  documentId?: string;
+  documentTitle?: string;
+}
+
+export type LumoModelTier = 'fast' | 'light' | 'pro';
+
+export interface AIChatRequest {
+  message: string;
+  history?: AIChatMessage[];
+  modelTier?: LumoModelTier;
+  context?: AIChatContext;
+}
+
+export interface AIChatResponse {
+  text: string;
+  modelTier: LumoModelTier;
+  provider: string;
+  model: string;
+  fallbackUsed: boolean;
+  suggestions: string[];
+  hasDocumentContext: boolean;
 }
 
 export const liveTutorApiClient = new LiveTutorApiClient();
+
 

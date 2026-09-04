@@ -346,6 +346,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           {/* ========================================================= */}
           <QuickActionsBar
             onStartLearning={() => handleOpenStartModal()}
+            onAskLumo={() => onNavigate('/ai')}
             onPractice={() => onNavigate('/practice')}
             onUploadMaterial={() => {
               const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement | null;

@@ -9,6 +9,7 @@ import { Button } from '../ui/Button';
 export interface QuickActionsBarProps {
   onStartLearning: () => void;
   onPractice: () => void;
+  onAskLumo?: () => void;
   onUploadMaterial: () => void;
   onViewMistakes: () => void;
   dueReviewsCount?: number;
@@ -17,6 +18,7 @@ export interface QuickActionsBarProps {
 export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
   onStartLearning,
   onPractice,
+  onAskLumo,
   onUploadMaterial,
   onViewMistakes,
   dueReviewsCount = 0,
@@ -45,6 +47,22 @@ export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
       >
         + Start new topic
       </Button>
+
+      {onAskLumo && (
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={onAskLumo}
+          style={{
+            borderRadius: 'var(--radius-full)',
+            padding: '0 var(--space-5)',
+            height: '42px',
+            background: 'transparent',
+          }}
+        >
+          ✦ Ask Lumo
+        </Button>
+      )}
 
       <Button
         variant="secondary"

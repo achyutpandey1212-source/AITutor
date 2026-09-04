@@ -14,6 +14,7 @@ import { BookmarksPage } from './components/pages/BookmarksPage';
 import { MistakesPage } from './components/pages/MistakesPage';
 import { AnalyticsPage } from './components/pages/AnalyticsPage';
 import { DocumentsPage } from './components/pages/DocumentsPage';
+import { LumoAIPage } from './components/pages/LumoAIPage';
 
 // Lumo Navigation Shell
 import { Navbar } from './components/navigation/Navbar';
@@ -151,7 +152,17 @@ export const App: React.FC = () => {
   const queryParams = new URLSearchParams(searchStr);
 
   // Protected Route Guards — unchanged
-  const protectedRoutes = ['/dashboard', '/tutor', '/practice', '/bookmarks', '/mistakes', '/analytics', '/documents'];
+  const protectedRoutes = [
+    '/dashboard',
+    '/tutor',
+    '/practice',
+    '/bookmarks',
+    '/mistakes',
+    '/analytics',
+    '/documents',
+    '/ai',
+    '/app/ai',
+  ];
   if (!isAuthenticated && protectedRoutes.includes(pathname)) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-background)' }}>
@@ -205,6 +216,21 @@ export const App: React.FC = () => {
 
       case '/documents':
         return <DocumentsPage idToken={idToken} onNavigate={navigate} />;
+
+      case '/ai':
+      case '/app/ai':
+        return (
+          <LumoAIPage
+            idToken={idToken}
+            onNavigate={navigate}
+            initialTopic={queryParams.get('topic') || undefined}
+            initialSubject={queryParams.get('subject') || undefined}
+            initialConcept={queryParams.get('concept') || undefined}
+            initialDocumentId={queryParams.get('documentId') || undefined}
+            initialDocumentTitle={queryParams.get('documentTitle') || undefined}
+            from={queryParams.get('from') || undefined}
+          />
+        );
 
       default:
         return <LandingPage isAuthenticated={isAuthenticated} onNavigate={navigate} />;

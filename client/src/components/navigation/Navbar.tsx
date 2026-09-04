@@ -128,6 +128,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { href: '/dashboard',  label: 'Home' },
     { href: '/tutor',      label: 'Learn' },
     { href: '/practice',   label: 'Practice' },
+    { href: '/ai',         label: 'Lumo AI' },
     { href: '/documents',  label: 'Documents' },
   ];
 
