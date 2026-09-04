@@ -5,6 +5,7 @@ import { AssessmentStage } from './AssessmentStage';
 import { TutorPresence } from './TutorPresence';
 import { StageSubtitlePill } from './StageSubtitlePill';
 import { LessonProgress, type ConceptStep } from '../TheaterProgress/LessonProgress';
+import { IconRefresh, IconPlay } from '../TheaterIcons';
 
 export interface TheaterStageProps {
   visualState: TutorVisualState;
@@ -59,26 +60,26 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
         width: '100%',
         maxWidth: '1360px',
         margin: '0 auto',
-        gap: '0.85rem',
+        gap: '0.75rem',
       }}
     >
-      {/* The Master Classroom Stage Container */}
+      {/* The Master Classroom Stage Container — Fluid, Responsive, Composition-Aware */}
       <div
         className="theater-stage-container"
         style={{
           position: 'relative',
           width: '100%',
-          aspectRatio: '16/9',
-          minHeight: '480px',
-          maxHeight: '68vh',
-          background: '#0A0A0B',
-          backgroundImage:
-            'radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.03) 0%, rgba(10, 10, 11, 0.98) 75%)',
-          borderRadius: '24px',
+          height: 'clamp(420px, 60vh, 700px)',
+          minHeight: '400px',
+          background: 'var(--theater-surface)',
+          borderRadius: 'var(--theater-radius-xl)',
           overflow: 'hidden',
-          border: '1px solid rgba(255, 255, 255, 0.07)',
+          border: '1px solid var(--theater-border-subtle)',
           boxShadow: 'var(--theater-shadow-stage)',
           display: 'flex',
+          gap: '0.85rem',
+          padding: '0.85rem',
+          boxSizing: 'border-box',
         }}
       >
         {/* Replay Banner at Top Center */}
@@ -89,43 +90,51 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
               top: '1rem',
               left: '50%',
               transform: 'translateX(-50%)',
-              background: 'rgba(226, 157, 75, 0.94)',
-              backdropFilter: 'blur(10px)',
-              color: '#080808',
-              padding: '0.35rem 1rem',
-              borderRadius: '999px',
-              fontSize: '0.8rem',
-              fontWeight: 700,
+              background: 'var(--theater-surface-elevated)',
+              border: '1px solid var(--theater-accent-border)',
+              color: 'var(--theater-text-primary)',
+              padding: '0.35rem 0.9rem',
+              borderRadius: 'var(--theater-radius-pill)',
+              fontSize: '0.78rem',
+              fontWeight: 550,
               display: 'flex',
               alignItems: 'center',
-              gap: '0.6rem',
+              gap: '0.65rem',
               zIndex: 30,
-              boxShadow: '0 4px 20px rgba(226, 157, 75, 0.3)',
+              boxShadow: 'var(--theater-shadow-dock)',
               fontFamily: 'var(--theater-font-sans)',
             }}
           >
-            <span>↻ Replaying: {replayConceptName || visualState.concept}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+              <IconRefresh size={13} style={{ color: 'var(--theater-accent)' }} />
+              <span>Replaying: {replayConceptName || visualState.concept}</span>
+            </span>
             {onResumeLive && (
               <button
                 onClick={onResumeLive}
                 style={{
-                  background: '#080808',
-                  color: '#F5F5F2',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  background: 'var(--theater-accent)',
+                  color: 'var(--theater-accent-contrast)',
                   border: 'none',
-                  borderRadius: '999px',
-                  padding: '0.15rem 0.55rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
+                  borderRadius: 'var(--theater-radius-pill)',
+                  padding: '0.2rem 0.6rem',
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
                   cursor: 'pointer',
+                  transition: 'opacity var(--theater-transition-fast)',
                 }}
               >
-                Resume Live ▶
+                <IconPlay size={10} />
+                <span>Resume Live</span>
               </button>
             )}
           </div>
         )}
 
-        {/* Left / Center: Visual Blackboard Content */}
+        {/* Primary Content: Visual Blackboard & Teaching Visuals */}
         <div
           style={{
             flex: 1,
@@ -135,6 +144,8 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
+            borderRadius: 'var(--theater-radius-lg)',
+            background: 'var(--theater-surface-sunken)',
           }}
         >
           <VisualCanvas
@@ -142,7 +153,7 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
             captionsEnabled={false}
           />
 
-          {/* Floating Subtitle Caption Pill */}
+          {/* Subtitle Caption Pill */}
           <StageSubtitlePill
             captionText={visualState.captionText}
             interimTranscript={interimTranscript}
@@ -154,9 +165,8 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
         {/* Right Section: Lumo Tutor Presence OR Assessment Workspace */}
         <div
           style={{
-            padding: '1.25rem 1.25rem 1.25rem 0.5rem',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'stretch',
             justifyContent: 'center',
             zIndex: 10,
           }}

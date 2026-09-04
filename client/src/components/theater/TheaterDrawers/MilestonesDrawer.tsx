@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { SessionMemory, ReplaySegment } from '@ai-tutor/shared';
+import { IconNotes } from '../TheaterIcons';
 
 export interface MilestonesDrawerProps {
   sessionId?: string;
@@ -80,7 +81,7 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '1.2rem' }}>🧠</span>
+          <IconNotes size={18} style={{ color: 'var(--theater-accent)' }} />
           <div>
             <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#FFFFFF' }}>
               Session Milestones

@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconMaterials } from '../TheaterIcons';
 
 export interface StudyMaterialDrawerProps {
   documentTitle?: string;
@@ -46,7 +47,7 @@ export const StudyMaterialDrawer: React.FC<StudyMaterialDrawerProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '1.2rem' }}>📎</span>
+          <IconMaterials size={18} style={{ color: 'var(--theater-accent-mint)' }} />
           <div>
             <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#FFFFFF' }}>
               Study Material

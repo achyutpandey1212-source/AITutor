@@ -45,7 +45,7 @@ function applyTheme(theme: Theme) {
   // Update meta theme-color for browser chrome
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) {
-    metaTheme.setAttribute('content', theme === 'dark' ? '#0D0F12' : '#FAF9F5');
+    metaTheme.setAttribute('content', theme === 'dark' ? '#101113' : '#F8F7F4');
   }
 }
 

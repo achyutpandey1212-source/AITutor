@@ -50,26 +50,26 @@ export const TheaterDock: React.FC<TheaterDockProps> = ({
       aria-label="Classroom Controls"
       style={{
         position: 'fixed',
-        bottom: '1.75rem',
+        bottom: '1.25rem',
         left: '50%',
         transform: 'translateX(-50%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '1.5rem',
-        width: 'min(1180px, 94vw)',
-        background: 'rgba(16, 16, 17, 0.88)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '22px',
-        padding: '0.65rem 1.25rem',
+        gap: '1.25rem',
+        width: 'min(1160px, 94vw)',
+        background: 'var(--theater-surface)',
+        border: '1px solid var(--theater-border-medium)',
+        borderRadius: 'var(--theater-radius-xl)',
+        padding: '0.5rem 1rem',
         boxShadow: 'var(--theater-shadow-dock)',
         zIndex: 40,
         userSelect: 'none',
         flexWrap: 'wrap',
+        boxSizing: 'border-box',
       }}
     >
-      {/* 1. Left Section: Hero Microphone + Waveform + Status */}
+      {/* 1. Left Section: Microphone Control & Audio Activity Status */}
       <VoiceActivityWidget
         micEnabled={micEnabled}
         isSpeaking={isSpeaking}
@@ -81,7 +81,7 @@ export const TheaterDock: React.FC<TheaterDockProps> = ({
         isSttSupported={isSttSupported}
       />
 
-      {/* 2. Center Section: Contextual Action Pills */}
+      {/* 2. Center Section: Contextual Actions */}
       <ContextualActionPills
         isSpeaking={isSpeaking}
         isListening={isListening}
@@ -96,7 +96,7 @@ export const TheaterDock: React.FC<TheaterDockProps> = ({
         disabled={isLoading}
       />
 
-      {/* 3. Right Section: Inline Question Input */}
+      {/* 3. Right Section: Inline Question Composer */}
       <InlineComposer
         onSendMessage={onSendMessage}
         disabled={isLoading}

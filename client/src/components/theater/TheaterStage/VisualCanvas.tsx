@@ -23,11 +23,12 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
         width: '100%',
         height: '100%',
         position: 'relative',
-        background: '#0A0A0B',
+        background: 'var(--theater-surface-sunken)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
+        borderRadius: 'var(--theater-radius-md)',
       }}
     >
       <Player
@@ -40,7 +41,6 @@ export const VisualCanvas: React.FC<VisualCanvasProps> = ({
         style={{
           width: '100%',
           height: '100%',
-          aspectRatio: '16/9',
           maxHeight: '100%',
           objectFit: 'contain',
         }}

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import type { TutorSessionContext } from '@ai-tutor/shared';
+import { IconTranscript } from '../TheaterIcons';
 
 export type ConversationTurn = TutorSessionContext['conversationHistory'][number];
 
@@ -56,7 +57,7 @@ export const TranscriptDrawer: React.FC<TranscriptDrawerProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '1.2rem' }}>💬</span>
+          <IconTranscript size={18} style={{ color: 'var(--theater-accent)' }} />
           <div>
             <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#FFFFFF' }}>
               Conversation Transcript

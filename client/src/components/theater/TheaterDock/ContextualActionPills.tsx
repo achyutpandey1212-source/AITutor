@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconRefresh, IconSparkles, IconLightbulb, IconHelp, IconPlay } from '../TheaterIcons';
 
 export interface ContextualActionPillsProps {
   isSpeaking?: boolean;
@@ -28,7 +29,7 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
   disabled = false,
 }) => {
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem' }}>
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
       {/* 1. Replay Mode: Resume Live */}
       {isReplaying && onResumeLive && (
         <button
@@ -36,21 +37,21 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.4rem',
-            background: 'rgba(226, 157, 75, 0.9)',
-            color: '#080808',
+            gap: '0.35rem',
+            background: 'var(--theater-accent)',
+            color: 'var(--theater-accent-contrast)',
             border: 'none',
-            borderRadius: '999px',
-            padding: '0.45rem 0.95rem',
-            fontSize: '0.82rem',
-            fontWeight: 700,
+            borderRadius: 'var(--theater-radius-sm)',
+            padding: '0.35rem 0.75rem',
+            fontSize: '0.78rem',
+            fontWeight: 600,
             cursor: 'pointer',
             fontFamily: 'var(--theater-font-sans)',
-            boxShadow: '0 0 16px rgba(226, 157, 75, 0.25)',
-            transition: 'all 0.15s ease',
+            transition: 'opacity var(--theater-transition-fast)',
           }}
         >
-          <span>▶ Resume Live</span>
+          <IconPlay size={10} />
+          <span>Resume Live</span>
         </button>
       )}
 
@@ -64,20 +65,33 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                background: 'rgba(229, 169, 60, 0.1)',
-                color: '#E5A93C',
-                border: '1px solid rgba(229, 169, 60, 0.25)',
-                borderRadius: '999px',
-                padding: '0.45rem 0.9rem',
-                fontSize: '0.82rem',
-                fontWeight: 600,
+                gap: '0.35rem',
+                background: 'var(--theater-surface-elevated)',
+                color: 'var(--theater-accent-amber)',
+                border: '1px solid var(--theater-border-medium)',
+                borderRadius: 'var(--theater-radius-sm)',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.78rem',
+                fontWeight: 500,
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 fontFamily: 'var(--theater-font-sans)',
-                transition: 'all 0.15s ease',
+                transition: 'all var(--theater-transition-fast)',
+              }}
+              onMouseEnter={(e) => {
+                if (!disabled) {
+                  e.currentTarget.style.background = 'var(--theater-surface-hover)';
+                  e.currentTarget.style.borderColor = 'var(--theater-accent-amber)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!disabled) {
+                  e.currentTarget.style.background = 'var(--theater-surface-elevated)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
+                }
               }}
             >
-              <span>💡 Need a Hint</span>
+              <IconLightbulb size={13} />
+              <span>Hint</span>
             </button>
           )}
 
@@ -88,26 +102,39 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                background: 'rgba(224, 82, 82, 0.1)',
-                color: '#FF8F78',
-                border: '1px solid rgba(224, 82, 82, 0.25)',
-                borderRadius: '999px',
-                padding: '0.45rem 0.9rem',
-                fontSize: '0.82rem',
-                fontWeight: 600,
+                gap: '0.35rem',
+                background: 'var(--theater-surface-elevated)',
+                color: 'var(--theater-accent-coral)',
+                border: '1px solid var(--theater-border-medium)',
+                borderRadius: 'var(--theater-radius-sm)',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.78rem',
+                fontWeight: 500,
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 fontFamily: 'var(--theater-font-sans)',
-                transition: 'all 0.15s ease',
+                transition: 'all var(--theater-transition-fast)',
+              }}
+              onMouseEnter={(e) => {
+                if (!disabled) {
+                  e.currentTarget.style.background = 'var(--theater-surface-hover)';
+                  e.currentTarget.style.borderColor = 'var(--theater-accent-coral)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!disabled) {
+                  e.currentTarget.style.background = 'var(--theater-surface-elevated)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
+                }
               }}
             >
-              <span>🤷 Show Solution</span>
+              <IconHelp size={13} />
+              <span>Solution</span>
             </button>
           )}
         </>
       )}
 
-      {/* 3. Normal Explaining / Listening: "Explain again", "Try another way", and "✦ Ask Lumo" */}
+      {/* 3. Normal Explaining / Listening: "Explain again", "Try another way" */}
       {!isAssessmentActive && !isReplaying && (
         <>
           {onExplainAgain && (
@@ -117,33 +144,35 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.45rem',
-                background: 'rgba(255, 255, 255, 0.04)',
-                color: '#EAEAE6',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '999px',
-                padding: '0.45rem 0.9rem',
-                fontSize: '0.82rem',
+                gap: '0.35rem',
+                background: 'var(--theater-surface-elevated)',
+                color: 'var(--theater-text-secondary)',
+                border: '1px solid var(--theater-border-subtle)',
+                borderRadius: 'var(--theater-radius-sm)',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.78rem',
                 fontWeight: 500,
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 fontFamily: 'var(--theater-font-sans)',
-                transition: 'all 0.15s ease',
+                transition: 'all var(--theater-transition-fast)',
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                  e.currentTarget.style.color = '#F5F5F2';
+                  e.currentTarget.style.background = 'var(--theater-surface-hover)';
+                  e.currentTarget.style.color = 'var(--theater-text-primary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                  e.currentTarget.style.color = '#EAEAE6';
+                  e.currentTarget.style.background = 'var(--theater-surface-elevated)';
+                  e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
                 }
               }}
               title="Deterministically replay the previous explanation verbatim"
             >
-              <span style={{ fontSize: '0.85rem' }}>↻</span>
+              <IconRefresh size={12} />
               <span>Explain again</span>
             </button>
           )}
@@ -155,33 +184,35 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.45rem',
-                background: 'rgba(255, 255, 255, 0.04)',
-                color: '#EAEAE6',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '999px',
-                padding: '0.45rem 0.9rem',
-                fontSize: '0.82rem',
+                gap: '0.35rem',
+                background: 'var(--theater-surface-elevated)',
+                color: 'var(--theater-text-secondary)',
+                border: '1px solid var(--theater-border-subtle)',
+                borderRadius: 'var(--theater-radius-sm)',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.78rem',
                 fontWeight: 500,
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 fontFamily: 'var(--theater-font-sans)',
-                transition: 'all 0.15s ease',
+                transition: 'all var(--theater-transition-fast)',
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                  e.currentTarget.style.color = '#F5F5F2';
+                  e.currentTarget.style.background = 'var(--theater-surface-hover)';
+                  e.currentTarget.style.color = 'var(--theater-text-primary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                  e.currentTarget.style.color = '#EAEAE6';
+                  e.currentTarget.style.background = 'var(--theater-surface-elevated)';
+                  e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
                 }
               }}
               title="Explain this concept with another visual or analogy"
             >
-              <span style={{ fontSize: '0.85rem' }}>✨</span>
+              <IconSparkles size={12} />
               <span>Try another way</span>
             </button>
           )}
@@ -194,33 +225,31 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                background: 'rgba(226, 157, 75, 0.08)',
-                color: '#E29D4B',
-                border: '1px solid rgba(226, 157, 75, 0.25)',
-                borderRadius: '999px',
-                padding: '0.45rem 0.85rem',
-                fontSize: '0.8rem',
-                fontWeight: 600,
+                gap: '0.3rem',
+                background: 'var(--theater-accent-subtle)',
+                color: 'var(--theater-accent)',
+                border: '1px solid var(--theater-accent-border)',
+                borderRadius: 'var(--theater-radius-sm)',
+                padding: '0.35rem 0.7rem',
+                fontSize: '0.78rem',
+                fontWeight: 550,
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 fontFamily: 'var(--theater-font-sans)',
-                transition: 'all 0.15s ease',
+                transition: 'all var(--theater-transition-fast)',
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'rgba(226, 157, 75, 0.15)';
-                  e.currentTarget.style.color = '#F5B942';
+                  e.currentTarget.style.borderColor = 'var(--theater-accent)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'rgba(226, 157, 75, 0.08)';
-                  e.currentTarget.style.color = '#E29D4B';
+                  e.currentTarget.style.borderColor = 'var(--theater-accent-border)';
                 }
               }}
               title="Ask your teacher something privately"
             >
-              <span style={{ fontSize: '0.8rem' }}>✦</span>
+              <IconSparkles size={12} />
               <span>Ask Lumo</span>
             </button>
           )}

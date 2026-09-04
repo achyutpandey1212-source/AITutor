@@ -13,6 +13,7 @@ import { LumoDoubtSolver } from './LumoDoubtSolver/LumoDoubtSolver';
 import { LaunchpadModal } from './Modals/LaunchpadModal';
 import { SessionSummaryStage } from './Modals/SessionSummaryStage';
 import type { ConceptStep } from './TheaterProgress/LessonProgress';
+import { IconPause, IconPlay } from './TheaterIcons';
 
 export interface LiveTheaterPageProps {
   idToken: string;
@@ -258,6 +259,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
       ? Math.round(((activeIndex >= 0 ? activeIndex + 1 : 2) / conceptSteps.length) * 100)
       : 40;
   const conceptProgressText = `${activeIndex >= 0 ? activeIndex + 1 : 2} of ${conceptSteps.length} concepts`;
+
   const activeConceptTitle =
     sessionContext?.activeConcept ||
     conceptSteps.find((s) => s.status === 'active')?.title ||
@@ -274,15 +276,14 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
     <div
       style={{
         minHeight: '100vh',
-        background: '#07090D',
-        backgroundImage:
-          'radial-gradient(circle at 50% 0%, rgba(30, 42, 64, 0.15) 0%, rgba(7, 9, 13, 0.98) 75%)',
-        color: '#FFFFFF',
+        background: 'var(--theater-bg)',
+        color: 'var(--theater-text-primary)',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        overflow: 'hidden',
+        overflowX: 'hidden',
         fontFamily: 'var(--theater-font-sans)',
+        transition: 'background-color var(--theater-transition-normal), color var(--theater-transition-normal)',
       }}
     >
       {/* 1. Pre-Session Launchpad Modal (when IDLE and not paused) */}
@@ -341,87 +342,84 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
             maxWidth: '1200px',
             width: 'min(1180px, 94vw)',
             margin: '0.6rem auto 0 auto',
-            padding: '0.75rem 1.35rem',
-            background: 'rgba(16, 16, 17, 0.94)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(226, 157, 75, 0.35)',
-            borderRadius: '16px',
+            padding: '0.65rem 1.25rem',
+            background: 'var(--theater-surface)',
+            border: '1px solid var(--theater-accent-border)',
+            borderRadius: 'var(--theater-radius-lg)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '1rem',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 16px rgba(226, 157, 75, 0.08)',
+            boxShadow: 'var(--theater-shadow-dock)',
             zIndex: 35,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div
               style={{
-                width: '32px',
-                height: '32px',
+                width: '28px',
+                height: '28px',
                 borderRadius: '50%',
-                background: 'rgba(226, 157, 75, 0.15)',
-                border: '1px solid rgba(226, 157, 75, 0.4)',
+                background: 'var(--theater-accent-subtle)',
+                color: 'var(--theater-accent)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#E29D4B',
-                fontSize: '0.85rem',
                 flexShrink: 0,
               }}
             >
-              ⏸
+              <IconPause size={13} />
             </div>
             <div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#F5F5F2' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--theater-text-primary)' }}>
                 Lesson Paused
               </div>
-              <div style={{ fontSize: '0.76rem', color: '#777773' }}>
-                Your visual whiteboard, conversation state, and lesson progress are preserved.
+              <div style={{ fontSize: '0.72rem', color: 'var(--theater-text-muted)' }}>
+                Your visual board, conversation history, and milestones are preserved.
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <button
               onClick={handleResumePausedSession}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.45rem',
-                background: '#E29D4B',
-                color: '#080808',
-                fontWeight: 700,
-                fontSize: '0.82rem',
-                padding: '0.48rem 1.15rem',
-                borderRadius: '10px',
+                gap: '0.35rem',
+                background: 'var(--theater-accent)',
+                color: 'var(--theater-accent-contrast)',
+                fontWeight: 600,
+                fontSize: '0.78rem',
+                padding: '0.4rem 0.9rem',
+                borderRadius: 'var(--theater-radius-sm)',
                 border: 'none',
                 cursor: 'pointer',
-                boxShadow: '0 0 16px rgba(226, 157, 75, 0.35)',
-                transition: 'transform 0.15s ease, filter 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.02)';
-                e.currentTarget.style.filter = 'brightness(1.08)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-                e.currentTarget.style.filter = 'brightness(1)';
+                transition: 'opacity var(--theater-transition-fast)',
               }}
             >
-              <span>▶</span>
+              <IconPlay size={10} />
               <span>Resume Lesson</span>
             </button>
             <button
               onClick={handleEndSession}
               style={{
                 background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#B8B8B3',
-                fontSize: '0.8rem',
+                border: '1px solid var(--theater-border-subtle)',
+                color: 'var(--theater-text-secondary)',
+                fontSize: '0.78rem',
                 fontWeight: 500,
-                padding: '0.45rem 0.85rem',
-                borderRadius: '10px',
+                padding: '0.4rem 0.8rem',
+                borderRadius: 'var(--theater-radius-sm)',
                 cursor: 'pointer',
+                transition: 'all var(--theater-transition-fast)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--theater-surface-hover)';
+                e.currentTarget.style.color = 'var(--theater-text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'var(--theater-text-secondary)';
               }}
             >
               End Session
@@ -430,18 +428,18 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
         </div>
       )}
 
-      {/* 4. Error Alert Banner (Non-Technical, Graceful) */}
+      {/* 4. Error Alert Banner */}
       {error && (
         <div
           style={{
             maxWidth: '1200px',
             margin: '0.5rem auto 0 auto',
-            padding: '0.6rem 1.25rem',
-            background: 'rgba(255, 90, 54, 0.12)',
-            border: '1px solid rgba(255, 90, 54, 0.3)',
-            borderRadius: '10px',
-            color: '#FF8F78',
-            fontSize: '0.85rem',
+            padding: '0.5rem 1.1rem',
+            background: 'var(--theater-accent-coral-subtle)',
+            border: '1px solid var(--theater-accent-coral)',
+            borderRadius: 'var(--theater-radius-sm)',
+            color: 'var(--theater-accent-coral)',
+            fontSize: '0.82rem',
             textAlign: 'center',
           }}
         >
@@ -457,8 +455,10 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '0.75rem 1.5rem 6.5rem 1.5rem',
+          padding: '0.5rem 1.25rem 5.5rem 1.25rem',
           position: 'relative',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         <TheaterStage
@@ -488,7 +488,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
         />
       </main>
 
-      {/* 6. Floating Command Dock (Bottom Center Island) */}
+      {/* 6. Subtle Elevated Command Dock */}
       {isSessionActive && (
         <TheaterDock
           micEnabled={micEnabled}

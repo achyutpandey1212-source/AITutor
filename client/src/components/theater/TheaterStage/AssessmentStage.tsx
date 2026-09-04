@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ClientAssessmentQuestion, AssessmentSubmission } from '@ai-tutor/shared';
 import { AssessmentRenderer } from '../../assessment/AssessmentRenderer';
+import { IconNotes, IconLightbulb, IconHelp } from '../TheaterIcons';
 
 export interface AssessmentStageProps {
   question: ClientAssessmentQuestion;
@@ -24,23 +25,22 @@ export const AssessmentStage: React.FC<AssessmentStageProps> = ({
   return (
     <div
       style={{
-        position: 'absolute',
-        top: '1rem',
-        right: '1rem',
-        bottom: '1rem',
-        width: 'min(480px, 48%)',
-        background: 'rgba(15, 23, 42, 0.94)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(85, 169, 232, 0.35)',
-        borderRadius: '16px',
-        padding: '1.25rem',
-        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), 0 0 20px rgba(85, 169, 232, 0.15)',
+        position: 'relative',
+        width: 'min(420px, 35vw)',
+        minWidth: '280px',
+        height: '100%',
+        background: 'var(--theater-surface)',
+        border: '1px solid var(--theater-border-medium)',
+        borderRadius: 'var(--theater-radius-lg)',
+        padding: '1rem',
+        boxShadow: 'var(--theater-shadow-dock)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 25,
         overflowY: 'auto',
-        color: '#F7F5EF',
-        animation: 'fadeIn 0.25s ease-out',
+        color: 'var(--theater-text-primary)',
+        boxSizing: 'border-box',
+        fontFamily: 'var(--theater-font-sans)',
       }}
     >
       {/* Header */}
@@ -49,44 +49,48 @@ export const AssessmentStage: React.FC<AssessmentStageProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '1rem',
-          paddingBottom: '0.75rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          marginBottom: '0.85rem',
+          paddingBottom: '0.65rem',
+          borderBottom: '1px solid var(--theater-border-subtle)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '1.1rem' }}>📝</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <IconNotes size={16} style={{ color: 'var(--theater-accent)' }} />
           <div>
-            <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#F7F5EF' }}>
-              Check Your Understanding
+            <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--theater-text-primary)' }}>
+              Check Understanding
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#89909D', marginTop: '0.1rem' }}>
-              Concept: <strong style={{ color: '#55A9E8' }}>{question.concept}</strong> •{' '}
+            <div style={{ fontSize: '0.72rem', color: 'var(--theater-text-muted)', marginTop: '0.1rem' }}>
+              Concept: <strong style={{ color: 'var(--theater-text-secondary)', fontWeight: 550 }}>{question.concept}</strong> •{' '}
               <span style={{ textTransform: 'uppercase' }}>{question.difficulty}</span>
             </div>
           </div>
         </div>
 
         {/* Action Pills */}
-        <div style={{ display: 'flex', gap: '0.4rem' }}>
+        <div style={{ display: 'flex', gap: '0.35rem' }}>
           {onRequestHint && (
             <button
               onClick={onRequestHint}
               disabled={isLoading}
               style={{
-                padding: '0.3rem 0.65rem',
-                background: 'rgba(245, 185, 66, 0.15)',
-                color: '#F5C542',
-                border: '1px solid rgba(245, 185, 66, 0.35)',
-                borderRadius: '6px',
-                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                padding: '0.25rem 0.55rem',
+                background: 'var(--theater-accent-amber-subtle)',
+                color: 'var(--theater-accent-amber)',
+                border: '1px solid var(--theater-accent-amber)',
+                borderRadius: 'var(--theater-radius-sm)',
+                fontWeight: 550,
                 cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontSize: '0.75rem',
-                transition: 'all 0.15s ease',
+                fontSize: '0.72rem',
+                transition: 'all var(--theater-transition-fast)',
               }}
               title="Get a hint from Lumo"
             >
-              💡 Hint
+              <IconLightbulb size={12} />
+              <span>Hint</span>
             </button>
           )}
 
@@ -95,19 +99,23 @@ export const AssessmentStage: React.FC<AssessmentStageProps> = ({
               onClick={onGiveUp}
               disabled={isLoading}
               style={{
-                padding: '0.3rem 0.65rem',
-                background: 'rgba(222, 107, 104, 0.15)',
-                color: '#FF8F78',
-                border: '1px solid rgba(222, 107, 104, 0.35)',
-                borderRadius: '6px',
-                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                padding: '0.25rem 0.55rem',
+                background: 'var(--theater-accent-coral-subtle)',
+                color: 'var(--theater-accent-coral)',
+                border: '1px solid var(--theater-accent-coral)',
+                borderRadius: 'var(--theater-radius-sm)',
+                fontWeight: 550,
                 cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontSize: '0.75rem',
-                transition: 'all 0.15s ease',
+                fontSize: '0.72rem',
+                transition: 'all var(--theater-transition-fast)',
               }}
               title="Reveal solution"
             >
-              🤷 Solution
+              <IconHelp size={12} />
+              <span>Solution</span>
             </button>
           )}
         </div>

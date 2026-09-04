@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { IconArrowRight } from '../TheaterIcons';
 
 export interface InlineComposerProps {
   onSendMessage: (message: string) => Promise<void>;
@@ -28,16 +29,16 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
       style={{
         display: 'flex',
         alignItems: 'center',
-        background: isFocused ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.03)',
+        background: 'var(--theater-surface-elevated)',
         border: isFocused
-          ? '1px solid rgba(226, 157, 75, 0.35)'
-          : '1px solid rgba(255, 255, 255, 0.07)',
-        borderRadius: '14px',
-        padding: '0.35rem 0.5rem 0.35rem 0.95rem',
+          ? '1px solid var(--theater-accent)'
+          : '1px solid var(--theater-border-subtle)',
+        borderRadius: 'var(--theater-radius-md)',
+        padding: '0.25rem 0.35rem 0.25rem 0.75rem',
         minWidth: '220px',
         maxWidth: '300px',
-        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-        boxShadow: isFocused ? '0 0 16px rgba(226, 157, 75, 0.12)' : 'none',
+        transition: 'border-color var(--theater-transition-fast)',
+        boxSizing: 'border-box',
       }}
     >
       <input
@@ -57,8 +58,8 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
           background: 'transparent',
           border: 'none',
           outline: 'none',
-          color: '#F5F5F2',
-          fontSize: '0.82rem',
+          color: 'var(--theater-text-primary)',
+          fontSize: '0.8rem',
           fontFamily: 'var(--theater-font-sans)',
         }}
       />
@@ -67,23 +68,23 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
         type="submit"
         disabled={disabled || !typedMessage.trim()}
         style={{
-          background: typedMessage.trim() ? '#E29D4B' : 'transparent',
-          color: typedMessage.trim() ? '#080808' : '#777773',
+          background: typedMessage.trim() ? 'var(--theater-accent)' : 'transparent',
+          color: typedMessage.trim() ? 'var(--theater-accent-contrast)' : 'var(--theater-text-faint)',
           border: 'none',
-          borderRadius: '8px',
-          width: '28px',
-          height: '28px',
+          borderRadius: 'var(--theater-radius-sm)',
+          width: '26px',
+          height: '26px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: disabled || !typedMessage.trim() ? 'default' : 'pointer',
-          fontSize: '0.95rem',
-          fontWeight: 700,
-          transition: 'all 0.15s ease',
+          padding: 0,
+          transition: 'all var(--theater-transition-fast)',
         }}
         title="Send message"
+        aria-label="Send message"
       >
-        →
+        <IconArrowRight size={13} />
       </button>
     </form>
   );

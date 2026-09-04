@@ -15,9 +15,9 @@ export const StageSubtitlePill: React.FC<StageSubtitlePillProps> = ({
 }) => {
   // If student is speaking or interrupting, display interim speech
   const displayText = isInterrupting
-    ? `✋ Interrupted: "${interimTranscript}"`
+    ? `Interrupted: "${interimTranscript}"`
     : interimTranscript
-    ? `🎙️ "${interimTranscript}"`
+    ? `"${interimTranscript}"`
     : captionText;
 
   if (!isVisible || !displayText) return null;
@@ -26,29 +26,28 @@ export const StageSubtitlePill: React.FC<StageSubtitlePillProps> = ({
     <div
       style={{
         position: 'absolute',
-        bottom: '1.25rem',
+        bottom: '1rem',
         left: '50%',
         transform: 'translateX(-50%)',
-        maxWidth: '82%',
+        maxWidth: '85%',
         background: isInterrupting
-          ? 'rgba(42, 24, 20, 0.94)'
-          : 'rgba(13, 15, 18, 0.92)',
-        backdropFilter: 'blur(12px)',
+          ? 'var(--theater-surface-elevated)'
+          : 'var(--theater-surface)',
         border: isInterrupting
-          ? '1px solid rgba(245, 185, 66, 0.5)'
-          : '1px solid rgba(255, 255, 255, 0.15)',
-        borderRadius: '12px',
-        padding: '0.45rem 1.25rem',
-        color: isInterrupting ? '#F5C542' : '#F7F5EF',
-        fontSize: '0.92rem',
+          ? '1px solid var(--theater-accent-border)'
+          : '1px solid var(--theater-border-medium)',
+        borderRadius: 'var(--theater-radius-md)',
+        padding: '0.45rem 1.1rem',
+        color: isInterrupting ? 'var(--theater-accent)' : 'var(--theater-text-primary)',
+        fontSize: '0.85rem',
         fontWeight: 500,
         textAlign: 'center',
-        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6)',
+        boxShadow: 'var(--theater-shadow-dock)',
         zIndex: 20,
-        lineHeight: 1.4,
+        lineHeight: 1.45,
         pointerEvents: 'none',
         userSelect: 'none',
-        animation: 'fadeIn 0.2s ease-out',
+        fontFamily: 'var(--theater-font-sans)',
       }}
     >
       <span>{displayText}</span>

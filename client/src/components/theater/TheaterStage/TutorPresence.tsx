@@ -22,231 +22,175 @@ export const TutorPresence: React.FC<TutorPresenceProps> = ({
   const thinkingActive = isThinking || avatarState === 'THINKING';
 
   const getStatusText = () => {
-    if (interruptingActive) return 'Interrupted — listening...';
-    if (speakingActive) return 'Lumo is explaining...';
-    if (thinkingActive) return 'Lumo is thinking...';
-    if (listeningActive) return 'Listening to you...';
-    return 'Lumo is ready';
+    if (interruptingActive) return 'Listening...';
+    if (speakingActive) return 'Explaining...';
+    if (thinkingActive) return 'Thinking...';
+    if (listeningActive) return 'Listening...';
+    return 'Lumo';
   };
 
-  const getWaveformColor = () => {
-    if (interruptingActive) return '#E5A93C';
-    if (speakingActive) return '#E29D4B';
-    if (listeningActive) return '#55C98A';
-    return '#777773';
+  const getStatusDotColor = () => {
+    if (interruptingActive) return 'var(--theater-accent-amber)';
+    if (speakingActive) return 'var(--theater-accent)';
+    if (listeningActive) return 'var(--theater-accent-mint)';
+    return 'var(--theater-text-muted)';
   };
 
   return (
     <div
+      id="lumo-avatar-viewport"
       style={{
         position: 'relative',
-        width: 'min(300px, 28vw)',
-        height: 'min(390px, 58vh)',
-        borderRadius: '20px',
-        overflow: 'hidden',
-        background: '#101011',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 0, 0, 0.5)',
+        width: 'min(280px, 24vw)',
+        minWidth: '220px',
+        height: '100%',
+        minHeight: '340px',
+        borderRadius: 'var(--theater-radius-lg)',
+        background: 'var(--theater-surface)',
+        border: '1px solid var(--theater-border-subtle)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        flexShrink: 0,
+        padding: '0.85rem',
+        boxSizing: 'border-box',
         userSelect: 'none',
+        overflow: 'hidden',
       }}
     >
-      {/* Background Avatar Subtle Lighting Effect */}
+      {/* Top Presence Header: Lumo status label */}
       <div
         style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(to bottom, rgba(16, 16, 17, 0.2) 0%, rgba(16, 16, 17, 0.9) 100%)',
-          zIndex: 2,
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Teacher Video / Portrait Asset */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          background: '#0B0B0C',
+          justifyContent: 'space-between',
+          zIndex: 5,
         }}
       >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <span
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: getStatusDotColor(),
+              transition: 'background var(--theater-transition-fast)',
+            }}
+          />
+          <span
+            style={{
+              fontSize: '0.78rem',
+              fontWeight: 550,
+              color: 'var(--theater-text-primary)',
+              fontFamily: 'var(--theater-font-sans)',
+            }}
+          >
+            Lumo
+          </span>
+        </div>
+
+        <span
+          style={{
+            fontSize: '0.72rem',
+            fontWeight: 450,
+            color: 'var(--theater-text-muted)',
+            fontFamily: 'var(--theater-font-sans)',
+          }}
+        >
+          {getStatusText()}
+        </span>
+      </div>
+
+      {/* Main Architectural Slot for Phase 4 3D Avatar */}
+      <div
+        id="lumo-avatar-mount"
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          margin: '0.5rem 0',
+          borderRadius: 'var(--theater-radius-md)',
+          background: 'var(--theater-surface-sunken)',
+          border: '1px solid var(--theater-border-subtle)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Subtle Watermark Branding in Slot */}
         <img
           src="/logo/Lumo_Logo.png"
-          alt="Lumo Tutor"
+          alt=""
+          aria-hidden="true"
           style={{
-            width: '80px',
-            height: '80px',
+            width: '44px',
+            height: '44px',
             objectFit: 'contain',
             opacity: 0.12,
             position: 'absolute',
           }}
         />
-        {/* Stylized Avatar Illustration / Feed */}
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            background:
-              'radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.04) 0%, rgba(11, 11, 12, 0.98) 75%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '1rem',
-          }}
-        >
-          {/* Avatar Icon / Portrait */}
-          <div
-            style={{
-              width: '84px',
-              height: '84px',
-              borderRadius: '50%',
-              background: '#141416',
-              border: speakingActive
-                ? '2px solid #E29D4B'
-                : listeningActive
-                ? '2px solid #55C98A'
-                : '2px solid rgba(255, 255, 255, 0.08)',
-              boxShadow: speakingActive
-                ? '0 0 20px rgba(226, 157, 75, 0.25)'
-                : listeningActive
-                ? '0 0 20px rgba(85, 201, 138, 0.25)'
-                : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-            }}
-          >
-            <span style={{ fontSize: '2rem' }}>🎓</span>
-          </div>
-        </div>
-      </div>
 
-      {/* Top Badge: "Lumo  |||•" */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 5,
-          padding: '1rem 1.1rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            background: 'rgba(16, 16, 17, 0.85)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '999px',
-            padding: '0.25rem 0.65rem',
-          }}
-        >
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#F5F5F2' }}>Lumo</span>
-          {/* Subtle mini wave icon */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5px', height: '10px' }}>
-            <span
-              style={{
-                width: '2px',
-                height: speakingActive ? '8px' : '4px',
-                background: speakingActive ? '#E29D4B' : '#777773',
-                borderRadius: '1px',
-                transition: 'height 0.15s ease',
-              }}
-            />
-            <span
-              style={{
-                width: '2px',
-                height: speakingActive ? '10px' : '6px',
-                background: speakingActive ? '#E29D4B' : '#777773',
-                borderRadius: '1px',
-                transition: 'height 0.2s ease',
-              }}
-            />
-            <span
-              style={{
-                width: '2px',
-                height: speakingActive ? '6px' : '3px',
-                background: speakingActive ? '#E29D4B' : '#777773',
-                borderRadius: '1px',
-                transition: 'height 0.18s ease',
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Status Card with Full Animated Waveform */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 5,
-          margin: '0.75rem',
-          padding: '0.75rem 1rem',
-          background: 'rgba(16, 16, 17, 0.9)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '14px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.45rem',
-        }}
-      >
-        <span
-          style={{
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            color: '#F5F5F2',
-            letterSpacing: '0.01em',
-          }}
-        >
-          {getStatusText()}
-        </span>
-
-        {/* Animated Horizontal Audio Visualizer Bars */}
+        {/* Minimal Audio Visualizer Bar while Speaking/Listening */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '2px',
-            height: '14px',
-            width: '100%',
+            gap: '3px',
+            height: '20px',
+            zIndex: 2,
           }}
         >
-          {Array.from({ length: 24 }).map((_, i) => {
-            const isMid = i >= 6 && i <= 18;
-            const height = speakingActive
-              ? isMid
-                ? ((i * 7) % 10) + 4
-                : ((i * 3) % 6) + 2
-              : 2;
-
+          {[8, 14, 20, 12, 18, 10, 16, 8].map((baseHeight, i) => {
+            const h = speakingActive
+              ? baseHeight
+              : listeningActive
+              ? Math.round(baseHeight * 0.7)
+              : 3;
             return (
               <span
                 key={i}
                 style={{
-                  flex: 1,
-                  height: `${height}px`,
-                  background: getWaveformColor(),
-                  borderRadius: '1px',
-                  opacity: speakingActive ? 0.9 : 0.35,
-                  transition: 'height 0.2s ease',
+                  width: '2.5px',
+                  height: `${h}px`,
+                  borderRadius: '1.5px',
+                  background: speakingActive
+                    ? 'var(--theater-accent)'
+                    : listeningActive
+                    ? 'var(--theater-accent-mint)'
+                    : 'var(--theater-text-faint)',
+                  opacity: speakingActive || listeningActive ? 0.85 : 0.4,
+                  transition: 'height 0.15s ease, background 0.2s ease',
                 }}
               />
             );
           })}
         </div>
+      </div>
+
+      {/* Bottom Subtext info */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingTop: '0.2rem',
+        }}
+      >
+        <span
+          style={{
+            fontSize: '0.7rem',
+            color: 'var(--theater-text-muted)',
+            fontFamily: 'var(--theater-font-sans)',
+            textAlign: 'center',
+          }}
+        >
+          {speakingActive
+            ? 'Speaking — click mic to interrupt'
+            : listeningActive
+            ? 'Listening to your speech...'
+            : 'Interactive AI Tutor'}
+        </span>
       </div>
     </div>
   );

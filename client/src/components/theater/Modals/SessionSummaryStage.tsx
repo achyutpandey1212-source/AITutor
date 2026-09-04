@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconCheck, IconNotes, IconArrowRight } from '../TheaterIcons';
 
 export interface SessionSummaryStageProps {
   topic: string;
@@ -20,64 +21,65 @@ export const SessionSummaryStage: React.FC<SessionSummaryStageProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(7, 9, 13, 0.9)',
-        backdropFilter: 'blur(24px)',
+        background: 'var(--theater-bg)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '1.5rem',
         zIndex: 60,
-        animation: 'theaterFadeIn 0.25s ease-out',
         fontFamily: 'var(--theater-font-sans)',
       }}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '540px',
-          background: '#0E1219',
-          border: '1px solid rgba(85, 201, 138, 0.35)',
-          borderRadius: '24px',
-          padding: '2.5rem',
-          boxShadow: '0 25px 70px rgba(0, 0, 0, 0.85), 0 0 30px rgba(85, 201, 138, 0.12)',
-          color: '#FFFFFF',
+          maxWidth: '500px',
+          background: 'var(--theater-surface)',
+          border: '1px solid var(--theater-border-medium)',
+          borderRadius: 'var(--theater-radius-xl)',
+          padding: '2.25rem 2rem',
+          boxShadow: 'var(--theater-shadow-stage)',
+          color: 'var(--theater-text-primary)',
           textAlign: 'center',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.5rem',
+          gap: '1.4rem',
+          boxSizing: 'border-box',
         }}
       >
         <div>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.4rem' }}>🎉</div>
-          <span
+          <div
             style={{
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
               padding: '0.2rem 0.65rem',
-              borderRadius: '999px',
-              background: 'rgba(85, 201, 138, 0.15)',
-              color: '#55C98A',
-              border: '1px solid rgba(85, 201, 138, 0.3)',
+              borderRadius: 'var(--theater-radius-pill)',
+              background: 'var(--theater-accent-mint-subtle)',
+              color: 'var(--theater-accent-mint)',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              marginBottom: '0.75rem',
             }}
           >
-            {subject} Lesson Complete
-          </span>
+            <IconCheck size={12} />
+            <span>{subject} Lesson Complete</span>
+          </div>
+
           <h2
             style={{
-              margin: '0.75rem 0 0 0',
-              fontSize: '1.8rem',
-              fontWeight: 400,
-              fontFamily: 'var(--theater-font-serif)',
-              color: '#FFFFFF',
-              letterSpacing: '-0.01em',
+              margin: '0.2rem 0 0 0',
+              fontSize: '1.6rem',
+              fontWeight: 600,
+              color: 'var(--theater-text-primary)',
+              letterSpacing: '-0.02em',
+              fontFamily: 'var(--theater-font-sans)',
             }}
           >
             {topic}
           </h2>
-          <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.85rem', color: '#7E8695' }}>
-            Great effort! Your session insights and concepts have been safely saved to your memory timeline.
+          <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.82rem', color: 'var(--theater-text-muted)' }}>
+            Your session progression and concept milestones have been saved to your timeline.
           </p>
         </div>
 
@@ -85,40 +87,43 @@ export const SessionSummaryStage: React.FC<SessionSummaryStageProps> = ({
         {conceptsMastered.length > 0 && (
           <div
             style={{
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '14px',
-              padding: '1rem',
+              background: 'var(--theater-surface-sunken)',
+              border: '1px solid var(--theater-border-subtle)',
+              borderRadius: 'var(--theater-radius-md)',
+              padding: '0.85rem 1rem',
               textAlign: 'left',
             }}
           >
             <div
               style={{
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                color: '#55C98A',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                marginBottom: '0.5rem',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                color: 'var(--theater-text-secondary)',
+                letterSpacing: '0.02em',
+                marginBottom: '0.45rem',
               }}
             >
-              Concepts Mastered ({conceptsMastered.length})
+              Concepts Covered ({conceptsMastered.length})
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
               {conceptsMastered.map((c, i) => (
                 <span
                   key={i}
                   style={{
-                    fontSize: '0.78rem',
-                    background: 'rgba(85, 201, 138, 0.1)',
-                    border: '1px solid rgba(85, 201, 138, 0.25)',
-                    color: '#55C98A',
-                    padding: '0.25rem 0.65rem',
-                    borderRadius: '6px',
-                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    fontSize: '0.75rem',
+                    background: 'var(--theater-surface)',
+                    border: '1px solid var(--theater-border-subtle)',
+                    color: 'var(--theater-text-primary)',
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: 'var(--theater-radius-sm)',
+                    fontWeight: 500,
                   }}
                 >
-                  ✓ {c}
+                  <IconCheck size={10} style={{ color: 'var(--theater-accent-mint)' }} />
+                  <span>{c}</span>
                 </span>
               ))}
             </div>
@@ -126,44 +131,59 @@ export const SessionSummaryStage: React.FC<SessionSummaryStageProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.65rem', marginTop: '0.25rem' }}>
           <button
             onClick={onPracticeQuestions}
             style={{
               flex: 1,
-              padding: '0.85rem',
-              background: '#3B82F6',
-              color: '#FFFFFF',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.35rem',
+              padding: '0.75rem 1rem',
+              background: 'var(--theater-accent)',
+              color: 'var(--theater-accent-contrast)',
               border: 'none',
-              borderRadius: '12px',
-              fontWeight: 700,
-              fontSize: '0.92rem',
+              borderRadius: 'var(--theater-radius-md)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
               cursor: 'pointer',
-              boxShadow: '0 4px 18px rgba(59, 130, 246, 0.35)',
               fontFamily: 'var(--theater-font-sans)',
-              transition: 'all 0.15s ease',
+              transition: 'opacity var(--theater-transition-fast)',
             }}
           >
-            📝 Practice Questions
+            <IconNotes size={14} />
+            <span>Practice</span>
           </button>
 
           <button
             onClick={onExitToDashboard}
             style={{
               flex: 1,
-              padding: '0.85rem',
-              background: 'rgba(255, 255, 255, 0.05)',
-              color: '#FFFFFF',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
-              fontWeight: 600,
-              fontSize: '0.92rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.35rem',
+              padding: '0.75rem 1rem',
+              background: 'var(--theater-surface-elevated)',
+              color: 'var(--theater-text-primary)',
+              border: '1px solid var(--theater-border-subtle)',
+              borderRadius: 'var(--theater-radius-md)',
+              fontWeight: 550,
+              fontSize: '0.85rem',
               cursor: 'pointer',
               fontFamily: 'var(--theater-font-sans)',
-              transition: 'all 0.15s ease',
+              transition: 'all var(--theater-transition-fast)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--theater-surface-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--theater-surface-elevated)';
             }}
           >
-            Done & Return →
+            <span>Done</span>
+            <IconArrowRight size={13} />
           </button>
         </div>
       </div>

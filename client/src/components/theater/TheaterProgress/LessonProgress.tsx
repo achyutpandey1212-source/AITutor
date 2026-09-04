@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconCheck } from '../TheaterIcons';
 
 export interface ConceptStep {
   id: string;
@@ -24,20 +25,21 @@ export const LessonProgress: React.FC<LessonProgressProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0.65rem 1rem',
+        padding: '0.45rem 1rem',
         width: '100%',
         maxWidth: '1200px',
         margin: '0 auto',
         userSelect: 'none',
         overflowX: 'auto',
         scrollbarWidth: 'none',
+        fontFamily: 'var(--theater-font-sans)',
       }}
     >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.85rem',
+          gap: '0.65rem',
           minWidth: 'fit-content',
         }}
       >
@@ -48,97 +50,94 @@ export const LessonProgress: React.FC<LessonProgressProps> = ({
 
           return (
             <React.Fragment key={step.id || index}>
-              {/* Step Pill */}
-              <div
+              {/* Step Item */}
+              <button
                 onClick={() => isCompleted && onSelectStep?.(step.id)}
+                disabled={!isCompleted}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.55rem',
+                  gap: '0.45rem',
                   padding: isActive
-                    ? '0.35rem 0.85rem 0.35rem 0.4rem'
-                    : '0.3rem 0.75rem 0.3rem 0.4rem',
-                  borderRadius: '999px',
+                    ? '0.3rem 0.75rem 0.3rem 0.35rem'
+                    : '0.25rem 0.65rem 0.25rem 0.35rem',
+                  borderRadius: 'var(--theater-radius-pill)',
                   background: isActive
-                    ? 'rgba(226, 157, 75, 0.1)'
+                    ? 'var(--theater-surface-elevated)'
                     : isCompleted
-                    ? 'rgba(255, 255, 255, 0.02)'
+                    ? 'var(--theater-surface)'
                     : 'transparent',
                   border: isActive
-                    ? '1px solid rgba(226, 157, 75, 0.35)'
+                    ? '1px solid var(--theater-accent)'
                     : isCompleted
-                    ? '1px solid rgba(255, 255, 255, 0.05)'
+                    ? '1px solid var(--theater-border-subtle)'
                     : '1px solid transparent',
-                  boxShadow: isActive
-                    ? '0 0 16px rgba(226, 157, 75, 0.12)'
-                    : 'none',
                   cursor: isCompleted ? 'pointer' : 'default',
-                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  transition: 'all var(--theater-transition-fast)',
                 }}
                 title={
                   isCompleted
                     ? `Click to replay ${step.title}`
                     : isActive
-                    ? `Currently learning ${step.title}`
+                    ? `Currently learning: ${step.title}`
                     : `Upcoming: ${step.title}`
                 }
               >
                 {/* Number Badge or Checkmark */}
                 <div
                   style={{
-                    width: '22px',
-                    height: '22px',
+                    width: '18px',
+                    height: '18px',
                     borderRadius: '50%',
                     background: isActive
-                      ? '#E29D4B'
+                      ? 'var(--theater-accent)'
                       : isCompleted
-                      ? 'rgba(85, 201, 138, 0.12)'
-                      : 'rgba(255, 255, 255, 0.05)',
+                      ? 'var(--theater-accent-mint-subtle)'
+                      : 'var(--theater-surface-hover)',
                     color: isActive
-                      ? '#080808'
+                      ? 'var(--theater-accent-contrast)'
                       : isCompleted
-                      ? '#55C98A'
-                      : '#777773',
+                      ? 'var(--theater-accent-mint)'
+                      : 'var(--theater-text-muted)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    fontFamily: 'var(--theater-font-sans)',
+                    fontSize: '0.68rem',
+                    fontWeight: 600,
                   }}
                 >
-                  {isCompleted ? '✓' : step.number}
+                  {isCompleted ? <IconCheck size={11} /> : step.number}
                 </div>
 
                 {/* Step Title */}
                 <span
                   style={{
-                    fontSize: '0.8rem',
+                    fontSize: '0.78rem',
                     fontWeight: isActive ? 600 : isCompleted ? 500 : 400,
                     color: isActive
-                      ? '#F5F5F2'
+                      ? 'var(--theater-text-primary)'
                       : isCompleted
-                      ? '#B8B8B3'
-                      : '#777773',
-                    fontFamily: 'var(--theater-font-sans)',
+                      ? 'var(--theater-text-secondary)'
+                      : 'var(--theater-text-muted)',
                     whiteSpace: 'nowrap',
-                    letterSpacing: '0.01em',
+                    letterSpacing: '-0.01em',
                   }}
                 >
                   {step.title}
                 </span>
-              </div>
+              </button>
 
-              {/* Connecting Line */}
+              {/* Subtle Connecting Line */}
               {hasNext && (
                 <div
                   style={{
-                    width: '24px',
+                    width: '16px',
                     height: '1px',
                     background: isCompleted
-                      ? 'rgba(85, 201, 138, 0.25)'
-                      : 'rgba(255, 255, 255, 0.07)',
-                    transition: 'all 0.25s ease',
+                      ? 'var(--theater-accent-mint)'
+                      : 'var(--theater-border-subtle)',
+                    opacity: isCompleted ? 0.4 : 1,
+                    transition: 'all var(--theater-transition-fast)',
                   }}
                 />
               )}
