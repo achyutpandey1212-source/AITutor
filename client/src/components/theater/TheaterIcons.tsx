@@ -132,7 +132,6 @@ export const IconNotes: React.FC<IconProps> = ({ size = 16, style }) => (
     <polyline points="14 2 14 8 20 8" />
     <line x1="16" x2="8" y1="13" y2="13" />
     <line x1="16" x2="8" y1="17" y2="17" />
-    <line x1="10" x2="8" y1="9" y2="9" />
   </svg>
 );
 
@@ -315,5 +314,43 @@ export const IconChevronRight: React.FC<IconProps> = ({ size = 14, style }) => (
     style={style}
   >
     <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+export const IconMaximize: React.FC<IconProps> = ({ size = 16, style }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+  >
+    <polyline points="15 3 21 3 21 9" />
+    <polyline points="9 21 3 21 3 15" />
+    <line x1="21" y1="3" x2="14" y2="10" />
+    <line x1="3" y1="21" x2="10" y2="14" />
+  </svg>
+);
+
+export const IconMinimize: React.FC<IconProps> = ({ size = 16, style }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+  >
+    <polyline points="4 14 10 14 10 20" />
+    <polyline points="20 10 14 10 14 4" />
+    <line x1="14" y1="10" x2="21" y2="3" />
+    <line x1="3" y1="21" x2="10" y2="14" />
   </svg>
 );

@@ -78,14 +78,26 @@ export const AssessmentStage: React.FC<AssessmentStageProps> = ({
                 alignItems: 'center',
                 gap: '0.25rem',
                 padding: '0.25rem 0.55rem',
-                background: 'var(--theater-accent-amber-subtle)',
-                color: 'var(--theater-accent-amber)',
-                border: '1px solid var(--theater-accent-amber)',
+                background: 'transparent',
+                color: 'var(--theater-text-secondary)',
+                border: '1px solid var(--theater-border-subtle)',
                 borderRadius: 'var(--theater-radius-sm)',
-                fontWeight: 550,
+                fontWeight: 500,
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 fontSize: '0.72rem',
                 transition: 'all var(--theater-transition-fast)',
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.color = 'var(--theater-text-primary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
+                }
               }}
               title="Get a hint from Lumo"
             >
@@ -103,14 +115,26 @@ export const AssessmentStage: React.FC<AssessmentStageProps> = ({
                 alignItems: 'center',
                 gap: '0.25rem',
                 padding: '0.25rem 0.55rem',
-                background: 'var(--theater-accent-coral-subtle)',
-                color: 'var(--theater-accent-coral)',
-                border: '1px solid var(--theater-accent-coral)',
+                background: 'transparent',
+                color: 'var(--theater-text-secondary)',
+                border: '1px solid var(--theater-border-subtle)',
                 borderRadius: 'var(--theater-radius-sm)',
-                fontWeight: 550,
+                fontWeight: 500,
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 fontSize: '0.72rem',
                 transition: 'all var(--theater-transition-fast)',
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.color = 'var(--theater-text-primary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
+                }
               }}
               title="Reveal solution"
             >

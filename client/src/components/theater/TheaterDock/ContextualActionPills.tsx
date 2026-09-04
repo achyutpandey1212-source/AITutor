@@ -29,7 +29,7 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
   disabled = false,
 }) => {
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
       {/* 1. Replay Mode: Resume Live */}
       {isReplaying && onResumeLive && (
         <button
@@ -37,18 +37,19 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.35rem',
+            gap: '0.3rem',
             background: 'var(--theater-accent)',
             color: 'var(--theater-accent-contrast)',
             border: 'none',
             borderRadius: 'var(--theater-radius-sm)',
-            padding: '0.35rem 0.75rem',
-            fontSize: '0.78rem',
-            fontWeight: 600,
+            padding: '0.3rem 0.65rem',
+            fontSize: '0.75rem',
+            fontWeight: 550,
             cursor: 'pointer',
             fontFamily: 'var(--theater-font-sans)',
             transition: 'opacity var(--theater-transition-fast)',
           }}
+          title="Resume live teaching"
         >
           <IconPlay size={10} />
           <span>Resume Live</span>
@@ -65,33 +66,32 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.35rem',
-                background: 'var(--theater-surface-elevated)',
-                color: 'var(--theater-accent-amber)',
-                border: '1px solid var(--theater-border-medium)',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                background: 'transparent',
+                color: 'var(--theater-text-secondary)',
+                border: '1px solid var(--theater-border-subtle)',
                 borderRadius: 'var(--theater-radius-sm)',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.78rem',
-                fontWeight: 500,
                 cursor: disabled ? 'not-allowed' : 'pointer',
-                fontFamily: 'var(--theater-font-sans)',
                 transition: 'all var(--theater-transition-fast)',
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'var(--theater-surface-hover)';
-                  e.currentTarget.style.borderColor = 'var(--theater-accent-amber)';
+                  e.currentTarget.style.color = 'var(--theater-text-primary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'var(--theater-surface-elevated)';
-                  e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
+                  e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
                 }
               }}
+              title="Need a hint from Lumo"
+              aria-label="Hint"
             >
-              <IconLightbulb size={13} />
-              <span>Hint</span>
+              <IconLightbulb size={14} />
             </button>
           )}
 
@@ -102,33 +102,32 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.35rem',
-                background: 'var(--theater-surface-elevated)',
-                color: 'var(--theater-accent-coral)',
-                border: '1px solid var(--theater-border-medium)',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                background: 'transparent',
+                color: 'var(--theater-text-secondary)',
+                border: '1px solid var(--theater-border-subtle)',
                 borderRadius: 'var(--theater-radius-sm)',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.78rem',
-                fontWeight: 500,
                 cursor: disabled ? 'not-allowed' : 'pointer',
-                fontFamily: 'var(--theater-font-sans)',
                 transition: 'all var(--theater-transition-fast)',
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'var(--theater-surface-hover)';
-                  e.currentTarget.style.borderColor = 'var(--theater-accent-coral)';
+                  e.currentTarget.style.color = 'var(--theater-text-primary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'var(--theater-surface-elevated)';
-                  e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
+                  e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
                 }
               }}
+              title="Reveal step-by-step solution"
+              aria-label="Solution"
             >
-              <IconHelp size={13} />
-              <span>Solution</span>
+              <IconHelp size={14} />
             </button>
           )}
         </>
@@ -144,36 +143,32 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.35rem',
-                background: 'var(--theater-surface-elevated)',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                background: 'transparent',
                 color: 'var(--theater-text-secondary)',
                 border: '1px solid var(--theater-border-subtle)',
                 borderRadius: 'var(--theater-radius-sm)',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.78rem',
-                fontWeight: 500,
                 cursor: disabled ? 'not-allowed' : 'pointer',
-                fontFamily: 'var(--theater-font-sans)',
                 transition: 'all var(--theater-transition-fast)',
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'var(--theater-surface-hover)';
                   e.currentTarget.style.color = 'var(--theater-text-primary)';
-                  e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'var(--theater-surface-elevated)';
                   e.currentTarget.style.color = 'var(--theater-text-secondary)';
                   e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
                 }
               }}
-              title="Deterministically replay the previous explanation verbatim"
+              title="Explain again verbatim"
+              aria-label="Explain again"
             >
-              <IconRefresh size={12} />
-              <span>Explain again</span>
+              <IconRefresh size={13} />
             </button>
           )}
 
@@ -184,40 +179,35 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.35rem',
-                background: 'var(--theater-surface-elevated)',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                background: 'transparent',
                 color: 'var(--theater-text-secondary)',
                 border: '1px solid var(--theater-border-subtle)',
                 borderRadius: 'var(--theater-radius-sm)',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.78rem',
-                fontWeight: 500,
                 cursor: disabled ? 'not-allowed' : 'pointer',
-                fontFamily: 'var(--theater-font-sans)',
                 transition: 'all var(--theater-transition-fast)',
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'var(--theater-surface-hover)';
                   e.currentTarget.style.color = 'var(--theater-text-primary)';
-                  e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.background = 'var(--theater-surface-elevated)';
                   e.currentTarget.style.color = 'var(--theater-text-secondary)';
                   e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
                 }
               }}
-              title="Explain this concept with another visual or analogy"
+              title="Try another way (alternative explanation or analogy)"
+              aria-label="Try another way"
             >
-              <IconSparkles size={12} />
-              <span>Try another way</span>
+              <IconSparkles size={13} />
             </button>
           )}
 
-          {/* Lumo AI / Contextual Doubt Solver Entry Point */}
           {onOpenDoubtSolver && (
             <button
               onClick={onOpenDoubtSolver}
@@ -225,32 +215,32 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.3rem',
-                background: 'var(--theater-accent-subtle)',
-                color: 'var(--theater-accent)',
-                border: '1px solid var(--theater-accent-border)',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                background: 'transparent',
+                color: 'var(--theater-text-secondary)',
+                border: '1px solid var(--theater-border-subtle)',
                 borderRadius: 'var(--theater-radius-sm)',
-                padding: '0.35rem 0.7rem',
-                fontSize: '0.78rem',
-                fontWeight: 550,
                 cursor: disabled ? 'not-allowed' : 'pointer',
-                fontFamily: 'var(--theater-font-sans)',
                 transition: 'all var(--theater-transition-fast)',
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.borderColor = 'var(--theater-accent)';
+                  e.currentTarget.style.color = 'var(--theater-text-primary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.borderColor = 'var(--theater-accent-border)';
+                  e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                  e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
                 }
               }}
-              title="Ask your teacher something privately"
+              title="Ask Lumo a private doubt"
+              aria-label="Ask Lumo"
             >
-              <IconSparkles size={12} />
-              <span>Ask Lumo</span>
+              <IconHelp size={13} />
             </button>
           )}
         </>

@@ -54,6 +54,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [isReplaying, setIsReplaying] = useState(false);
   const [replayConceptName, setReplayConceptName] = useState<string | undefined>(undefined);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   // Load User Documents
   useEffect(() => {
@@ -308,6 +309,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
         conceptProgressText={conceptProgressText}
         conceptProgressPercent={conceptProgressPercent}
         documentTitle={activeDocTitle}
+        isFocusMode={isFocusMode}
         onExit={() => onNavigate('/dashboard')}
         onOpenDoubtSolver={() => {
           closeAllDrawers();
@@ -344,7 +346,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
             margin: '0.6rem auto 0 auto',
             padding: '0.65rem 1.25rem',
             background: 'var(--theater-surface)',
-            border: '1px solid var(--theater-accent-border)',
+            border: '1px solid var(--theater-border-medium)',
             borderRadius: 'var(--theater-radius-lg)',
             display: 'flex',
             alignItems: 'center',
@@ -360,8 +362,9 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
                 width: '28px',
                 height: '28px',
                 borderRadius: '50%',
-                background: 'var(--theater-accent-subtle)',
-                color: 'var(--theater-accent)',
+                background: 'var(--theater-surface-elevated)',
+                color: 'var(--theater-text-primary)',
+                border: '1px solid var(--theater-border-subtle)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -435,10 +438,10 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
             maxWidth: '1200px',
             margin: '0.5rem auto 0 auto',
             padding: '0.5rem 1.1rem',
-            background: 'var(--theater-accent-coral-subtle)',
-            border: '1px solid var(--theater-accent-coral)',
+            background: 'var(--theater-status-error-subtle)',
+            border: '1px solid var(--theater-status-error)',
             borderRadius: 'var(--theater-radius-sm)',
-            color: 'var(--theater-accent-coral)',
+            color: 'var(--theater-status-error)',
             fontSize: '0.82rem',
             textAlign: 'center',
           }}
@@ -455,10 +458,11 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '0.5rem 1.25rem 5.5rem 1.25rem',
+          padding: isFocusMode ? '0.25rem 1rem 4.5rem 1rem' : '0.5rem 1.25rem 5.5rem 1.25rem',
           position: 'relative',
           width: '100%',
           boxSizing: 'border-box',
+          transition: 'padding var(--theater-transition-stage)',
         }}
       >
         <TheaterStage
@@ -485,6 +489,8 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
             setIsReplaying(true);
             setReplayConceptName(conceptSteps.find((s) => s.id === stepId)?.title);
           }}
+          isFocusMode={isFocusMode}
+          onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
         />
       </main>
 
@@ -512,6 +518,8 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
           onSendMessage={submitTypedMessage}
           isLoading={isLoading}
           isSttSupported={isSttSupported}
+          isFocusMode={isFocusMode}
+          onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
         />
       )}
 

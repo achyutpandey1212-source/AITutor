@@ -31,12 +31,13 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
         alignItems: 'center',
         background: 'var(--theater-surface-elevated)',
         border: isFocused
-          ? '1px solid var(--theater-accent)'
+          ? '1px solid var(--theater-text-primary)'
           : '1px solid var(--theater-border-subtle)',
-        borderRadius: 'var(--theater-radius-md)',
-        padding: '0.25rem 0.35rem 0.25rem 0.75rem',
-        minWidth: '220px',
-        maxWidth: '300px',
+        borderRadius: 'var(--theater-radius-sm)',
+        padding: '0.15rem 0.25rem 0.15rem 0.65rem',
+        minWidth: '180px',
+        maxWidth: '260px',
+        height: '32px',
         transition: 'border-color var(--theater-transition-fast)',
         boxSizing: 'border-box',
       }}
@@ -59,7 +60,7 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
           border: 'none',
           outline: 'none',
           color: 'var(--theater-text-primary)',
-          fontSize: '0.8rem',
+          fontSize: '0.78rem',
           fontFamily: 'var(--theater-font-sans)',
         }}
       />
@@ -71,9 +72,9 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
           background: typedMessage.trim() ? 'var(--theater-accent)' : 'transparent',
           color: typedMessage.trim() ? 'var(--theater-accent-contrast)' : 'var(--theater-text-faint)',
           border: 'none',
-          borderRadius: 'var(--theater-radius-sm)',
-          width: '26px',
-          height: '26px',
+          borderRadius: 'var(--theater-radius-xs)',
+          width: '22px',
+          height: '22px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -84,7 +85,7 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
         title="Send message"
         aria-label="Send message"
       >
-        <IconArrowRight size={13} />
+        <IconArrowRight size={11} />
       </button>
     </form>
   );

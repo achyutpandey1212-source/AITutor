@@ -1,7 +1,8 @@
 /* ==========================================================================
-   LUMO V3 — CANONICAL DESIGN TOKENS
-   Product-grade, restrained, editorial, calm, and typography-led.
-   Zero AI-slop: no neon glows, no excessive glassmorphism, no blue gradients.
+   LUMO V3 — CANONICAL DESIGN TOKENS (FINAL PASS)
+   Monochrome, quiet, cinematic, and typography-led.
+   Palette: Black / Charcoal + Soft White / Ivory + Subtle Light.
+   Zero neon, zero orange/green dominance, zero artificial card-clutter.
    ========================================================================== */
 
 /* --- Local Font-Face Declarations from /Fonts/ --- */
@@ -57,103 +58,97 @@
   /* Restrained Motion */
   --theater-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --theater-transition-fast: 120ms cubic-bezier(0.16, 1, 0.3, 1);
-  --theater-transition-normal: 200ms cubic-bezier(0.16, 1, 0.3, 1);
-  --theater-transition-stage: 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  --theater-transition-normal: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  --theater-transition-stage: 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ==========================================================================
-   DARK THEME (Warm Charcoal + Soft White + Restrained Terracotta Accent)
+   DARK THEME (Near-Black Charcoal + Soft White + Subtle Light)
    Default for Live Theater environment
    ========================================================================== */
 :root,
 [data-theme="dark"] {
   /* Surfaces & Backgrounds */
-  --theater-bg: #101113;
-  --theater-bg-subtle: #141518;
-  --theater-surface: #17181C;
-  --theater-surface-elevated: #1E1F24;
-  --theater-surface-hover: #24262C;
-  --theater-surface-active: #2B2E36;
-  --theater-surface-sunken: #0C0D0F;
+  --theater-bg: #0B0C0E;
+  --theater-bg-subtle: #101114;
+  --theater-surface: #141518;
+  --theater-surface-elevated: #1A1B1F;
+  --theater-surface-hover: #222328;
+  --theater-surface-active: #2A2B32;
+  --theater-surface-sunken: #070809;
 
   /* Hairline Borders */
   --theater-border-subtle: rgba(255, 255, 255, 0.07);
   --theater-border-medium: rgba(255, 255, 255, 0.12);
-  --theater-border-strong: rgba(255, 255, 255, 0.18);
-  --theater-border-active: #E07A43;
+  --theater-border-strong: rgba(255, 255, 255, 0.20);
+  --theater-border-active: rgba(255, 255, 255, 0.50);
 
   /* Typography Colors */
-  --theater-text-primary: #EDEDEC;
-  --theater-text-secondary: #9E9EA0;
-  --theater-text-muted: #636366;
-  --theater-text-faint: #444446;
+  --theater-text-primary: #F5F5F5;
+  --theater-text-secondary: #A1A1A5;
+  --theater-text-muted: #66666A;
+  --theater-text-faint: #444448;
 
-  /* Meaningful Functional Accents */
-  --theater-accent: #E07A43;
-  --theater-accent-hover: #EA864F;
-  --theater-accent-subtle: rgba(224, 122, 67, 0.14);
-  --theater-accent-border: rgba(224, 122, 67, 0.30);
-  --theater-accent-contrast: #FFFFFF;
+  /* Monochrome High-Contrast Accent */
+  --theater-accent: #FFFFFF;
+  --theater-accent-hover: #EBEBEB;
+  --theater-accent-subtle: rgba(255, 255, 255, 0.08);
+  --theater-accent-border: rgba(255, 255, 255, 0.18);
+  --theater-accent-contrast: #0B0C0E;
 
-  --theater-accent-mint: #3EAF76;
-  --theater-accent-mint-subtle: rgba(62, 175, 118, 0.14);
+  /* Subtle Status Indications (Monochrome / Muted) */
+  --theater-status-active: #FFFFFF;
+  --theater-status-active-subtle: rgba(255, 255, 255, 0.10);
+  --theater-status-error: #E5534B;
+  --theater-status-error-subtle: rgba(229, 83, 75, 0.12);
 
-  --theater-accent-amber: #D98B2B;
-  --theater-accent-amber-subtle: rgba(217, 139, 43, 0.14);
-
-  --theater-accent-coral: #D9534F;
-  --theater-accent-coral-subtle: rgba(217, 83, 79, 0.14);
-
-  /* Shadows (Deep Ambient Occlusion, Zero Neon) */
-  --theater-shadow-stage: 0 1px 3px rgba(0, 0, 0, 0.4), 0 20px 48px -12px rgba(0, 0, 0, 0.65);
-  --theater-shadow-dock: 0 2px 10px rgba(0, 0, 0, 0.35), 0 12px 32px -4px rgba(0, 0, 0, 0.5);
-  --theater-shadow-dropdown: 0 8px 30px rgba(0, 0, 0, 0.5);
+  /* Shadows (Restrained Ambient Occlusion) */
+  --theater-shadow-stage: 0 1px 3px rgba(0, 0, 0, 0.4), 0 24px 60px -12px rgba(0, 0, 0, 0.7);
+  --theater-shadow-dock: 0 2px 8px rgba(0, 0, 0, 0.35), 0 16px 36px -4px rgba(0, 0, 0, 0.55);
+  --theater-shadow-dropdown: 0 8px 30px rgba(0, 0, 0, 0.55);
 }
 
 /* ==========================================================================
-   LIGHT THEME (Warm Ivory + Charcoal Typography + Warm Terracotta Accent)
+   LIGHT THEME (Warm Ivory + Charcoal Typography + Crisp Tonal Surfaces)
    ========================================================================== */
 [data-theme="light"] {
   /* Surfaces & Backgrounds */
-  --theater-bg: #F8F7F4;
-  --theater-bg-subtle: #F2EFEA;
+  --theater-bg: #F7F7F5;
+  --theater-bg-subtle: #F0F0ED;
   --theater-surface: #FFFFFF;
-  --theater-surface-elevated: #F5F4EF;
-  --theater-surface-hover: #ECE9E2;
-  --theater-surface-active: #E2DFD7;
-  --theater-surface-sunken: #EBE8E0;
+  --theater-surface-elevated: #F3F3F0;
+  --theater-surface-hover: #E9E9E5;
+  --theater-surface-active: #DFDFDA;
+  --theater-surface-sunken: #ECECE8;
 
   /* Hairline Borders */
-  --theater-border-subtle: rgba(0, 0, 0, 0.08);
-  --theater-border-medium: rgba(0, 0, 0, 0.13);
+  --theater-border-subtle: rgba(0, 0, 0, 0.07);
+  --theater-border-medium: rgba(0, 0, 0, 0.12);
   --theater-border-strong: rgba(0, 0, 0, 0.20);
-  --theater-border-active: #D4622B;
+  --theater-border-active: rgba(0, 0, 0, 0.45);
 
   /* Typography Colors */
-  --theater-text-primary: #151618;
-  --theater-text-secondary: #58585C;
-  --theater-text-muted: #8A8A8E;
-  --theater-text-faint: #B5B5B8;
+  --theater-text-primary: #121314;
+  --theater-text-secondary: #5A5A5E;
+  --theater-text-muted: #8C8C90;
+  --theater-text-faint: #B8B8BC;
 
-  /* Meaningful Functional Accents */
-  --theater-accent: #D4622B;
-  --theater-accent-hover: #C05522;
-  --theater-accent-subtle: rgba(212, 98, 43, 0.09);
-  --theater-accent-border: rgba(212, 98, 43, 0.25);
+  /* Monochrome High-Contrast Accent */
+  --theater-accent: #121314;
+  --theater-accent-hover: #26272A;
+  --theater-accent-subtle: rgba(0, 0, 0, 0.06);
+  --theater-accent-border: rgba(0, 0, 0, 0.15);
   --theater-accent-contrast: #FFFFFF;
 
-  --theater-accent-mint: #2E9963;
-  --theater-accent-mint-subtle: rgba(46, 153, 99, 0.10);
-
-  --theater-accent-amber: #C0791F;
-  --theater-accent-amber-subtle: rgba(192, 121, 31, 0.10);
-
-  --theater-accent-coral: #C93B37;
-  --theater-accent-coral-subtle: rgba(201, 59, 55, 0.10);
+  /* Subtle Status Indications */
+  --theater-status-active: #121314;
+  --theater-status-active-subtle: rgba(0, 0, 0, 0.07);
+  --theater-status-error: #D33A31;
+  --theater-status-error-subtle: rgba(211, 58, 49, 0.08);
 
   /* Shadows (Subtle Natural Definition) */
-  --theater-shadow-stage: 0 1px 3px rgba(0, 0, 0, 0.04), 0 16px 36px -8px rgba(0, 0, 0, 0.06);
-  --theater-shadow-dock: 0 2px 10px rgba(0, 0, 0, 0.06), 0 12px 28px -4px rgba(0, 0, 0, 0.08);
+  --theater-shadow-stage: 0 1px 3px rgba(0, 0, 0, 0.04), 0 16px 40px -8px rgba(0, 0, 0, 0.06);
+  --theater-shadow-dock: 0 2px 8px rgba(0, 0, 0, 0.05), 0 12px 28px -4px rgba(0, 0, 0, 0.07);
   --theater-shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
@@ -175,23 +170,17 @@
     display: none !important;
   }
   .theater-dock {
-    width: 94vw !important;
-    padding: 0.5rem 0.85rem !important;
-    gap: 0.75rem !important;
-    bottom: 1rem !important;
+    width: 95vw !important;
+    padding: 0.4rem 0.75rem !important;
+    gap: 0.5rem !important;
+    bottom: 0.85rem !important;
   }
 }
 
 @media (max-width: 768px) {
-  .theater-stage-container {
-    flex-direction: column !important;
-    min-height: auto !important;
-    max-height: none !important;
-  }
   .theater-dock {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 0.6rem !important;
-    border-radius: var(--theater-radius-lg) !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
   }
 }

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { liveTutorApiClient } from '../../../services/api.service';
 import { speechToTextService } from '../../../services/stt.service';
+import { IconSparkles, IconMic, IconArrowRight } from '../TheaterIcons';
 
 export interface LumoDoubtSolverProps {
   isOpen: boolean;
@@ -156,16 +157,14 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
           pointerEvents: 'auto',
           width: isExpanded ? 'min(760px, 94vw)' : 'min(420px, 92vw)',
           height: isExpanded ? 'min(640px, 82vh)' : 'min(490px, 68vh)',
-          background: '#0B0B0C',
-          backgroundImage:
-            'radial-gradient(circle at 50% 0%, rgba(226, 157, 75, 0.04) 0%, rgba(11, 11, 12, 0.98) 75%)',
-          borderRadius: '20px',
-          border: '1px solid rgba(255, 255, 255, 0.09)',
-          boxShadow: '0 24px 60px -10px rgba(0, 0, 0, 0.9), 0 0 1px rgba(255, 255, 255, 0.1)',
+          background: 'var(--theater-surface)',
+          borderRadius: 'var(--theater-radius-xl)',
+          border: '1px solid var(--theater-border-medium)',
+          boxShadow: 'var(--theater-shadow-stage)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          animation: 'theaterModalFadeIn 0.2s var(--theater-ease-out)',
+          animation: 'theaterModalFadeIn 0.2s var(--theater-ease)',
           fontFamily: 'var(--theater-font-sans)',
         }}
       >
@@ -176,28 +175,28 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '0.85rem 1.15rem',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
-            background: 'rgba(16, 16, 17, 0.7)',
+            borderBottom: '1px solid var(--theater-border-subtle)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ color: '#E29D4B', fontSize: '0.95rem' }}>✦</span>
+            <IconSparkles size={16} style={{ color: 'var(--theater-text-primary)' }} />
             <div>
-              <span style={{ fontSize: '0.86rem', fontWeight: 600, color: '#F5F5F2' }}>
+              <span style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--theater-text-primary)' }}>
                 Ask Lumo Privately
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.1rem' }}>
-                <span style={{ fontSize: '0.7rem', color: '#777773' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--theater-text-muted)' }}>
                   {subject} › {concept}
                 </span>
                 {documentTitle && (
                   <span
                     style={{
                       fontSize: '0.68rem',
-                      color: '#55C98A',
-                      background: 'rgba(85, 201, 138, 0.1)',
+                      color: 'var(--theater-text-secondary)',
+                      background: 'var(--theater-surface-elevated)',
+                      border: '1px solid var(--theater-border-subtle)',
                       padding: '0.05rem 0.35rem',
-                      borderRadius: '4px',
+                      borderRadius: 'var(--theater-radius-xs)',
                     }}
                   >
                     📎 {documentTitle}
@@ -214,15 +213,15 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#777773',
+                color: 'var(--theater-text-muted)',
                 cursor: 'pointer',
                 fontSize: '0.85rem',
                 padding: '0.3rem',
-                borderRadius: '6px',
-                transition: 'color 0.15s ease',
+                borderRadius: 'var(--theater-radius-xs)',
+                transition: 'color var(--theater-transition-fast)',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#F5F5F2')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#777773')}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--theater-text-muted)')}
               title={isExpanded ? 'Collapse to compact mode' : 'Expand workspace'}
             >
               {isExpanded ? '⤡' : '⤢'}
@@ -234,15 +233,15 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#777773',
+                color: 'var(--theater-text-muted)',
                 cursor: 'pointer',
                 fontSize: '0.9rem',
                 padding: '0.3rem',
-                borderRadius: '6px',
-                transition: 'color 0.15s ease',
+                borderRadius: 'var(--theater-radius-xs)',
+                transition: 'color var(--theater-transition-fast)',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#F5F5F2')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#777773')}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--theater-text-muted)')}
               title="Close doubt solver"
             >
               ✕
@@ -277,11 +276,13 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
                     maxWidth: '85%',
                     padding: '0.65rem 0.95rem',
                     borderRadius: isStudent ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                    background: isStudent ? 'rgba(226, 157, 75, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                    background: isStudent
+                      ? 'var(--theater-surface-elevated)'
+                      : 'var(--theater-surface-sunken)',
                     border: isStudent
-                      ? '1px solid rgba(226, 157, 75, 0.25)'
-                      : '1px solid rgba(255, 255, 255, 0.06)',
-                    color: isStudent ? '#F5F5F2' : '#EAEAE6',
+                      ? '1px solid var(--theater-border-medium)'
+                      : '1px solid var(--theater-border-subtle)',
+                    color: 'var(--theater-text-primary)',
                     fontSize: '0.82rem',
                     lineHeight: 1.5,
                   }}
@@ -294,8 +295,8 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
                         gap: '0.3rem',
                         marginBottom: '0.3rem',
                         fontSize: '0.68rem',
-                        fontWeight: 700,
-                        color: '#E29D4B',
+                        fontWeight: 600,
+                        color: 'var(--theater-text-muted)',
                       }}
                     >
                       <span>✦ Lumo</span>
@@ -306,7 +307,7 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
                 <span
                   style={{
                     fontSize: '0.65rem',
-                    color: '#777773',
+                    color: 'var(--theater-text-faint)',
                     marginTop: '0.2rem',
                     padding: '0 0.3rem',
                   }}
@@ -318,8 +319,8 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
           })}
 
           {isLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#777773', fontSize: '0.78rem' }}>
-              <span style={{ color: '#E29D4B' }}>✦</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--theater-text-muted)', fontSize: '0.78rem' }}>
+              <IconSparkles size={13} style={{ color: 'var(--theater-text-muted)' }} />
               <span>Lumo is reflecting on your question...</span>
             </div>
           )}
@@ -331,8 +332,8 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
         <div
           style={{
             padding: '0.75rem 1rem',
-            borderTop: '1px solid rgba(255, 255, 255, 0.07)',
-            background: 'rgba(16, 16, 17, 0.8)',
+            borderTop: '1px solid var(--theater-border-subtle)',
+            background: 'var(--theater-surface-elevated)',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
@@ -348,11 +349,11 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
             disabled={isLoading}
             style={{
               flex: 1,
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.07)',
-              borderRadius: '10px',
+              background: 'var(--theater-surface-sunken)',
+              border: '1px solid var(--theater-border-subtle)',
+              borderRadius: 'var(--theater-radius-sm)',
               padding: '0.5rem 0.85rem',
-              color: '#F5F5F2',
+              color: 'var(--theater-text-primary)',
               fontSize: '0.82rem',
               outline: 'none',
               fontFamily: 'var(--theater-font-sans)',
@@ -364,23 +365,23 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
             <button
               onClick={handleToggleVoiceInput}
               style={{
-                background: isListeningMic ? 'rgba(85, 201, 138, 0.2)' : 'transparent',
+                background: isListeningMic ? 'var(--theater-accent)' : 'transparent',
                 border: isListeningMic
-                  ? '1px solid #55C98A'
-                  : '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '8px',
+                  ? '1px solid var(--theater-accent)'
+                  : '1px solid var(--theater-border-subtle)',
+                borderRadius: 'var(--theater-radius-sm)',
                 width: '32px',
                 height: '32px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: isListeningMic ? '#55C98A' : '#777773',
+                color: isListeningMic ? 'var(--theater-accent-contrast)' : 'var(--theater-text-muted)',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                transition: 'all var(--theater-transition-fast)',
               }}
               title={isListeningMic ? 'Listening... click to stop' : 'Speak your doubt'}
             >
-              🎙
+              <IconMic size={15} />
             </button>
           )}
 
@@ -389,23 +390,23 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
             onClick={handleSend}
             disabled={isLoading || !inputQuery.trim()}
             style={{
-              background: inputQuery.trim() ? '#E29D4B' : 'rgba(255, 255, 255, 0.05)',
-              color: inputQuery.trim() ? '#080808' : '#777773',
-              border: 'none',
-              borderRadius: '8px',
+              background: inputQuery.trim() ? 'var(--theater-accent)' : 'transparent',
+              color: inputQuery.trim() ? 'var(--theater-accent-contrast)' : 'var(--theater-text-faint)',
+              border: inputQuery.trim() ? '1px solid var(--theater-accent)' : '1px solid var(--theater-border-subtle)',
+              borderRadius: 'var(--theater-radius-sm)',
               width: '32px',
               height: '32px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: isLoading || !inputQuery.trim() ? 'default' : 'pointer',
-              fontWeight: 700,
+              fontWeight: 600,
               fontSize: '0.95rem',
-              transition: 'all 0.15s ease',
+              transition: 'all var(--theater-transition-fast)',
             }}
             title="Submit doubt"
           >
-            →
+            <IconArrowRight size={14} />
           </button>
         </div>
       </aside>

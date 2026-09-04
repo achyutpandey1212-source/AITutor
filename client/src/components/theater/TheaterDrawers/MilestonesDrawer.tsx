@@ -58,15 +58,14 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
         right: 0,
         width: 'min(380px, 90vw)',
         height: '100vh',
-        background: 'rgba(11, 14, 20, 0.96)',
-        backdropFilter: 'blur(20px)',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: 'var(--theater-shadow-drawer)',
+        background: 'var(--theater-surface)',
+        borderLeft: '1px solid var(--theater-border-medium)',
+        boxShadow: 'var(--theater-shadow-stage)',
         zIndex: 50,
         display: 'flex',
         flexDirection: 'column',
-        animation: 'theaterSlideInRight 0.25s var(--theater-ease-out)',
-        color: '#FFFFFF',
+        animation: 'theaterSlideInRight 0.25s var(--theater-ease)',
+        color: 'var(--theater-text-primary)',
         fontFamily: 'var(--theater-font-sans)',
       }}
     >
@@ -77,16 +76,16 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: '1px solid var(--theater-border-subtle)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <IconNotes size={18} style={{ color: 'var(--theater-accent)' }} />
+          <IconNotes size={18} style={{ color: 'var(--theater-text-primary)' }} />
           <div>
-            <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#FFFFFF' }}>
+            <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: 'var(--theater-text-primary)' }}>
               Session Milestones
             </h3>
-            <span style={{ fontSize: '0.75rem', color: '#7E8695' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--theater-text-muted)' }}>
               Concepts mastered & replay history
             </span>
           </div>
@@ -95,21 +94,27 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
         <button
           onClick={onClose}
           style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '50%',
+            background: 'transparent',
+            border: '1px solid var(--theater-border-subtle)',
+            borderRadius: 'var(--theater-radius-sm)',
             width: '28px',
             height: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#8C96A5',
+            color: 'var(--theater-text-muted)',
             cursor: 'pointer',
             fontSize: '0.85rem',
-            transition: 'all 0.15s ease',
+            transition: 'all var(--theater-transition-fast)',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#8C96A5')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--theater-text-primary)';
+            e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--theater-text-muted)';
+            e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
+          }}
         >
           ✕
         </button>
@@ -118,13 +123,13 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
       {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem' }}>
         {loading ? (
-          <div style={{ color: '#7E8695', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
+          <div style={{ color: 'var(--theater-text-muted)', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
             Loading milestones...
           </div>
         ) : !memory || memory.segments.length === 0 ? (
-          <div style={{ color: '#7E8695', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
+          <div style={{ color: 'var(--theater-text-muted)', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
             <p>No teaching segments recorded yet.</p>
-            <p style={{ fontSize: '0.78rem', color: '#4B5260' }}>
+            <p style={{ fontSize: '0.78rem', color: 'var(--theater-text-faint)' }}>
               As Lumo teaches concepts, your progress and replay points will appear here.
             </p>
           </div>
@@ -134,8 +139,8 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
               <span
                 style={{
                   fontSize: '0.72rem',
-                  fontWeight: 700,
-                  color: '#60A5FA',
+                  fontWeight: 600,
+                  color: 'var(--theater-text-secondary)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
                 }}
@@ -148,11 +153,11 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
                     key={i}
                     style={{
                       fontSize: '0.75rem',
-                      background: 'rgba(255, 255, 255, 0.04)',
+                      background: 'var(--theater-surface-elevated)',
                       padding: '0.25rem 0.65rem',
-                      borderRadius: '6px',
-                      color: '#E2E8F0',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: 'var(--theater-radius-sm)',
+                      color: 'var(--theater-text-primary)',
+                      border: '1px solid var(--theater-border-subtle)',
                       fontWeight: 500,
                     }}
                   >
@@ -162,12 +167,12 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1rem' }}>
+            <div style={{ borderTop: '1px solid var(--theater-border-subtle)', paddingTop: '1rem' }}>
               <span
                 style={{
                   fontSize: '0.72rem',
-                  fontWeight: 700,
-                  color: '#7E8695',
+                  fontWeight: 600,
+                  color: 'var(--theater-text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
                 }}
@@ -187,42 +192,50 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
                       key={seg.segmentId}
                       style={{
                         padding: '0.85rem',
-                        background: 'rgba(255, 255, 255, 0.025)',
-                        borderRadius: '10px',
-                        border: '1px solid rgba(255, 255, 255, 0.07)',
+                        background: 'var(--theater-surface-sunken)',
+                        borderRadius: 'var(--theater-radius-md)',
+                        border: '1px solid var(--theater-border-subtle)',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '0.4rem',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.72rem', color: '#7E8695', fontWeight: 600 }}>{time}</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--theater-text-muted)', fontWeight: 550 }}>{time}</span>
                         <button
                           onClick={() => {
                             onClose();
                             onReplaySegment(seg.segmentId);
                           }}
                           style={{
-                            background: 'rgba(59, 130, 246, 0.15)',
-                            border: '1px solid rgba(59, 130, 246, 0.35)',
-                            color: '#60A5FA',
-                            borderRadius: '6px',
-                            padding: '0.2rem 0.6rem',
+                            background: 'var(--theater-surface-elevated)',
+                            border: '1px solid var(--theater-border-subtle)',
+                            color: 'var(--theater-text-secondary)',
+                            borderRadius: 'var(--theater-radius-xs)',
+                            padding: '0.2rem 0.55rem',
                             fontSize: '0.72rem',
-                            fontWeight: 700,
+                            fontWeight: 550,
                             cursor: 'pointer',
-                            transition: 'all 0.15s ease',
+                            transition: 'all var(--theater-transition-fast)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = 'var(--theater-text-primary)';
+                            e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                            e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
                           }}
                         >
                           ↻ Replay
                         </button>
                       </div>
 
-                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#FFFFFF' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--theater-text-primary)' }}>
                         {seg.title || seg.concept}
                       </div>
 
-                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#B4BAC5', lineHeight: 1.4 }}>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--theater-text-muted)', lineHeight: 1.4 }}>
                         {seg.displayText.length > 90
                           ? `${seg.displayText.slice(0, 90)}...`
                           : seg.displayText}

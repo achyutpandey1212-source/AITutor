@@ -25,6 +25,7 @@ export interface TheaterHeaderProps {
   onOpenTranscript?: () => void;
   onOpenSettings: () => void;
   onOpenDoubtSolver?: () => void;
+  isFocusMode?: boolean;
 }
 
 export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
@@ -40,6 +41,7 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
   onOpenTranscript,
   onOpenSettings,
   onOpenDoubtSolver,
+  isFocusMode = false,
 }) => {
   const { theme, toggleTheme } = useTheme();
 
@@ -62,7 +64,7 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: '0.6rem 1.5rem 0.2rem 1.5rem',
+        padding: isFocusMode ? '0.4rem 1.75rem 0.1rem 1.75rem' : '0.65rem 1.75rem 0.2rem 1.75rem',
         background: 'transparent',
         zIndex: 30,
         position: 'relative',
@@ -70,6 +72,7 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
         fontFamily: 'var(--theater-font-sans)',
         width: '100%',
         boxSizing: 'border-box',
+        transition: 'padding var(--theater-transition-normal), opacity var(--theater-transition-normal)',
       }}
     >
       {/* Top Bar Row */}
@@ -79,53 +82,44 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           width: '100%',
-          maxWidth: '1360px',
+          maxWidth: '1440px',
           gap: '1rem',
         }}
       >
-        {/* Left: Lumo Brand & Exit */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {/* Lumo Typographic Brand Mark */}
+        {/* Left: Real Lumo Logo & Exit Action */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
+          {/* Real Lumo Logo Asset */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
               cursor: 'default',
             }}
           >
-            <span
+            <img
+              src="/logo/Lumo_Logo.png"
+              alt="Lumo"
               style={{
-                width: '7px',
-                height: '7px',
-                borderRadius: '50%',
-                background: 'var(--theater-accent)',
-                display: 'inline-block',
+                height: '22px',
+                width: 'auto',
+                objectFit: 'contain',
+                filter: theme === 'dark' ? 'invert(1)' : 'none',
+                opacity: 0.95,
+                transition: 'filter var(--theater-transition-fast)',
               }}
             />
-            <span
-              style={{
-                fontSize: '0.92rem',
-                fontWeight: 650,
-                color: 'var(--theater-text-primary)',
-                letterSpacing: '-0.02em',
-                fontFamily: 'var(--theater-font-sans)',
-              }}
-            >
-              Lumo
-            </span>
           </div>
 
-          {/* Hairline vertical divider */}
+          {/* Hairline subtle vertical divider */}
           <span
             style={{
               width: '1px',
-              height: '14px',
-              background: 'var(--theater-border-medium)',
+              height: '13px',
+              background: 'var(--theater-border-subtle)',
             }}
           />
 
-          {/* Understated Exit Action */}
+          {/* Quiet Exit Link */}
           <button
             onClick={onExit}
             style={{
@@ -135,25 +129,23 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
               background: 'transparent',
               border: 'none',
               color: 'var(--theater-text-muted)',
-              fontSize: '0.8rem',
-              fontWeight: 500,
+              fontSize: '0.78rem',
+              fontWeight: 450,
               cursor: 'pointer',
-              padding: '0.25rem 0.45rem',
-              borderRadius: 'var(--theater-radius-sm)',
-              transition: 'color var(--theater-transition-fast), background var(--theater-transition-fast)',
+              padding: '0.2rem 0.4rem',
+              borderRadius: 'var(--theater-radius-xs)',
+              transition: 'color var(--theater-transition-fast)',
               fontFamily: 'var(--theater-font-sans)',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = 'var(--theater-text-primary)';
-              e.currentTarget.style.background = 'var(--theater-surface-hover)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = 'var(--theater-text-muted)';
-              e.currentTarget.style.background = 'transparent';
             }}
             title="Return to Dashboard"
           >
-            <IconExit size={13} />
+            <IconExit size={12} />
             <span>Dashboard</span>
           </button>
         </div>
@@ -165,22 +157,24 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '0.45rem',
-            fontSize: '0.8rem',
+            fontSize: '0.78rem',
             fontFamily: 'var(--theater-font-sans)',
+            opacity: isFocusMode ? 0.65 : 1,
+            transition: 'opacity var(--theater-transition-fast)',
           }}
         >
-          <span style={{ color: 'var(--theater-text-muted)', fontWeight: 500 }}>{subject}</span>
+          <span style={{ color: 'var(--theater-text-muted)', fontWeight: 450 }}>{subject}</span>
           <span style={{ color: 'var(--theater-text-faint)', display: 'inline-flex', alignItems: 'center' }}>
-            <IconChevronRight size={11} />
+            <IconChevronRight size={10} />
           </span>
-          <span style={{ color: 'var(--theater-text-secondary)', fontWeight: 500 }}>{topic}</span>
+          <span style={{ color: 'var(--theater-text-secondary)', fontWeight: 450 }}>{topic}</span>
           <span style={{ color: 'var(--theater-text-faint)', display: 'inline-flex', alignItems: 'center' }}>
-            <IconChevronRight size={11} />
+            <IconChevronRight size={10} />
           </span>
           <span
             style={{
               color: 'var(--theater-text-primary)',
-              fontWeight: 600,
+              fontWeight: 550,
               letterSpacing: '-0.01em',
             }}
           >
@@ -188,35 +182,37 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
           </span>
         </div>
 
-        {/* Right: Small Utility Actions (Quiet, Precise, Unintrusive) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          {/* Ask Lumo Doubt Solver */}
+        {/* Right: Quiet Utility Actions (Icon-First with Tooltips) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+          {/* Ask Lumo */}
           {onOpenDoubtSolver && (
             <button
               onClick={onOpenDoubtSolver}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.35rem',
-                background: 'var(--theater-accent-subtle)',
-                border: '1px solid var(--theater-accent-border)',
+                gap: '0.3rem',
+                background: 'var(--theater-surface-elevated)',
+                border: '1px solid var(--theater-border-subtle)',
                 borderRadius: 'var(--theater-radius-sm)',
-                color: 'var(--theater-accent)',
-                fontSize: '0.78rem',
-                fontWeight: 550,
+                color: 'var(--theater-text-secondary)',
+                fontSize: '0.75rem',
+                fontWeight: 500,
                 cursor: 'pointer',
-                padding: '0.28rem 0.6rem',
-                marginRight: '0.2rem',
+                padding: '0.25rem 0.55rem',
+                marginRight: '0.35rem',
                 transition: 'all var(--theater-transition-fast)',
                 fontFamily: 'var(--theater-font-sans)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--theater-accent)';
+                e.currentTarget.style.color = 'var(--theater-text-primary)';
+                e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--theater-accent-border)';
+                e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
               }}
-              title="Ask Lumo a private doubt"
+              title="Ask Lumo a private question"
             >
               <IconSparkles size={12} />
               <span>Ask Lumo</span>
@@ -229,29 +225,21 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.35rem',
+              justifyContent: 'center',
               background: 'transparent',
               border: 'none',
-              color: 'var(--theater-text-secondary)',
-              fontSize: '0.8rem',
-              fontWeight: 500,
+              color: 'var(--theater-text-muted)',
               cursor: 'pointer',
-              padding: '0.3rem 0.55rem',
-              borderRadius: 'var(--theater-radius-sm)',
-              transition: 'color var(--theater-transition-fast), background var(--theater-transition-fast)',
-              fontFamily: 'var(--theater-font-sans)',
+              padding: '0.35rem',
+              borderRadius: 'var(--theater-radius-xs)',
+              transition: 'color var(--theater-transition-fast)',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--theater-text-primary)';
-              e.currentTarget.style.background = 'var(--theater-surface-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--theater-text-secondary)';
-              e.currentTarget.style.background = 'transparent';
-            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--theater-text-muted)')}
+            title="Session Notes & Key Takeaways"
+            aria-label="Notes"
           >
             <IconNotes size={14} />
-            <span>Notes</span>
           </button>
 
           {/* Materials */}
@@ -260,62 +248,45 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.35rem',
+              justifyContent: 'center',
               background: 'transparent',
               border: 'none',
-              color: documentTitle ? 'var(--theater-accent-mint)' : 'var(--theater-text-secondary)',
-              fontSize: '0.8rem',
-              fontWeight: 500,
+              color: documentTitle ? 'var(--theater-text-primary)' : 'var(--theater-text-muted)',
               cursor: 'pointer',
-              padding: '0.3rem 0.55rem',
-              borderRadius: 'var(--theater-radius-sm)',
-              transition: 'color var(--theater-transition-fast), background var(--theater-transition-fast)',
-              fontFamily: 'var(--theater-font-sans)',
+              padding: '0.35rem',
+              borderRadius: 'var(--theater-radius-xs)',
+              transition: 'color var(--theater-transition-fast)',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--theater-text-primary)';
-              e.currentTarget.style.background = 'var(--theater-surface-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = documentTitle ? 'var(--theater-accent-mint)' : 'var(--theater-text-secondary)';
-              e.currentTarget.style.background = 'transparent';
-            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = documentTitle ? 'var(--theater-text-primary)' : 'var(--theater-text-muted)')}
             title={documentTitle ? `Attached: ${documentTitle}` : 'Attached Study Materials'}
+            aria-label="Materials"
           >
             <IconMaterials size={14} />
-            <span>Materials</span>
           </button>
 
-          {/* Transcript / More */}
+          {/* Transcript */}
           {onOpenTranscript && (
             <button
               onClick={onOpenTranscript}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.35rem',
+                justifyContent: 'center',
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--theater-text-secondary)',
-                fontSize: '0.8rem',
-                fontWeight: 500,
+                color: 'var(--theater-text-muted)',
                 cursor: 'pointer',
-                padding: '0.3rem 0.55rem',
-                borderRadius: 'var(--theater-radius-sm)',
-                transition: 'color var(--theater-transition-fast), background var(--theater-transition-fast)',
-                fontFamily: 'var(--theater-font-sans)',
+                padding: '0.35rem',
+                borderRadius: 'var(--theater-radius-xs)',
+                transition: 'color var(--theater-transition-fast)',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'var(--theater-text-primary)';
-                e.currentTarget.style.background = 'var(--theater-surface-hover)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--theater-text-secondary)';
-                e.currentTarget.style.background = 'transparent';
-              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--theater-text-muted)')}
+              title="Full Dialogue Transcript"
+              aria-label="Transcript"
             >
               <IconTranscript size={14} />
-              <span>Transcript</span>
             </button>
           )}
 
@@ -328,25 +299,18 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
               justifyContent: 'center',
               background: 'transparent',
               border: 'none',
-              color: 'var(--theater-text-secondary)',
+              color: 'var(--theater-text-muted)',
               cursor: 'pointer',
               padding: '0.35rem',
-              borderRadius: 'var(--theater-radius-sm)',
-              transition: 'color var(--theater-transition-fast), background var(--theater-transition-fast)',
-              fontFamily: 'var(--theater-font-sans)',
+              borderRadius: 'var(--theater-radius-xs)',
+              transition: 'color var(--theater-transition-fast)',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--theater-text-primary)';
-              e.currentTarget.style.background = 'var(--theater-surface-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--theater-text-secondary)';
-              e.currentTarget.style.background = 'transparent';
-            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--theater-text-muted)')}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             aria-label="Toggle theme"
           >
-            {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+            {theme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />}
           </button>
 
           {/* Settings */}
@@ -358,46 +322,33 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
               justifyContent: 'center',
               background: 'transparent',
               border: 'none',
-              color: 'var(--theater-text-secondary)',
+              color: 'var(--theater-text-muted)',
               cursor: 'pointer',
               padding: '0.35rem',
-              borderRadius: 'var(--theater-radius-sm)',
-              transition: 'color var(--theater-transition-fast), background var(--theater-transition-fast)',
-              fontFamily: 'var(--theater-font-sans)',
+              borderRadius: 'var(--theater-radius-xs)',
+              transition: 'color var(--theater-transition-fast)',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--theater-text-primary)';
-              e.currentTarget.style.background = 'var(--theater-surface-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--theater-text-secondary)';
-              e.currentTarget.style.background = 'transparent';
-            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--theater-text-muted)')}
             title="Classroom Settings"
-            aria-label="Classroom settings"
+            aria-label="Settings"
           >
-            <IconSettings size={15} />
+            <IconSettings size={14} />
           </button>
         </div>
       </div>
 
-      {/* Subtle Hairline Concept Progress Track */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.6rem',
-          marginTop: '0.35rem',
-        }}
-      >
+      {/* Ultra-Minimal Hairline Progress Bar */}
+      {!isFocusMode && (
         <div
           style={{
-            width: '120px',
-            height: '2px',
+            width: '100%',
+            maxWidth: '1440px',
+            height: '1px',
             background: 'var(--theater-border-subtle)',
-            borderRadius: '2px',
-            overflow: 'hidden',
+            marginTop: '0.5rem',
             position: 'relative',
+            overflow: 'hidden',
           }}
         >
           <div
@@ -407,24 +358,12 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
               left: 0,
               width: `${computedPercent}%`,
               height: '100%',
-              background: 'var(--theater-accent)',
-              borderRadius: '2px',
-              transition: 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+              background: 'var(--theater-text-muted)',
+              transition: 'width 0.35s var(--theater-ease)',
             }}
           />
         </div>
-        <span
-          style={{
-            fontSize: '0.72rem',
-            color: 'var(--theater-text-muted)',
-            fontWeight: 450,
-            letterSpacing: '0.01em',
-            fontFamily: 'var(--theater-font-sans)',
-          }}
-        >
-          {conceptProgressText}
-        </span>
-      </div>
+      )}
     </header>
   );
 };

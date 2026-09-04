@@ -22,145 +22,71 @@ export const TutorPresence: React.FC<TutorPresenceProps> = ({
   const thinkingActive = isThinking || avatarState === 'THINKING';
 
   const getStatusText = () => {
-    if (interruptingActive) return 'Listening...';
-    if (speakingActive) return 'Explaining...';
-    if (thinkingActive) return 'Thinking...';
-    if (listeningActive) return 'Listening...';
+    if (interruptingActive) return 'Listening';
+    if (speakingActive) return 'Explaining';
+    if (thinkingActive) return 'Thinking';
+    if (listeningActive) return 'Listening';
     return 'Lumo';
-  };
-
-  const getStatusDotColor = () => {
-    if (interruptingActive) return 'var(--theater-accent-amber)';
-    if (speakingActive) return 'var(--theater-accent)';
-    if (listeningActive) return 'var(--theater-accent-mint)';
-    return 'var(--theater-text-muted)';
   };
 
   return (
     <div
       id="lumo-avatar-viewport"
       style={{
-        position: 'relative',
-        width: 'min(280px, 24vw)',
-        minWidth: '220px',
-        height: '100%',
-        minHeight: '340px',
-        borderRadius: 'var(--theater-radius-lg)',
-        background: 'var(--theater-surface)',
-        border: '1px solid var(--theater-border-subtle)',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: '0.85rem',
-        boxSizing: 'border-box',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '120px',
+        padding: '0.5rem',
+        borderRadius: 'var(--theater-radius-md)',
+        background: 'transparent',
         userSelect: 'none',
-        overflow: 'hidden',
+        boxSizing: 'border-box',
+        transition: 'opacity var(--theater-transition-fast)',
       }}
     >
-      {/* Top Presence Header: Lumo status label */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          zIndex: 5,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-          <span
-            style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: getStatusDotColor(),
-              transition: 'background var(--theater-transition-fast)',
-            }}
-          />
-          <span
-            style={{
-              fontSize: '0.78rem',
-              fontWeight: 550,
-              color: 'var(--theater-text-primary)',
-              fontFamily: 'var(--theater-font-sans)',
-            }}
-          >
-            Lumo
-          </span>
-        </div>
-
-        <span
-          style={{
-            fontSize: '0.72rem',
-            fontWeight: 450,
-            color: 'var(--theater-text-muted)',
-            fontFamily: 'var(--theater-font-sans)',
-          }}
-        >
-          {getStatusText()}
-        </span>
-      </div>
-
-      {/* Main Architectural Slot for Phase 4 3D Avatar */}
+      {/* Architectural Mount Slot for Phase 4 3D Avatar */}
       <div
         id="lumo-avatar-mount"
         style={{
-          flex: 1,
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          background: 'var(--theater-surface-elevated)',
+          border: '1px solid var(--theater-border-subtle)',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          margin: '0.5rem 0',
-          borderRadius: 'var(--theater-radius-md)',
-          background: 'var(--theater-surface-sunken)',
-          border: '1px solid var(--theater-border-subtle)',
-          overflow: 'hidden',
+          marginBottom: '0.4rem',
         }}
       >
-        {/* Subtle Watermark Branding in Slot */}
-        <img
-          src="/logo/Lumo_Logo.png"
-          alt=""
-          aria-hidden="true"
-          style={{
-            width: '44px',
-            height: '44px',
-            objectFit: 'contain',
-            opacity: 0.12,
-            position: 'absolute',
-          }}
-        />
-
-        {/* Minimal Audio Visualizer Bar while Speaking/Listening */}
+        {/* Acoustic Micro-Visualizer */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '3px',
-            height: '20px',
-            zIndex: 2,
+            gap: '2px',
+            height: '14px',
           }}
         >
-          {[8, 14, 20, 12, 18, 10, 16, 8].map((baseHeight, i) => {
+          {[4, 9, 14, 8, 12, 6].map((baseHeight, i) => {
             const h = speakingActive
               ? baseHeight
               : listeningActive
-              ? Math.round(baseHeight * 0.7)
-              : 3;
+              ? Math.max(3, Math.round(baseHeight * 0.6))
+              : 2;
             return (
               <span
                 key={i}
                 style={{
-                  width: '2.5px',
+                  width: '2px',
                   height: `${h}px`,
-                  borderRadius: '1.5px',
-                  background: speakingActive
-                    ? 'var(--theater-accent)'
-                    : listeningActive
-                    ? 'var(--theater-accent-mint)'
-                    : 'var(--theater-text-faint)',
-                  opacity: speakingActive || listeningActive ? 0.85 : 0.4,
-                  transition: 'height 0.15s ease, background 0.2s ease',
+                  borderRadius: '1px',
+                  background: 'var(--theater-text-primary)',
+                  opacity: speakingActive ? 0.9 : listeningActive ? 0.6 : 0.25,
+                  transition: 'height 0.12s ease',
                 }}
               />
             );
@@ -168,28 +94,27 @@ export const TutorPresence: React.FC<TutorPresenceProps> = ({
         </div>
       </div>
 
-      {/* Bottom Subtext info */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingTop: '0.2rem',
-        }}
-      >
+      {/* Understated Typographic Status */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
         <span
           style={{
-            fontSize: '0.7rem',
-            color: 'var(--theater-text-muted)',
+            width: '4px',
+            height: '4px',
+            borderRadius: '50%',
+            background: speakingActive || listeningActive ? 'var(--theater-text-primary)' : 'var(--theater-text-muted)',
+            opacity: speakingActive || listeningActive ? 1 : 0.4,
+          }}
+        />
+        <span
+          style={{
+            fontSize: '0.72rem',
+            fontWeight: 500,
+            color: 'var(--theater-text-secondary)',
             fontFamily: 'var(--theater-font-sans)',
-            textAlign: 'center',
+            letterSpacing: '-0.01em',
           }}
         >
-          {speakingActive
-            ? 'Speaking — click mic to interrupt'
-            : listeningActive
-            ? 'Listening to your speech...'
-            : 'Interactive AI Tutor'}
+          {getStatusText()}
         </span>
       </div>
     </div>

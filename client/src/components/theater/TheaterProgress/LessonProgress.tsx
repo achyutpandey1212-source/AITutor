@@ -1,5 +1,4 @@
 import React from 'react';
-import { IconCheck } from '../TheaterIcons';
 
 export interface ConceptStep {
   id: string;
@@ -20,15 +19,14 @@ export const LessonProgress: React.FC<LessonProgressProps> = ({
   if (!steps || steps.length === 0) return null;
 
   return (
-    <div
+    <nav
+      aria-label="Lesson Progression"
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0.45rem 1rem',
+        padding: '0.25rem 1rem',
         width: '100%',
-        maxWidth: '1200px',
-        margin: '0 auto',
         userSelect: 'none',
         overflowX: 'auto',
         scrollbarWidth: 'none',
@@ -50,76 +48,50 @@ export const LessonProgress: React.FC<LessonProgressProps> = ({
 
           return (
             <React.Fragment key={step.id || index}>
-              {/* Step Item */}
               <button
                 onClick={() => isCompleted && onSelectStep?.(step.id)}
                 disabled={!isCompleted}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.45rem',
-                  padding: isActive
-                    ? '0.3rem 0.75rem 0.3rem 0.35rem'
-                    : '0.25rem 0.65rem 0.25rem 0.35rem',
-                  borderRadius: 'var(--theater-radius-pill)',
-                  background: isActive
-                    ? 'var(--theater-surface-elevated)'
-                    : isCompleted
-                    ? 'var(--theater-surface)'
-                    : 'transparent',
-                  border: isActive
-                    ? '1px solid var(--theater-accent)'
-                    : isCompleted
-                    ? '1px solid var(--theater-border-subtle)'
-                    : '1px solid transparent',
+                  gap: '0.35rem',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '0.2rem 0.35rem',
                   cursor: isCompleted ? 'pointer' : 'default',
-                  transition: 'all var(--theater-transition-fast)',
+                  transition: 'color var(--theater-transition-fast)',
                 }}
                 title={
                   isCompleted
-                    ? `Click to replay ${step.title}`
+                    ? `Click to replay: ${step.title}`
                     : isActive
-                    ? `Currently learning: ${step.title}`
+                    ? `Current concept: ${step.title}`
                     : `Upcoming: ${step.title}`
                 }
               >
-                {/* Number Badge or Checkmark */}
-                <div
-                  style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    background: isActive
-                      ? 'var(--theater-accent)'
-                      : isCompleted
-                      ? 'var(--theater-accent-mint-subtle)'
-                      : 'var(--theater-surface-hover)',
-                    color: isActive
-                      ? 'var(--theater-accent-contrast)'
-                      : isCompleted
-                      ? 'var(--theater-accent-mint)'
-                      : 'var(--theater-text-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.68rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  {isCompleted ? <IconCheck size={11} /> : step.number}
-                </div>
+                {/* Tiny active dot */}
+                {isActive && (
+                  <span
+                    style={{
+                      width: '4px',
+                      height: '4px',
+                      borderRadius: '50%',
+                      background: 'var(--theater-text-primary)',
+                      display: 'inline-block',
+                    }}
+                  />
+                )}
 
-                {/* Step Title */}
+                {/* Concept Title */}
                 <span
                   style={{
                     fontSize: '0.78rem',
-                    fontWeight: isActive ? 600 : isCompleted ? 500 : 400,
+                    fontWeight: isActive ? 600 : isCompleted ? 450 : 400,
                     color: isActive
                       ? 'var(--theater-text-primary)'
                       : isCompleted
                       ? 'var(--theater-text-secondary)'
-                      : 'var(--theater-text-muted)',
-                    whiteSpace: 'nowrap',
+                      : 'var(--theater-text-faint)',
                     letterSpacing: '-0.01em',
                   }}
                 >
@@ -127,24 +99,22 @@ export const LessonProgress: React.FC<LessonProgressProps> = ({
                 </span>
               </button>
 
-              {/* Subtle Connecting Line */}
+              {/* Minimal Interpunct Divider */}
               {hasNext && (
-                <div
+                <span
                   style={{
-                    width: '16px',
-                    height: '1px',
-                    background: isCompleted
-                      ? 'var(--theater-accent-mint)'
-                      : 'var(--theater-border-subtle)',
-                    opacity: isCompleted ? 0.4 : 1,
-                    transition: 'all var(--theater-transition-fast)',
+                    color: 'var(--theater-text-faint)',
+                    fontSize: '0.7rem',
+                    opacity: 0.5,
                   }}
-                />
+                >
+                  ·
+                </span>
               )}
             </React.Fragment>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 };

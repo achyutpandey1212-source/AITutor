@@ -34,15 +34,14 @@ export const TranscriptDrawer: React.FC<TranscriptDrawerProps> = ({
         right: 0,
         width: 'min(420px, 92vw)',
         height: '100vh',
-        background: 'rgba(11, 14, 20, 0.96)',
-        backdropFilter: 'blur(20px)',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: 'var(--theater-shadow-drawer)',
+        background: 'var(--theater-surface)',
+        borderLeft: '1px solid var(--theater-border-medium)',
+        boxShadow: 'var(--theater-shadow-stage)',
         zIndex: 50,
         display: 'flex',
         flexDirection: 'column',
-        animation: 'theaterSlideInRight 0.25s var(--theater-ease-out)',
-        color: '#FFFFFF',
+        animation: 'theaterSlideInRight 0.25s var(--theater-ease)',
+        color: 'var(--theater-text-primary)',
         fontFamily: 'var(--theater-font-sans)',
       }}
     >
@@ -53,16 +52,16 @@ export const TranscriptDrawer: React.FC<TranscriptDrawerProps> = ({
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: '1px solid var(--theater-border-subtle)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <IconTranscript size={18} style={{ color: 'var(--theater-accent)' }} />
+          <IconTranscript size={18} style={{ color: 'var(--theater-text-primary)' }} />
           <div>
-            <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#FFFFFF' }}>
+            <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: 'var(--theater-text-primary)' }}>
               Conversation Transcript
             </h3>
-            <span style={{ fontSize: '0.75rem', color: '#7E8695' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--theater-text-muted)' }}>
               Full dialogue & explanations
             </span>
           </div>
@@ -71,21 +70,27 @@ export const TranscriptDrawer: React.FC<TranscriptDrawerProps> = ({
         <button
           onClick={onClose}
           style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '50%',
+            background: 'transparent',
+            border: '1px solid var(--theater-border-subtle)',
+            borderRadius: 'var(--theater-radius-sm)',
             width: '28px',
             height: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#8C96A5',
+            color: 'var(--theater-text-muted)',
             cursor: 'pointer',
             fontSize: '0.85rem',
-            transition: 'all 0.15s ease',
+            transition: 'all var(--theater-transition-fast)',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#8C96A5')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--theater-text-primary)';
+            e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--theater-text-muted)';
+            e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
+          }}
         >
           ✕
         </button>
@@ -103,9 +108,9 @@ export const TranscriptDrawer: React.FC<TranscriptDrawerProps> = ({
         }}
       >
         {conversationHistory.length === 0 ? (
-          <div style={{ color: '#7E8695', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
+          <div style={{ color: 'var(--theater-text-muted)', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
             <p>No messages yet.</p>
-            <p style={{ fontSize: '0.78rem', color: '#4B5260' }}>
+            <p style={{ fontSize: '0.78rem', color: 'var(--theater-text-faint)' }}>
               Speak or type to begin talking with your tutor.
             </p>
           </div>
@@ -128,9 +133,9 @@ export const TranscriptDrawer: React.FC<TranscriptDrawerProps> = ({
                 <div
                   style={{
                     fontSize: '0.72rem',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     marginBottom: '0.25rem',
-                    color: isStudent ? '#60A5FA' : isAssessment ? '#F5C542' : '#B4BAC5',
+                    color: isStudent ? 'var(--theater-text-secondary)' : 'var(--theater-text-muted)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.4rem',
@@ -142,8 +147,9 @@ export const TranscriptDrawer: React.FC<TranscriptDrawerProps> = ({
                     <span
                       style={{
                         fontSize: '0.65rem',
-                        background: 'rgba(245, 185, 66, 0.15)',
-                        color: '#F5C542',
+                        background: 'var(--theater-surface-elevated)',
+                        color: 'var(--theater-text-primary)',
+                        border: '1px solid var(--theater-border-subtle)',
                         padding: '0.05rem 0.35rem',
                         borderRadius: '3px',
                       }}
@@ -159,16 +165,12 @@ export const TranscriptDrawer: React.FC<TranscriptDrawerProps> = ({
                     padding: '0.7rem 1rem',
                     borderRadius: isStudent ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
                     background: isStudent
-                      ? 'rgba(59, 130, 246, 0.12)'
-                      : isAssessment
-                      ? 'rgba(245, 185, 66, 0.08)'
-                      : 'rgba(255, 255, 255, 0.04)',
+                      ? 'var(--theater-surface-elevated)'
+                      : 'var(--theater-surface-sunken)',
                     border: isStudent
-                      ? '1px solid rgba(59, 130, 246, 0.25)'
-                      : isAssessment
-                      ? '1px solid rgba(245, 185, 66, 0.2)'
-                      : '1px solid rgba(255, 255, 255, 0.07)',
-                    color: '#FFFFFF',
+                      ? '1px solid var(--theater-border-medium)'
+                      : '1px solid var(--theater-border-subtle)',
+                    color: 'var(--theater-text-primary)',
                     fontSize: '0.85rem',
                     lineHeight: 1.45,
                     whiteSpace: 'pre-wrap',

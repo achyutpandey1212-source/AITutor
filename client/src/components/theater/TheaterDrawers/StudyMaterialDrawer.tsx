@@ -24,15 +24,14 @@ export const StudyMaterialDrawer: React.FC<StudyMaterialDrawerProps> = ({
         right: 0,
         width: 'min(380px, 90vw)',
         height: '100vh',
-        background: 'rgba(11, 14, 20, 0.96)',
-        backdropFilter: 'blur(20px)',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: 'var(--theater-shadow-drawer)',
+        background: 'var(--theater-surface)',
+        borderLeft: '1px solid var(--theater-border-medium)',
+        boxShadow: 'var(--theater-shadow-stage)',
         zIndex: 50,
         display: 'flex',
         flexDirection: 'column',
-        animation: 'theaterSlideInRight 0.25s var(--theater-ease-out)',
-        color: '#FFFFFF',
+        animation: 'theaterSlideInRight 0.25s var(--theater-ease)',
+        color: 'var(--theater-text-primary)',
         fontFamily: 'var(--theater-font-sans)',
       }}
     >
@@ -43,16 +42,16 @@ export const StudyMaterialDrawer: React.FC<StudyMaterialDrawerProps> = ({
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: '1px solid var(--theater-border-subtle)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <IconMaterials size={18} style={{ color: 'var(--theater-accent-mint)' }} />
+          <IconMaterials size={18} style={{ color: 'var(--theater-text-primary)' }} />
           <div>
-            <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: '#FFFFFF' }}>
+            <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: 'var(--theater-text-primary)' }}>
               Study Material
             </h3>
-            <span style={{ fontSize: '0.75rem', color: '#7E8695' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--theater-text-muted)' }}>
               Document grounding & syllabus context
             </span>
           </div>
@@ -61,21 +60,27 @@ export const StudyMaterialDrawer: React.FC<StudyMaterialDrawerProps> = ({
         <button
           onClick={onClose}
           style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '50%',
+            background: 'transparent',
+            border: '1px solid var(--theater-border-subtle)',
+            borderRadius: 'var(--theater-radius-sm)',
             width: '28px',
             height: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#8C96A5',
+            color: 'var(--theater-text-muted)',
             cursor: 'pointer',
             fontSize: '0.85rem',
-            transition: 'all 0.15s ease',
+            transition: 'all var(--theater-transition-fast)',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#8C96A5')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--theater-text-primary)';
+            e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--theater-text-muted)';
+            e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
+          }}
         >
           ✕
         </button>
@@ -88,26 +93,26 @@ export const StudyMaterialDrawer: React.FC<StudyMaterialDrawerProps> = ({
             <div
               style={{
                 padding: '1.1rem',
-                background: 'rgba(85, 201, 138, 0.06)',
-                border: '1px solid rgba(85, 201, 138, 0.25)',
-                borderRadius: '12px',
+                background: 'var(--theater-surface-elevated)',
+                border: '1px solid var(--theater-border-medium)',
+                borderRadius: 'var(--theater-radius-md)',
               }}
             >
               <div
                 style={{
                   fontSize: '0.72rem',
-                  fontWeight: 700,
-                  color: '#55C98A',
+                  fontWeight: 600,
+                  color: 'var(--theater-text-secondary)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
                 }}
               >
                 Active Document
               </div>
-              <div style={{ fontWeight: 700, fontSize: '1rem', color: '#FFFFFF', marginTop: '0.35rem' }}>
-                📚 {documentTitle}
+              <div style={{ fontWeight: 600, fontSize: '0.98rem', color: 'var(--theater-text-primary)', marginTop: '0.35rem' }}>
+                {documentTitle}
               </div>
-              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.82rem', color: '#B4BAC5', lineHeight: 1.45 }}>
+              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.82rem', color: 'var(--theater-text-muted)', lineHeight: 1.45 }}>
                 Lumo is using this document to ground definitions, formulas, and syllabus requirements.
               </p>
             </div>
@@ -115,20 +120,20 @@ export const StudyMaterialDrawer: React.FC<StudyMaterialDrawerProps> = ({
             <div
               style={{
                 padding: '1rem',
-                background: 'rgba(255, 255, 255, 0.025)',
-                border: '1px solid rgba(255, 255, 255, 0.07)',
-                borderRadius: '12px',
+                background: 'var(--theater-surface-sunken)',
+                border: '1px solid var(--theater-border-subtle)',
+                borderRadius: 'var(--theater-radius-md)',
               }}
             >
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#FFFFFF', fontWeight: 700 }}>
-                💡 Pro Tips
+              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: 'var(--theater-text-primary)', fontWeight: 600 }}>
+                Study Tips
               </h4>
               <ul
                 style={{
                   margin: 0,
                   paddingLeft: '1.1rem',
                   fontSize: '0.8rem',
-                  color: '#7E8695',
+                  color: 'var(--theater-text-secondary)',
                   lineHeight: 1.55,
                 }}
               >
@@ -138,9 +143,9 @@ export const StudyMaterialDrawer: React.FC<StudyMaterialDrawerProps> = ({
             </div>
           </div>
         ) : (
-          <div style={{ color: '#7E8695', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
+          <div style={{ color: 'var(--theater-text-muted)', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
             <p>No document attached to this session.</p>
-            <p style={{ fontSize: '0.78rem', color: '#4B5260' }}>
+            <p style={{ fontSize: '0.78rem', color: 'var(--theater-text-faint)' }}>
               Lumo is teaching using its broad scientific and mathematical knowledge base.
             </p>
           </div>

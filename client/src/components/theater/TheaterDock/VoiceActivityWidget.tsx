@@ -31,39 +31,24 @@ export const VoiceActivityWidget: React.FC<VoiceActivityWidgetProps> = ({
   };
 
   const getStatusHeadline = () => {
-    if (isInterrupting) return 'Interrupted';
-    if (isSpeaking) return 'Lumo is explaining';
-    if (isThinking) return 'Lumo is thinking';
-    if (isListening && micEnabled) return 'Listening to you';
-    if (!micEnabled) return 'Microphone muted';
-    return 'Voice ready';
-  };
-
-  const getSubtext = () => {
-    if (isSpeaking) return 'Tap mic to interrupt';
-    if (isListening && micEnabled) return 'Speak naturally';
-    if (isThinking) return 'Synthesizing response';
-    if (!micEnabled) return 'Tap to unmute';
-    return 'Tap to speak';
-  };
-
-  const getWaveColor = () => {
-    if (isInterrupting) return 'var(--theater-accent-amber)';
-    if (isSpeaking) return 'var(--theater-accent)';
-    if (isListening && micEnabled) return 'var(--theater-accent-mint)';
-    return 'var(--theater-text-faint)';
+    if (isInterrupting) return 'Listening';
+    if (isSpeaking) return 'Explaining';
+    if (isThinking) return 'Thinking';
+    if (isListening && micEnabled) return 'Listening';
+    if (!micEnabled) return 'Muted';
+    return 'Ready';
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-      {/* 1. Restrained Microphone Control Button */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+      {/* 1. High-Craft Microphone Control Button */}
       <button
         onClick={handleClick}
         disabled={!isSttSupported}
         aria-label={isSpeaking ? 'Interrupt Lumo' : micEnabled ? 'Mute microphone' : 'Unmute microphone'}
         style={{
-          width: '40px',
-          height: '40px',
+          width: '36px',
+          height: '36px',
           borderRadius: '50%',
           background: isSpeaking
             ? 'var(--theater-accent)'
@@ -71,13 +56,11 @@ export const VoiceActivityWidget: React.FC<VoiceActivityWidgetProps> = ({
             ? 'var(--theater-surface-active)'
             : 'var(--theater-surface-elevated)',
           border: isListening && micEnabled
-            ? '1px solid var(--theater-accent-mint)'
+            ? '1px solid var(--theater-text-primary)'
             : '1px solid var(--theater-border-medium)',
           color: isSpeaking
             ? 'var(--theater-accent-contrast)'
-            : isListening && micEnabled
-            ? 'var(--theater-accent-mint)'
-            : 'var(--theater-text-secondary)',
+            : 'var(--theater-text-primary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -89,73 +72,58 @@ export const VoiceActivityWidget: React.FC<VoiceActivityWidgetProps> = ({
         }}
         onMouseEnter={(e) => {
           if (!isSpeaking) {
-            e.currentTarget.style.color = 'var(--theater-text-primary)';
             e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
           }
         }}
         onMouseLeave={(e) => {
           if (!isSpeaking) {
-            e.currentTarget.style.color = isListening && micEnabled ? 'var(--theater-accent-mint)' : 'var(--theater-text-secondary)';
-            e.currentTarget.style.borderColor = isListening && micEnabled ? 'var(--theater-accent-mint)' : 'var(--theater-border-medium)';
+            e.currentTarget.style.borderColor = isListening && micEnabled ? 'var(--theater-text-primary)' : 'var(--theater-border-medium)';
           }
         }}
         title={isSpeaking ? 'Tap to interrupt' : micEnabled ? 'Mute microphone' : 'Unmute microphone'}
       >
-        {micEnabled ? <IconMic size={17} /> : <IconMicOff size={17} />}
+        {micEnabled ? <IconMic size={16} /> : <IconMicOff size={16} />}
       </button>
 
-      {/* 2. Waveform & Concise Status */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-          {/* Subtle Acoustic Visualizer */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '2px',
-              height: '12px',
-            }}
-          >
-            {[4, 9, 12, 7, 10, 6, 8, 4].map((h, i) => {
-              const activeHeight = isSpeaking || (isListening && micEnabled) ? h : 2;
-              return (
-                <span
-                  key={i}
-                  style={{
-                    width: '2px',
-                    height: `${activeHeight}px`,
-                    background: getWaveColor(),
-                    borderRadius: '1px',
-                    transition: 'height 0.12s ease',
-                  }}
-                />
-              );
-            })}
-          </div>
-
-          <span
-            style={{
-              fontSize: '0.82rem',
-              fontWeight: 550,
-              color: 'var(--theater-text-primary)',
-              letterSpacing: '-0.01em',
-              fontFamily: 'var(--theater-font-sans)',
-            }}
-          >
-            {getStatusHeadline()}
-          </span>
+      {/* 2. Micro Waveform & Compact Single-Word Status */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        {/* Subtle Acoustic Visualizer */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2px',
+            height: '11px',
+          }}
+        >
+          {[3, 8, 11, 6, 9, 5].map((h, i) => {
+            const activeHeight = isSpeaking || (isListening && micEnabled) ? h : 2;
+            return (
+              <span
+                key={i}
+                style={{
+                  width: '2px',
+                  height: `${activeHeight}px`,
+                  background: 'var(--theater-text-primary)',
+                  opacity: isSpeaking ? 0.9 : isListening && micEnabled ? 0.6 : 0.25,
+                  borderRadius: '1px',
+                  transition: 'height 0.12s ease',
+                }}
+              />
+            );
+          })}
         </div>
 
-        {/* Subtext description */}
         <span
           style={{
-            fontSize: '0.7rem',
-            color: 'var(--theater-text-muted)',
-            fontWeight: 400,
+            fontSize: '0.78rem',
+            fontWeight: 500,
+            color: 'var(--theater-text-primary)',
+            letterSpacing: '-0.01em',
             fontFamily: 'var(--theater-font-sans)',
           }}
         >
-          {getSubtext()}
+          {getStatusHeadline()}
         </span>
       </div>
     </div>

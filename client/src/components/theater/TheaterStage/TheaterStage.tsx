@@ -5,7 +5,7 @@ import { AssessmentStage } from './AssessmentStage';
 import { TutorPresence } from './TutorPresence';
 import { StageSubtitlePill } from './StageSubtitlePill';
 import { LessonProgress, type ConceptStep } from '../TheaterProgress/LessonProgress';
-import { IconRefresh, IconPlay } from '../TheaterIcons';
+import { IconRefresh, IconPlay, IconMaximize, IconMinimize } from '../TheaterIcons';
 
 export interface TheaterStageProps {
   visualState: TutorVisualState;
@@ -28,6 +28,8 @@ export interface TheaterStageProps {
   onResumeLive?: () => void;
   conceptSteps?: ConceptStep[];
   onSelectConceptStep?: (stepId: string) => void;
+  isFocusMode?: boolean;
+  onToggleFocusMode?: () => void;
 }
 
 export const TheaterStage: React.FC<TheaterStageProps> = ({
@@ -51,101 +53,98 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
   onResumeLive,
   conceptSteps = [],
   onSelectConceptStep,
+  isFocusMode = false,
+  onToggleFocusMode,
 }) => {
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
         width: '100%',
-        maxWidth: '1360px',
+        maxWidth: isFocusMode ? '1600px' : '1240px',
         margin: '0 auto',
-        gap: '0.75rem',
+        position: 'relative',
+        transition: 'max-width var(--theater-transition-stage)',
       }}
     >
-      {/* The Master Classroom Stage Container — Fluid, Responsive, Composition-Aware */}
+      {/* Replay Indicator Pill at Top */}
+      {isReplaying && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '-2.25rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'var(--theater-surface-elevated)',
+            border: '1px solid var(--theater-border-medium)',
+            color: 'var(--theater-text-primary)',
+            padding: '0.25rem 0.8rem',
+            borderRadius: 'var(--theater-radius-pill)',
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            zIndex: 30,
+            boxShadow: 'var(--theater-shadow-dock)',
+            fontFamily: 'var(--theater-font-sans)',
+          }}
+        >
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            <IconRefresh size={12} />
+            <span>Replaying: {replayConceptName || visualState.concept}</span>
+          </span>
+          {onResumeLive && (
+            <button
+              onClick={onResumeLive}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                background: 'var(--theater-accent)',
+                color: 'var(--theater-accent-contrast)',
+                border: 'none',
+                borderRadius: 'var(--theater-radius-pill)',
+                padding: '0.15rem 0.5rem',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <IconPlay size={9} />
+              <span>Resume Live</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* The Central Teaching Environment Canvas Area */}
       <div
-        className="theater-stage-container"
         style={{
-          position: 'relative',
           width: '100%',
-          height: 'clamp(420px, 60vh, 700px)',
-          minHeight: '400px',
-          background: 'var(--theater-surface)',
-          borderRadius: 'var(--theater-radius-xl)',
-          overflow: 'hidden',
-          border: '1px solid var(--theater-border-subtle)',
-          boxShadow: 'var(--theater-shadow-stage)',
+          height: isFocusMode ? 'calc(100vh - 120px)' : 'clamp(380px, 58vh, 660px)',
           display: 'flex',
-          gap: '0.85rem',
-          padding: '0.85rem',
-          boxSizing: 'border-box',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          gap: '1.25rem',
+          transition: 'height var(--theater-transition-stage)',
         }}
       >
-        {/* Replay Banner at Top Center */}
-        {isReplaying && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '1rem',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'var(--theater-surface-elevated)',
-              border: '1px solid var(--theater-accent-border)',
-              color: 'var(--theater-text-primary)',
-              padding: '0.35rem 0.9rem',
-              borderRadius: 'var(--theater-radius-pill)',
-              fontSize: '0.78rem',
-              fontWeight: 550,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.65rem',
-              zIndex: 30,
-              boxShadow: 'var(--theater-shadow-dock)',
-              fontFamily: 'var(--theater-font-sans)',
-            }}
-          >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-              <IconRefresh size={13} style={{ color: 'var(--theater-accent)' }} />
-              <span>Replaying: {replayConceptName || visualState.concept}</span>
-            </span>
-            {onResumeLive && (
-              <button
-                onClick={onResumeLive}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  background: 'var(--theater-accent)',
-                  color: 'var(--theater-accent-contrast)',
-                  border: 'none',
-                  borderRadius: 'var(--theater-radius-pill)',
-                  padding: '0.2rem 0.6rem',
-                  fontSize: '0.72rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'opacity var(--theater-transition-fast)',
-                }}
-              >
-                <IconPlay size={10} />
-                <span>Resume Live</span>
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Primary Content: Visual Blackboard & Teaching Visuals */}
+        {/* Visual Blackboard Content — The Unquestioned Hero */}
         <div
           style={{
             flex: 1,
             height: '100%',
-            position: 'relative',
+            maxWidth: activeAssessmentQuestion ? '68%' : '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            position: 'relative',
             overflow: 'hidden',
-            borderRadius: 'var(--theater-radius-lg)',
-            background: 'var(--theater-surface-sunken)',
           }}
         >
           <VisualCanvas
@@ -153,25 +152,65 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
             captionsEnabled={false}
           />
 
-          {/* Subtitle Caption Pill */}
+          {/* Floating Subtitle Caption Pill */}
           <StageSubtitlePill
             captionText={visualState.captionText}
             interimTranscript={interimTranscript}
             isInterrupting={isInterrupting}
             isVisible={captionsEnabled || Boolean(interimTranscript) || isInterrupting}
           />
+
+          {/* Quick Focus Mode Expand Toggle on Canvas Corner */}
+          {onToggleFocusMode && (
+            <button
+              onClick={onToggleFocusMode}
+              style={{
+                position: 'absolute',
+                top: '0.75rem',
+                right: '0.75rem',
+                background: 'var(--theater-surface-elevated)',
+                border: '1px solid var(--theater-border-subtle)',
+                borderRadius: 'var(--theater-radius-xs)',
+                color: 'var(--theater-text-muted)',
+                width: '28px',
+                height: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                opacity: 0.75,
+                transition: 'opacity var(--theater-transition-fast), color var(--theater-transition-fast)',
+                zIndex: 25,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.color = 'var(--theater-text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '0.75';
+                e.currentTarget.style.color = 'var(--theater-text-muted)';
+              }}
+              title={isFocusMode ? 'Exit Focus Mode' : 'Enter Focus Mode'}
+              aria-label={isFocusMode ? 'Exit Focus Mode' : 'Enter Focus Mode'}
+            >
+              {isFocusMode ? <IconMinimize size={13} /> : <IconMaximize size={13} />}
+            </button>
+          )}
         </div>
 
-        {/* Right Section: Lumo Tutor Presence OR Assessment Workspace */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'stretch',
-            justifyContent: 'center',
-            zIndex: 10,
-          }}
-        >
-          {!activeAssessmentQuestion ? (
+        {/* Companion Area: Tutor Presence OR Assessment Stage */}
+        {!activeAssessmentQuestion ? (
+          /* Subtle Lumo Companion Presence */
+          <div
+            style={{
+              display: isFocusMode ? 'none' : 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              opacity: isFocusMode ? 0 : 1,
+              transition: 'opacity var(--theater-transition-fast)',
+            }}
+          >
             <TutorPresence
               avatarState={avatarState}
               isSpeaking={isSpeaking}
@@ -179,7 +218,19 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
               isListening={isListening}
               isThinking={isThinking}
             />
-          ) : (
+          </div>
+        ) : (
+          /* Active Assessment Stage */
+          <div
+            style={{
+              width: 'min(400px, 32vw)',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'stretch',
+              flexShrink: 0,
+              zIndex: 20,
+            }}
+          >
             <AssessmentStage
               question={activeAssessmentQuestion}
               idToken={idToken}
@@ -189,16 +240,18 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
               onGiveUp={onGiveUpAssessment}
               isLoading={isLoadingAssessment}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Lesson / Concept Progress Track along Bottom of Stage */}
-      {conceptSteps.length > 0 && (
-        <LessonProgress
-          steps={conceptSteps}
-          onSelectStep={onSelectConceptStep}
-        />
+      {/* Lesson / Concept Timeline Track (Recedes Gracefully in Focus Mode) */}
+      {!isFocusMode && conceptSteps.length > 0 && (
+        <div style={{ marginTop: '0.75rem', width: '100%' }}>
+          <LessonProgress
+            steps={conceptSteps}
+            onSelectStep={onSelectConceptStep}
+          />
+        </div>
       )}
     </div>
   );

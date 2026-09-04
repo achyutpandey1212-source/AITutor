@@ -55,8 +55,9 @@ export const SessionSummaryStage: React.FC<SessionSummaryStageProps> = ({
               gap: '0.4rem',
               padding: '0.2rem 0.65rem',
               borderRadius: 'var(--theater-radius-pill)',
-              background: 'var(--theater-accent-mint-subtle)',
-              color: 'var(--theater-accent-mint)',
+              background: 'var(--theater-accent-subtle)',
+              color: 'var(--theater-text-primary)',
+              border: '1px solid var(--theater-border-subtle)',
               fontSize: '0.75rem',
               fontWeight: 600,
               marginBottom: '0.75rem',
@@ -122,7 +123,7 @@ export const SessionSummaryStage: React.FC<SessionSummaryStageProps> = ({
                     fontWeight: 500,
                   }}
                 >
-                  <IconCheck size={10} style={{ color: 'var(--theater-accent-mint)' }} />
+                  <IconCheck size={10} style={{ color: 'var(--theater-text-primary)' }} />
                   <span>{c}</span>
                 </span>
               ))}
