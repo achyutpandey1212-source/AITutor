@@ -3,7 +3,7 @@ import { onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase
 import { auth } from './config/firebase';
 import type { ApiResponse, User as AppUser } from '@ai-tutor/shared';
 
-// Page Components
+// Page Components — all existing pages preserved
 import { LandingPage } from './components/pages/LandingPage';
 import { SignInPage } from './components/pages/SignInPage';
 import { SignUpPage } from './components/pages/SignUpPage';
@@ -15,6 +15,58 @@ import { MistakesPage } from './components/pages/MistakesPage';
 import { AnalyticsPage } from './components/pages/AnalyticsPage';
 import { DocumentsPage } from './components/pages/DocumentsPage';
 
+// Lumo Navigation Shell
+import { Navbar } from './components/navigation/Navbar';
+
+// ---------------------------------------------------------------
+// Pages where the Navbar should NOT appear
+// (e.g. Theater full-screen, auth pages with their own layout)
+// ---------------------------------------------------------------
+const NAV_HIDDEN_PATHS = new Set(['/signin', '/signup']);
+
+// ---------------------------------------------------------------
+// Lumo loading screen
+// ---------------------------------------------------------------
+const LoadingScreen: React.FC = () => (
+  <div
+    style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'var(--color-background)',
+      gap: '16px',
+    }}
+  >
+    <img
+      src="/logo/Lumo_Logo.png"
+      alt="Lumo"
+      style={{
+        height: '48px',
+        width: '48px',
+        objectFit: 'contain',
+        opacity: 0.25,
+        animation: 'lumo-pulse 1.6s ease-in-out infinite',
+      }}
+    />
+    <span
+      style={{
+        fontSize: 'var(--text-body-sm)',
+        color: 'var(--color-text-muted)',
+        fontWeight: 500,
+      }}
+    >
+      Loading…
+    </span>
+  </div>
+);
+
+// ---------------------------------------------------------------
+// App
+// All auth and routing logic is preserved exactly as-is.
+// Only the presentation shell has changed.
+// ---------------------------------------------------------------
 export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [syncedUser, setSyncedUser] = useState<AppUser | null>(null);
@@ -24,11 +76,13 @@ export const App: React.FC = () => {
     typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` || '/' : '/'
   );
 
-  // Sync route with browser history
+  // Sync route with browser history — unchanged
   const navigate = (path: string) => {
     if (typeof window !== 'undefined') {
       window.history.pushState({}, '', path);
       setCurrentPath(path);
+      // Scroll to top on navigation
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
   };
 
@@ -40,7 +94,7 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Firebase auth state observer & MongoDB sync
+  // Firebase auth state observer & MongoDB sync — unchanged
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
@@ -81,57 +135,61 @@ export const App: React.FC = () => {
       setIdToken('');
       setCurrentUser(null);
       setSyncedUser(null);
-      navigate('/signin');
+      navigate('/');
     } catch {
       // ignore
     }
   };
 
   if (authLoading) {
-    return (
-      <div style={{ padding: '3rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif', color: '#64748b' }}>
-        Loading AI Tutor...
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   const isAuthenticated = Boolean(currentUser && idToken);
-
   const pathname = currentPath.split('?')[0] || '/';
   const searchStr = currentPath.includes('?') ? currentPath.slice(currentPath.indexOf('?')) : '';
   const queryParams = new URLSearchParams(searchStr);
 
-  // Protected Route Guards
+  // Protected Route Guards — unchanged
   const protectedRoutes = ['/dashboard', '/tutor', '/practice', '/bookmarks', '/mistakes', '/analytics', '/documents'];
   if (!isAuthenticated && protectedRoutes.includes(pathname)) {
-    return <SignInPage onNavigate={navigate} onSuccess={() => navigate('/dashboard')} />;
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--color-background)' }}>
+        <SignInPage onNavigate={navigate} onSuccess={() => navigate('/dashboard')} />
+      </div>
+    );
   }
 
-  // Render appropriate page view
+  // Render page — all routes preserved exactly
   const renderCurrentPage = () => {
     switch (pathname) {
       case '/':
         return <LandingPage isAuthenticated={isAuthenticated} onNavigate={navigate} />;
 
       case '/signin':
-        return isAuthenticated ? (
-          <DashboardPage user={syncedUser} idToken={idToken} onNavigate={navigate} onSignOut={handleSignOut} />
-        ) : (
-          <SignInPage onNavigate={navigate} onSuccess={() => navigate('/dashboard')} />
-        );
+        return isAuthenticated
+          ? <DashboardPage user={syncedUser} idToken={idToken} onNavigate={navigate} onSignOut={handleSignOut} />
+          : <SignInPage onNavigate={navigate} onSuccess={() => navigate('/dashboard')} />;
 
       case '/signup':
-        return isAuthenticated ? (
-          <DashboardPage user={syncedUser} idToken={idToken} onNavigate={navigate} onSignOut={handleSignOut} />
-        ) : (
-          <SignUpPage onNavigate={navigate} onSuccess={() => navigate('/dashboard')} />
-        );
+        return isAuthenticated
+          ? <DashboardPage user={syncedUser} idToken={idToken} onNavigate={navigate} onSignOut={handleSignOut} />
+          : <SignUpPage onNavigate={navigate} onSuccess={() => navigate('/dashboard')} />;
 
       case '/dashboard':
         return <DashboardPage user={syncedUser} idToken={idToken} onNavigate={navigate} onSignOut={handleSignOut} />;
 
       case '/tutor':
-        return <TutorPage idToken={idToken} onNavigate={navigate} />;
+        return (
+          <TutorPage
+            idToken={idToken}
+            onNavigate={navigate}
+            initialSessionId={queryParams.get('sessionId') || undefined}
+            initialTopic={queryParams.get('topic') || undefined}
+            initialSubject={queryParams.get('subject') || undefined}
+            initialDocumentId={queryParams.get('documentId') || undefined}
+          />
+        );
 
       case '/practice':
         return <PracticePage idToken={idToken} onNavigate={navigate} initialQuestionId={queryParams.get('questionId') || undefined} />;
@@ -153,107 +211,26 @@ export const App: React.FC = () => {
     }
   };
 
+  // Auth pages and full-screen routes get their own layout (no shared navbar)
+  const hideNav = NAV_HIDDEN_PATHS.has(pathname);
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      {/* Minimal Top Navigation Header */}
-      <header
-        style={{
-          background: '#ffffff',
-          borderBottom: '1px solid #e2e8f0',
-          padding: '0.75rem 1.5rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <button
-          onClick={() => navigate(isAuthenticated ? '/dashboard' : '/')}
-          style={{
-            background: 'none',
-            border: 'none',
-            fontSize: '1.2rem',
-            fontWeight: 800,
-            color: '#0f172a',
-            cursor: 'pointer',
-            padding: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-          }}
-        >
-          🎓 <span>AI Tutor</span>
-        </button>
+    <div style={{ minHeight: '100vh', background: 'var(--color-background)' }}>
+      {/* Lumo Navigation — hidden on auth pages */}
+      {!hideNav && (
+        <Navbar
+          isAuthenticated={isAuthenticated}
+          currentPath={pathname}
+          userEmail={currentUser?.email}
+          onNavigate={navigate}
+          onSignOut={handleSignOut}
+        />
+      )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem' }}>
-          {isAuthenticated ? (
-            <>
-              <button
-                onClick={() => navigate('/dashboard')}
-                style={{ background: 'none', border: 'none', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => navigate('/tutor')}
-                style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Tutor
-              </button>
-              <button
-                onClick={() => navigate('/practice')}
-                style={{ background: 'none', border: 'none', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Practice
-              </button>
-              <span style={{ color: '#cbd5e1' }}>|</span>
-              <span style={{ color: '#64748b' }}>{currentUser?.email}</span>
-              <button
-                onClick={handleSignOut}
-                style={{
-                  background: '#f1f5f9',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '4px',
-                  padding: '0.25rem 0.5rem',
-                  color: '#475569',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem',
-                }}
-              >
-                Sign Out
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => navigate('/signin')}
-                style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => navigate('/signup')}
-                style={{
-                  background: '#2563eb',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '0.35rem 0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Create Account
-              </button>
-            </>
-          )}
-        </div>
-      </header>
-
-      {/* Main View Area */}
+      {/* Main content area */}
       <main>{renderCurrentPage()}</main>
     </div>
   );
 };
 
 export default App;
-

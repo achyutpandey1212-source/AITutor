@@ -1,0 +1,254 @@
+/* =============================================================
+   LUMO DESIGN TOKENS
+   Source of truth for all visual design decisions.
+   Reference: Lumo_Design_System.md
+   ============================================================= */
+
+/* ---- FONT IMPORT (fallback in case HTML link fails) ---- */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap');
+
+/* ---- LIGHT THEME (default) ---- */
+:root,
+[data-theme="light"] {
+  /* --- Backgrounds & Surfaces --- */
+  --color-background:        #FAF9F5;  /* Warm ivory foundation */
+  --color-surface:           #FFFFFF;  /* Primary elevated surface */
+  --color-surface-soft:      #F5F3EE;  /* Secondary/subtle surfaces */
+  --color-surface-hover:     #F0EDE6;  /* Hover state on surfaces */
+
+  /* --- Text --- */
+  --color-text-primary:      #172033;  /* Headings, primary content */
+  --color-text-secondary:    #5E6675;  /* Supporting text, metadata */
+  --color-text-muted:        #89909D;  /* Placeholders, tertiary info */
+  --color-text-inverse:      #FFFFFF;  /* Text on dark/colored surfaces */
+
+  /* --- Borders --- */
+  --color-border:            #E7E4DC;  /* Primary border */
+  --color-border-subtle:     #EEECE6;  /* Light separator */
+  --color-border-focus:      #FF5A36;  /* Focus ring — Lumo Orange */
+
+  /* --- Brand Colors --- */
+  --color-orange:            #FF5A36;  /* Primary brand — CTAs, key actions */
+  --color-orange-hover:      #E84D2B;  /* Orange hover */
+  --color-orange-soft:       #FFF0ED;  /* Orange tint background */
+  --color-coral:             #FF765C;  /* Soft companion, gradients */
+  --color-peach:             #FFB39F;  /* Subtle decorative */
+  --color-yellow:            #F5B942;  /* Highlights, achievements */
+  --color-yellow-soft:       #FFFAED;
+  --color-mint:              #55C98A;  /* Success, progress, mastery */
+  --color-mint-soft:         #EEFBF4;
+  --color-sky:               #55A9E8;  /* Information, science visuals */
+  --color-sky-soft:          #EDF6FD;
+  --color-pink:              #F39AB5;  /* Occasional accent */
+
+  /* --- Semantic Colors --- */
+  --color-success:           #39A96B;
+  --color-success-soft:      #EDFBF3;
+  --color-warning:           #D99527;
+  --color-warning-soft:      #FFFAEB;
+  --color-error:             #DE6B68;
+  --color-error-soft:        #FEF2F2;
+  --color-info:              #428FD1;
+  --color-info-soft:         #EDF4FD;
+
+  /* --- Navigation --- */
+  --color-nav-bg:            #FFFFFF;
+  --color-nav-border:        #E7E4DC;
+  --color-nav-text:          #5E6675;
+  --color-nav-text-active:   #172033;
+
+  /* --- Shadows (Light) --- */
+  --shadow-sm:   0 1px 3px rgba(23, 32, 51, 0.06);
+  --shadow-md:   0 4px 12px rgba(23, 32, 51, 0.08);
+  --shadow-lg:   0 16px 40px rgba(23, 32, 51, 0.10);
+  --shadow-xl:   0 24px 60px rgba(23, 32, 51, 0.12);
+
+  /* --- Interactive overlay --- */
+  --color-overlay:           rgba(23, 32, 51, 0.48);
+
+  /* --- Logo filter (none needed for light theme — logo is dark) --- */
+  --logo-filter: none;
+  --logo-opacity: 1;
+}
+
+/* ---- DARK THEME ---- */
+[data-theme="dark"] {
+  /* --- Backgrounds & Surfaces --- */
+  --color-background:        #0D0F12;  /* Deep cinematic background */
+  --color-surface:           #15181D;  /* Primary elevated surface */
+  --color-surface-soft:      #1B1F25;  /* Cards, dialogs, elevated */
+  --color-surface-hover:     #21262E;  /* Hover on dark surfaces */
+
+  /* --- Text --- */
+  --color-text-primary:      #F7F5EF;  /* Warm white text */
+  --color-text-secondary:    #B6BAC2;  /* Secondary text */
+  --color-text-muted:        #7E848F;  /* Muted text */
+  --color-text-inverse:      #172033;  /* Text on light surfaces */
+
+  /* --- Borders --- */
+  --color-border:            #292D34;  /* Primary dark border */
+  --color-border-subtle:     #20242A;  /* Subtle separator */
+  --color-border-focus:      #FF765C;  /* Focus ring — Lumo Coral (lighter on dark) */
+
+  /* --- Brand Colors (same hues, calibrated for dark) --- */
+  --color-orange:            #FF6B4A;  /* Slightly lifted for dark contrast */
+  --color-orange-hover:      #FF7B5C;
+  --color-orange-soft:       #2A1814;  /* Dark tint */
+  --color-coral:             #FF8F78;
+  --color-peach:             #FFB39F;
+  --color-yellow:            #F5C542;
+  --color-yellow-soft:       #1E1A0D;
+  --color-mint:              #62D394;
+  --color-mint-soft:         #0C2018;
+  --color-sky:               #6CB8F2;
+  --color-sky-soft:          #0A1929;
+  --color-pink:              #F4A8C0;
+
+  /* --- Semantic Colors --- */
+  --color-success:           #62D394;
+  --color-success-soft:      #0C2018;
+  --color-warning:           #F2B84B;
+  --color-warning-soft:      #1E1A0D;
+  --color-error:             #F18480;
+  --color-error-soft:        #2A0F0F;
+  --color-info:              #6CB8F2;
+  --color-info-soft:         #0A1929;
+
+  /* --- Navigation --- */
+  --color-nav-bg:            #0D0F12;
+  --color-nav-border:        #292D34;
+  --color-nav-text:          #B6BAC2;
+  --color-nav-text-active:   #F7F5EF;
+
+  /* --- Shadows (Dark — rely on surface contrast + subtle borders) --- */
+  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.30);
+  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.40);
+  --shadow-lg:   0 16px 40px rgba(0, 0, 0, 0.50);
+  --shadow-xl:   0 24px 60px rgba(0, 0, 0, 0.60);
+
+  /* --- Interactive overlay --- */
+  --color-overlay:           rgba(0, 0, 0, 0.70);
+
+  /* --- Logo: invert for white logo on dark backgrounds --- */
+  --logo-filter: invert(1) brightness(2);
+  --logo-opacity: 0.95;
+}
+
+/* ---- TYPOGRAPHY TOKENS ---- */
+:root {
+  --font-family-base:
+    'Plus Jakarta Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+
+  /* Type scale */
+  --text-display:         64px;
+  --text-display-lh:      1.05;
+  --text-display-ls:      -0.035em;
+
+  --text-h1:              40px;
+  --text-h1-lh:           1.15;
+  --text-h1-ls:           -0.025em;
+
+  --text-h2:              32px;
+  --text-h2-lh:           1.2;
+  --text-h2-ls:           -0.02em;
+
+  --text-h3:              24px;
+  --text-h3-lh:           1.25;
+  --text-h3-ls:           -0.015em;
+
+  --text-h4:              20px;
+  --text-h4-lh:           1.3;
+  --text-h4-ls:           -0.01em;
+
+  --text-body-lg:         18px;
+  --text-body-lg-lh:      1.6;
+
+  --text-body:            16px;
+  --text-body-lh:         1.55;
+
+  --text-body-sm:         14px;
+  --text-body-sm-lh:      1.5;
+
+  --text-caption:         12px;
+  --text-caption-lh:      1.4;
+
+  /* Font weights */
+  --font-light:    300;
+  --font-regular:  400;
+  --font-medium:   500;
+  --font-semibold: 600;
+  --font-bold:     700;
+  --font-extrabold: 800;
+}
+
+/* ---- SPACING TOKENS (8px base grid) ---- */
+:root {
+  --space-1:    4px;
+  --space-2:    8px;
+  --space-3:    12px;
+  --space-4:    16px;
+  --space-6:    24px;
+  --space-8:    32px;
+  --space-10:   40px;
+  --space-12:   48px;
+  --space-16:   64px;
+  --space-20:   80px;
+  --space-24:   96px;
+  --space-32:   128px;
+}
+
+/* ---- RADIUS TOKENS ---- */
+:root {
+  --radius-sm:        8px;
+  --radius-md:        12px;
+  --radius-lg:        16px;
+  --radius-xl:        20px;
+  --radius-cinematic: 24px;
+  --radius-full:      9999px;
+}
+
+/* ---- MOTION TOKENS ---- */
+:root {
+  --motion-instant:   80ms;
+  --motion-fast:      140ms;
+  --motion-standard:  220ms;
+  --motion-moderate:  350ms;
+  --motion-slow:      650ms;
+  --motion-cinematic: 900ms;
+
+  --ease-standard:    cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-enter:       cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-exit:        cubic-bezier(0.4, 0.0, 1, 1);
+  --ease-spring:      cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---- LAYOUT TOKENS ---- */
+:root {
+  --content-max-width: 1280px;
+  --content-padding-x: var(--space-6);
+
+  /* Breakpoints (reference only — use in CSS with min-width) */
+  /* Mobile:       < 640px   */
+  /* Tablet:       640–1023px */
+  /* Desktop:      1024–1439px */
+  /* Large:        1440px+   */
+}
+
+/* ---- REDUCED MOTION OVERRIDES ---- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-instant:   0ms;
+    --motion-fast:      0ms;
+    --motion-standard:  0ms;
+    --motion-moderate:  0ms;
+    --motion-slow:      0ms;
+    --motion-cinematic: 0ms;
+  }
+}

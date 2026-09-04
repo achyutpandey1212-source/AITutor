@@ -1,6 +1,12 @@
-﻿import React from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
+
+// Global CSS — must be imported before the app
+import './styles/tokens.css';
+import './styles/global.css';
+
 import App from './App';
+import { ThemeProvider } from './theme/ThemeContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -9,6 +15,8 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </React.StrictMode>
 );

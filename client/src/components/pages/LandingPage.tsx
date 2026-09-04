@@ -1,4 +1,12 @@
 import React from 'react';
+import { Hero } from '../landing/Hero';
+import { TeachingLoop } from '../landing/TeachingLoop';
+import { NotAnotherChatbot } from '../landing/NotAnotherChatbot';
+import { SubjectShowcase } from '../landing/SubjectShowcase';
+import { MaterialSection } from '../landing/MaterialSection';
+import { TheaterPreview } from '../landing/TheaterPreview';
+import { FinalCTA } from '../landing/FinalCTA';
+import { Footer } from '../landing/Footer';
 
 export interface LandingPageProps {
   isAuthenticated: boolean;
@@ -6,65 +14,52 @@ export interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ isAuthenticated, onNavigate }) => {
-  return (
-    <div style={{ maxWidth: '600px', margin: '4rem auto', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
-      <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: '#0f172a' }}>AI Tutor</h1>
-      <p style={{ fontSize: '1.2rem', color: '#64748b', marginBottom: '2rem' }}>
-        Your intelligent learning companion.
-      </p>
+  const handleStartLearning = () => {
+    if (isAuthenticated) {
+      onNavigate('/tutor');
+    } else {
+      onNavigate('/signup');
+    }
+  };
 
-      {isAuthenticated ? (
-        <div>
-          <button
-            onClick={() => onNavigate('/dashboard')}
-            style={{
-              padding: '0.75rem 2rem',
-              fontSize: '1rem',
-              fontWeight: 600,
-              background: '#2563eb',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
-          >
-            Go to Dashboard
-          </button>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <button
-            onClick={() => onNavigate('/signin')}
-            style={{
-              padding: '0.75rem 1.75rem',
-              fontSize: '1rem',
-              fontWeight: 600,
-              background: '#2563eb',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => onNavigate('/signup')}
-            style={{
-              padding: '0.75rem 1.75rem',
-              fontSize: '1rem',
-              fontWeight: 600,
-              background: '#f1f5f9',
-              color: '#1e293b',
-              border: '1px solid #cbd5e1',
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
-          >
-            Create Account
-          </button>
-        </div>
-      )}
+  const handleExplore = () => {
+    const el = document.getElementById('how');
+    el?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <div
+      style={{
+        background: 'var(--color-background)',
+        color: 'var(--color-text-primary)',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* 01. Hero Section */}
+      <Hero onStart={handleStartLearning} onExplore={handleExplore} />
+
+      {/* 02. Teaching Loop Demonstration */}
+      <TeachingLoop />
+
+      {/* 03. Cognitive Contrast (Not Another Chatbot) */}
+      <NotAnotherChatbot />
+
+      {/* 04. Subject-Aware Visual Intelligence */}
+      <SubjectShowcase />
+
+      {/* 05. Bring Your Material (Document & RAG Intelligence) */}
+      <MaterialSection onStart={handleStartLearning} />
+
+      {/* 06. The Flagship Learning Theater Preview */}
+      <TheaterPreview onEnterTheater={handleStartLearning} />
+
+      {/* 07. Final Quiet Invitation */}
+      <FinalCTA onStart={handleStartLearning} />
+
+      {/* 08. Footer */}
+      <Footer onNavigate={onNavigate} />
     </div>
   );
 };

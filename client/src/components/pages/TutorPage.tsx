@@ -10,12 +10,23 @@ import { SessionTimeline } from '../SessionTimeline';
 export interface TutorPageProps {
   idToken: string;
   onNavigate: (path: string) => void;
+  initialSessionId?: string;
+  initialTopic?: string;
+  initialSubject?: string;
+  initialDocumentId?: string;
 }
 
-export const TutorPage: React.FC<TutorPageProps> = ({ idToken, onNavigate }) => {
-  const [topicInput, setTopicInput] = useState<string>("Light Reflection & Refraction");
-  const [selectedSubject, setSelectedSubject] = useState<string>('Physics');
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string>('none');
+export const TutorPage: React.FC<TutorPageProps> = ({
+  idToken,
+  onNavigate,
+  initialSessionId,
+  initialTopic,
+  initialSubject,
+  initialDocumentId,
+}) => {
+  const [topicInput, setTopicInput] = useState<string>(initialTopic || "Light Reflection & Refraction");
+  const [selectedSubject, setSelectedSubject] = useState<string>(initialSubject || 'Physics');
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string>(initialDocumentId || 'none');
   const [selectedLanguage, setSelectedLanguage] = useState<'english' | 'hindi' | 'hinglish'>('english');
   const [typedMessage, setTypedMessage] = useState<string>('');
   const [userDocs, setUserDocs] = useState<KnowledgeDoc[]>([]);
@@ -130,6 +141,15 @@ export const TutorPage: React.FC<TutorPageProps> = ({ idToken, onNavigate }) => 
   const handleResumePastSession = async (sessionId: string) => {
     await resumeSession(sessionId);
   };
+
+  // Auto-resume session if initialSessionId was passed via dashboard
+  const autoResumedRef = useRef(false);
+  useEffect(() => {
+    if (initialSessionId && idToken && !autoResumedRef.current && tutorState === 'IDLE' && !session) {
+      autoResumedRef.current = true;
+      handleResumePastSession(initialSessionId);
+    }
+  }, [initialSessionId, idToken, tutorState, session]);
 
   const handleSendTyped = async (e: React.FormEvent) => {
     e.preventDefault();
