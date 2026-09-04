@@ -2,12 +2,20 @@ import React, { useState, useEffect } from 'react';
 import type { ClientAssessmentQuestion, AssessmentSubmission } from '@ai-tutor/shared';
 import { liveTutorApiClient } from '../../services/api.service';
 import { EvaluationFeedbackCard } from './EvaluationFeedbackCard';
+import { MarkdownRenderer } from '../ai/MarkdownRenderer';
+import { Button } from '../ui/Button';
 
 export interface NumericalQuestionProps {
   question: ClientAssessmentQuestion;
   idToken: string;
   onSubmitted?: (submission: AssessmentSubmission) => void;
   initialSubmission?: AssessmentSubmission | null;
+  hideEvaluation?: boolean;
+  onAskLumo?: (doubtContext: {
+    question?: string;
+    feedback?: string;
+    misconception?: string;
+  }) => void;
 }
 
 export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
@@ -15,6 +23,8 @@ export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
   idToken,
   onSubmitted,
   initialSubmission = null,
+  hideEvaluation = false,
+  onAskLumo,
 }) => {
   const [answer, setAnswer] = useState<string>(initialSubmission?.answer || '');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -77,11 +87,11 @@ export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
   return (
     <div
       style={{
-        padding: '1.25rem',
-        border: '1px solid #cbd5e1',
-        borderRadius: '8px',
-        background: '#ffffff',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        padding: '20px',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        background: 'var(--color-surface)',
+        boxShadow: 'var(--shadow-xs)',
       }}
     >
       {/* Header Badges */}
@@ -90,104 +100,135 @@ export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '0.75rem',
-          fontSize: '0.8rem',
+          marginBottom: '14px',
+          fontSize: '11px',
         }}
       >
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           <span
             style={{
-              padding: '0.2rem 0.5rem',
-              borderRadius: '4px',
-              background: '#e0f2fe',
-              color: '#0369a1',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-pill)',
+              background: 'var(--color-surface-hover)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-secondary)',
               fontWeight: 600,
             }}
           >
-            NUMERICAL
+            Numerical Problem
           </span>
           <span
             style={{
-              padding: '0.2rem 0.5rem',
-              borderRadius: '4px',
-              background: '#f1f5f9',
-              color: '#475569',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-pill)',
+              background: 'var(--color-surface-hover)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-muted)',
+              textTransform: 'uppercase',
             }}
           >
-            {question.difficulty.toUpperCase()}
+            {question.difficulty}
           </span>
           {question.ragGrounded && (
             <span
               style={{
-                padding: '0.2rem 0.5rem',
-                borderRadius: '4px',
-                background: '#dcfce7',
-                color: '#166534',
+                padding: '2px 8px',
+                borderRadius: 'var(--radius-pill)',
+                background: 'var(--color-surface-hover)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-orange)',
+                fontWeight: 600,
               }}
             >
-              📚 Study Doc Grounded
+              📄 Study Material
             </span>
           )}
         </div>
-        <span style={{ fontWeight: 700, color: '#0f172a' }}>
+        <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
           {question.marks} Mark{question.marks > 1 ? 's' : ''}
         </span>
       </div>
 
       {/* Question Context & Prompt */}
       {question.context && (
-        <p
+        <div
           style={{
-            fontSize: '0.9rem',
-            color: '#475569',
-            background: '#f8fafc',
-            padding: '0.5rem 0.75rem',
-            borderRadius: '6px',
-            marginBottom: '0.75rem',
+            fontSize: 'var(--text-body-sm)',
+            color: 'var(--color-text-secondary)',
+            background: 'var(--color-surface-hover)',
+            padding: '8px 12px',
+            borderRadius: 'var(--radius-sm)',
+            marginBottom: '14px',
+            borderLeft: '2px solid var(--color-orange)',
           }}
         >
           {question.context}
-        </p>
+        </div>
       )}
 
-      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#0f172a', lineHeight: '1.4' }}>
-        {question.question}
-      </h3>
+      <div style={{ margin: '0 0 18px 0' }}>
+        <MarkdownRenderer
+          content={question.question}
+          style={{
+            fontSize: 'var(--text-body-lg, 17px)',
+            fontWeight: 600,
+            lineHeight: 1.5,
+            color: 'var(--color-text-primary)',
+          }}
+        />
+      </div>
 
       {/* Numerical Answer Input Form */}
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>
-            Your Answer / Working:
+        <div style={{ marginBottom: '18px' }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: 'var(--color-text-secondary)',
+              marginBottom: '6px',
+            }}
+          >
+            Your Answer / Value with Units:
           </label>
           <input
             type="text"
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             disabled={isSubmitted || isSubmitting}
-            placeholder="e.g. 42 m/s or x = 5"
+            placeholder="e.g. 4.5 m/s² or 25 N"
             style={{
               width: '100%',
-              padding: '0.65rem 0.75rem',
-              borderRadius: '6px',
-              border: '1px solid #cbd5e1',
-              fontSize: '1rem',
-              background: isSubmitted ? '#f8fafc' : '#ffffff',
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-border)',
+              fontSize: 'var(--text-body)',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text-primary)',
               boxSizing: 'border-box',
+              outline: 'none',
+              fontFamily: 'inherit',
             }}
           />
+          {question.submissionGuidance && (
+            <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
+              Tip: {question.submissionGuidance}
+            </div>
+          )}
         </div>
 
         {/* Error Alert */}
         {error && (
           <div
             style={{
-              padding: '0.5rem 0.75rem',
-              marginBottom: '1rem',
-              background: '#fef2f2',
-              color: '#991b1b',
-              borderRadius: '6px',
-              fontSize: '0.85rem',
+              padding: '10px 14px',
+              marginBottom: '14px',
+              background: 'var(--color-surface-hover)',
+              border: '1px solid var(--color-danger, #ef4444)',
+              color: 'var(--color-danger, #ef4444)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '13px',
             }}
           >
             {error}
@@ -196,30 +237,44 @@ export const NumericalQuestion: React.FC<NumericalQuestionProps> = ({
 
         {/* Submit Button */}
         {!isSubmitted && (
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="md"
             disabled={!answer.trim() || isSubmitting}
-            style={{
-              padding: '0.6rem 1.25rem',
-              background: !answer.trim() || isSubmitting ? '#94a3b8' : '#0284c7',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 600,
-              cursor: !answer.trim() || isSubmitting ? 'not-allowed' : 'pointer',
-            }}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Numerical Answer'}
-          </button>
+            {isSubmitting ? 'Evaluating numerical solution…' : 'Submit Numerical Answer'}
+          </Button>
         )}
       </form>
 
-      {/* Evaluation Feedback Card */}
-      {submissionResult && (
+      {/* Evaluation Feedback */}
+      {submissionResult && !hideEvaluation && (
         <EvaluationFeedbackCard
           evaluation={submissionResult.evaluation}
-          status={submissionResult.status}
+          status={submissionResult.status as any}
+          onAskLumo={onAskLumo}
+          questionText={question.question}
         />
+      )}
+      {submissionResult && hideEvaluation && (
+        <div
+          style={{
+            marginTop: '16px',
+            padding: '12px 16px',
+            background: 'var(--color-surface-hover)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-border-subtle)',
+            color: 'var(--color-text-secondary)',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>✓</span>
+          <span>Response recorded. Detailed evaluation will be revealed at the end of the test.</span>
+        </div>
       )}
     </div>
   );

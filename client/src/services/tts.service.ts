@@ -9,6 +9,8 @@ export class TextToSpeechService {
   private isSpeaking: boolean = false;
   private voices: SpeechSynthesisVoice[] = [];
   private activeUtteranceId: number = 0;
+  private rate: number = 1.0;
+  private selectedVoiceURI: string | null = null;
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -22,6 +24,39 @@ export class TextToSpeechService {
 
   public isSupported(): boolean {
     return this.synth !== null;
+  }
+
+  public setRate(rate: number): void {
+    this.rate = Math.max(0.5, Math.min(2.0, rate));
+  }
+
+  public getRate(): number {
+    return this.rate;
+  }
+
+  public setVoiceURI(uri: string): void {
+    this.selectedVoiceURI = uri;
+  }
+
+  public getVoiceURI(): string | null {
+    return this.selectedVoiceURI;
+  }
+
+  public getVoicesList(): SpeechSynthesisVoice[] {
+    if (!this.voices.length) this.loadVoices();
+    return this.voices;
+  }
+
+  public previewVoice(text: string = "Hello! I am Lumo, your personal AI tutor."): void {
+    if (!this.synth) return;
+    this.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (this.selectedVoiceURI) {
+      const v = this.voices.find((item) => item.voiceURI === this.selectedVoiceURI);
+      if (v) utterance.voice = v;
+    }
+    utterance.rate = this.rate;
+    this.synth.speak(utterance);
   }
 
   private loadVoices(): void {
@@ -93,14 +128,18 @@ export class TextToSpeechService {
       const isLast = idx === sentences.length - 1;
 
       const utterance = new SpeechSynthesisUtterance(sentence);
-      if (voice) {
-        utterance.voice = voice;
-        utterance.lang = voice.lang;
+      const chosenVoice = this.selectedVoiceURI
+        ? this.voices.find((v) => v.voiceURI === this.selectedVoiceURI) || voice
+        : voice;
+
+      if (chosenVoice) {
+        utterance.voice = chosenVoice;
+        utterance.lang = chosenVoice.lang;
       } else {
         utterance.lang = langCode;
       }
 
-      utterance.rate = 1.0;
+      utterance.rate = this.rate;
       utterance.pitch = 1.0;
 
       utterance.onstart = () => {

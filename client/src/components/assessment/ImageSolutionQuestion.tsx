@@ -2,12 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { ClientAssessmentQuestion, AssessmentSubmission } from '@ai-tutor/shared';
 import { liveTutorApiClient } from '../../services/api.service';
 import { EvaluationFeedbackCard } from './EvaluationFeedbackCard';
+import { MarkdownRenderer } from '../ai/MarkdownRenderer';
+import { Button } from '../ui/Button';
 
 export interface ImageSolutionQuestionProps {
   question: ClientAssessmentQuestion;
   idToken: string;
   onSubmitted?: (submission: AssessmentSubmission) => void;
   initialSubmission?: AssessmentSubmission | null;
+  hideEvaluation?: boolean;
+  onAskLumo?: (doubtContext: {
+    question?: string;
+    feedback?: string;
+    misconception?: string;
+  }) => void;
 }
 
 export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
@@ -15,6 +23,8 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
   idToken,
   onSubmitted,
   initialSubmission = null,
+  hideEvaluation = false,
+  onAskLumo,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
@@ -106,7 +116,7 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
       }
     } catch (err: any) {
       console.error('Image solution submission error:', err);
-      setError(err?.message || 'Failed to upload solution image. Please try again.');
+      setError(err?.message || 'Failed to upload and evaluate photo. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -115,11 +125,11 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
   return (
     <div
       style={{
-        padding: '1.25rem',
-        border: '1px solid #cbd5e1',
-        borderRadius: '8px',
-        background: '#ffffff',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        padding: '20px',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        background: 'var(--color-surface)',
+        boxShadow: 'var(--shadow-xs)',
       }}
     >
       {/* Header Badges */}
@@ -128,87 +138,99 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '0.75rem',
-          fontSize: '0.8rem',
+          marginBottom: '14px',
+          fontSize: '11px',
         }}
       >
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           <span
             style={{
-              padding: '0.2rem 0.5rem',
-              borderRadius: '4px',
-              background: '#fef3c7',
-              color: '#92400e',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-pill)',
+              background: 'var(--color-surface-hover)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-orange)',
               fontWeight: 600,
             }}
           >
-            📸 HANDWRITTEN SOLUTION
+            📸 Handwritten Working
           </span>
           <span
             style={{
-              padding: '0.2rem 0.5rem',
-              borderRadius: '4px',
-              background: '#f1f5f9',
-              color: '#475569',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-pill)',
+              background: 'var(--color-surface-hover)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-muted)',
+              textTransform: 'uppercase',
             }}
           >
-            {question.difficulty.toUpperCase()}
+            {question.difficulty}
           </span>
           {question.ragGrounded && (
             <span
               style={{
-                padding: '0.2rem 0.5rem',
-                borderRadius: '4px',
-                background: '#dcfce7',
-                color: '#166534',
+                padding: '2px 8px',
+                borderRadius: 'var(--radius-pill)',
+                background: 'var(--color-surface-hover)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-orange)',
+                fontWeight: 600,
               }}
             >
-              📚 Study Doc Grounded
+              📄 Study Material
             </span>
           )}
         </div>
-        <span style={{ fontWeight: 700, color: '#0f172a' }}>
-          {question.marks} Marks (Multi-Step Working)
+        <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
+          {question.marks} Marks
         </span>
       </div>
 
       {/* Question Context & Prompt */}
       {question.context && (
-        <p
+        <div
           style={{
-            fontSize: '0.9rem',
-            color: '#475569',
-            background: '#f8fafc',
-            padding: '0.5rem 0.75rem',
-            borderRadius: '6px',
-            marginBottom: '0.75rem',
+            fontSize: 'var(--text-body-sm)',
+            color: 'var(--color-text-secondary)',
+            background: 'var(--color-surface-hover)',
+            padding: '8px 12px',
+            borderRadius: 'var(--radius-sm)',
+            marginBottom: '14px',
+            borderLeft: '2px solid var(--color-orange)',
           }}
         >
           {question.context}
-        </p>
+        </div>
       )}
 
-      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#0f172a', lineHeight: '1.4' }}>
-        {question.question}
-      </h3>
+      <div style={{ margin: '0 0 18px 0' }}>
+        <MarkdownRenderer
+          content={question.question}
+          style={{
+            fontSize: 'var(--text-body-lg, 17px)',
+            fontWeight: 600,
+            lineHeight: 1.5,
+            color: 'var(--color-text-primary)',
+          }}
+        />
+      </div>
 
-      {/* Cleanliness Guidance Card */}
+      {/* Instructions */}
       <div
         style={{
-          padding: '0.75rem 1rem',
-          background: '#f0f9ff',
-          border: '1px solid #bae6fd',
-          borderRadius: '6px',
-          marginBottom: '1.25rem',
-          fontSize: '0.85rem',
-          color: '#0369a1',
+          padding: '12px 14px',
+          background: 'var(--color-surface-hover)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '18px',
+          fontSize: '12px',
+          color: 'var(--color-text-secondary)',
         }}
       >
-        <strong>📋 Notebook Solution Instructions:</strong>
-        <p style={{ margin: '0.25rem 0 0 0', lineHeight: '1.4' }}>
-          {question.submissionGuidance ||
-            'Write each mathematical step clearly in your notebook. Show your full working. Take a clear, well-lit photo and upload it below.'}
-        </p>
+        <strong style={{ color: 'var(--color-text-primary)' }}>Notebook Instructions:</strong>{' '}
+        {question.submissionGuidance ||
+          'Solve this problem step-by-step in your notebook. Show all formula selections, substitutions, calculations, and units. Take a photo and upload below.'}
       </div>
 
       {/* Image Upload Area */}
@@ -217,82 +239,69 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
           <div
             onClick={() => fileInputRef.current?.click()}
             style={{
-              border: '2px dashed #cbd5e1',
-              borderRadius: '8px',
-              padding: '2rem 1rem',
+              border: '2px dashed var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '28px 20px',
               textAlign: 'center',
               cursor: isSubmitted ? 'default' : 'pointer',
-              background: '#f8fafc',
-              marginBottom: '1rem',
-              transition: 'border-color 0.2s',
+              background: 'var(--color-surface-hover)',
+              marginBottom: '18px',
+              transition: 'border-color var(--motion-fast) var(--ease-standard)',
             }}
           >
-            <span style={{ fontSize: '2rem', display: 'block', marginBottom: '0.5rem' }}>📷</span>
-            <strong style={{ display: 'block', color: '#1e293b', fontSize: '0.95rem' }}>
-              Click to photograph or upload solution
-            </strong>
-            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
-              Supports JPEG, PNG, or WebP (Max 10MB)
-            </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/jpg"
-              capture="environment"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-              disabled={isSubmitted || isSubmitting}
-            />
+            <div style={{ fontSize: '28px', marginBottom: '8px' }}>📷</div>
+            <div style={{ fontSize: 'var(--text-body-sm)', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '4px' }}>
+              Upload your handwritten solution
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+              Take a photo or browse your gallery (JPEG, PNG, WebP up to 10MB)
+            </div>
           </div>
         )}
 
-        {/* Image Preview */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/jpg"
+          capture="environment"
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+          disabled={isSubmitted || isSubmitting}
+        />
+
         {previewUrl && (
-          <div
-            style={{
-              marginBottom: '1rem',
-              border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              padding: '0.75rem',
-              background: '#f8fafc',
-            }}
-          >
+          <div style={{ marginBottom: '18px' }}>
             <div
               style={{
+                position: 'relative',
+                maxHeight: '360px',
+                overflow: 'hidden',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)',
+                background: '#000000',
                 display: 'flex',
-                justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '0.5rem',
+                justifyContent: 'center',
               }}
             >
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>
-                📸 Attached Solution Photo
-              </span>
-              {!isSubmitted && (
-                <button
-                  type="button"
-                  onClick={handleReplacePhoto}
-                  disabled={isSubmitting}
-                  style={{
-                    padding: '0.25rem 0.5rem',
-                    background: '#f1f5f9',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '4px',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  🔄 Retake / Replace Photo
-                </button>
-              )}
-            </div>
-            <div style={{ textAlign: 'center', maxHeight: '350px', overflow: 'hidden', borderRadius: '4px' }}>
               <img
                 src={previewUrl}
-                alt="Student Solution Preview"
-                style={{ maxWidth: '100%', maxHeight: '320px', objectFit: 'contain', borderRadius: '4px' }}
+                alt="Your handwritten working"
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '360px',
+                  objectFit: 'contain',
+                }}
               />
             </div>
+
+            {!isSubmitted && (
+              <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                <Button variant="ghost" size="sm" onClick={handleReplacePhoto} disabled={isSubmitting}>
+                  Replace Photo
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -300,12 +309,13 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
         {error && (
           <div
             style={{
-              padding: '0.5rem 0.75rem',
-              marginBottom: '1rem',
-              background: '#fef2f2',
-              color: '#991b1b',
-              borderRadius: '6px',
-              fontSize: '0.85rem',
+              padding: '10px 14px',
+              marginBottom: '14px',
+              background: 'var(--color-surface-hover)',
+              border: '1px solid var(--color-danger, #ef4444)',
+              color: 'var(--color-danger, #ef4444)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '13px',
             }}
           >
             {error}
@@ -314,34 +324,45 @@ export const ImageSolutionQuestion: React.FC<ImageSolutionQuestionProps> = ({
 
         {/* Submit Button */}
         {!isSubmitted && (
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="md"
             disabled={!selectedFile || isSubmitting}
-            style={{
-              padding: '0.65rem 1.25rem',
-              background: !selectedFile || isSubmitting ? '#94a3b8' : '#059669',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 600,
-              cursor: !selectedFile || isSubmitting ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
           >
-            {isSubmitting ? 'Uploading & Submitting...' : '📤 Submit Solution Image'}
-          </button>
+            {isSubmitting ? 'Evaluating handwritten steps…' : 'Submit Handwritten Working'}
+          </Button>
         )}
       </form>
 
-      {/* Evaluation Feedback Card */}
-      {submissionResult && (
+      {/* Evaluation Feedback */}
+      {submissionResult && !hideEvaluation && (
         <EvaluationFeedbackCard
           evaluation={submissionResult.evaluation}
-          status={submissionResult.status}
+          status={submissionResult.status as any}
           onRetry={handleReplacePhoto}
+          onAskLumo={onAskLumo}
+          questionText={question.question}
         />
+      )}
+      {submissionResult && hideEvaluation && (
+        <div
+          style={{
+            marginTop: '16px',
+            padding: '12px 16px',
+            background: 'var(--color-surface-hover)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-border-subtle)',
+            color: 'var(--color-text-secondary)',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>✓</span>
+          <span>Working image recorded. Step evaluation will be revealed at the end of the test.</span>
+        </div>
       )}
     </div>
   );

@@ -2,12 +2,20 @@ import React, { useState } from 'react';
 import type { ClientAssessmentQuestion, AssessmentSubmission } from '@ai-tutor/shared';
 import { liveTutorApiClient } from '../../services/api.service';
 import { EvaluationFeedbackCard } from './EvaluationFeedbackCard';
+import { MarkdownRenderer } from '../ai/MarkdownRenderer';
+import { Button } from '../ui/Button';
 
 export interface MCQQuestionProps {
   question: ClientAssessmentQuestion;
   idToken: string;
   onSubmitted?: (submission: AssessmentSubmission) => void;
   initialSubmission?: AssessmentSubmission | null;
+  hideEvaluation?: boolean;
+  onAskLumo?: (doubtContext: {
+    question?: string;
+    feedback?: string;
+    misconception?: string;
+  }) => void;
 }
 
 export const MCQQuestion: React.FC<MCQQuestionProps> = ({
@@ -15,6 +23,8 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
   idToken,
   onSubmitted,
   initialSubmission = null,
+  hideEvaluation = false,
+  onAskLumo,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string>(
     initialSubmission?.selectedOption || ''
@@ -58,11 +68,11 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
   return (
     <div
       style={{
-        padding: '1.25rem',
-        border: '1px solid #cbd5e1',
-        borderRadius: '8px',
-        background: '#ffffff',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        padding: '20px',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        background: 'var(--color-surface)',
+        boxShadow: 'var(--shadow-xs)',
       }}
     >
       {/* Header Badges */}
@@ -71,87 +81,102 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '0.75rem',
-          fontSize: '0.8rem',
+          marginBottom: '14px',
+          fontSize: '11px',
         }}
       >
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           <span
             style={{
-              padding: '0.2rem 0.5rem',
-              borderRadius: '4px',
-              background: '#e0e7ff',
-              color: '#3730a3',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-pill)',
+              background: 'var(--color-surface-hover)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-secondary)',
               fontWeight: 600,
             }}
           >
-            MCQ
+            Multiple Choice
           </span>
           <span
             style={{
-              padding: '0.2rem 0.5rem',
-              borderRadius: '4px',
-              background: '#f1f5f9',
-              color: '#475569',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-pill)',
+              background: 'var(--color-surface-hover)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-muted)',
+              textTransform: 'uppercase',
             }}
           >
-            {question.difficulty.toUpperCase()}
+            {question.difficulty}
           </span>
           {question.ragGrounded && (
             <span
               style={{
-                padding: '0.2rem 0.5rem',
-                borderRadius: '4px',
-                background: '#dcfce7',
-                color: '#166534',
+                padding: '2px 8px',
+                borderRadius: 'var(--radius-pill)',
+                background: 'var(--color-surface-hover)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-orange)',
+                fontWeight: 600,
               }}
             >
-              📚 Study Doc Grounded
+              📄 Study Material
             </span>
           )}
         </div>
-        <span style={{ fontWeight: 700, color: '#0f172a' }}>
+        <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
           {question.marks} Mark{question.marks > 1 ? 's' : ''}
         </span>
       </div>
 
       {/* Question Context & Prompt */}
       {question.context && (
-        <p
+        <div
           style={{
-            fontSize: '0.9rem',
-            color: '#475569',
-            background: '#f8fafc',
-            padding: '0.5rem 0.75rem',
-            borderRadius: '6px',
-            marginBottom: '0.75rem',
+            fontSize: 'var(--text-body-sm)',
+            color: 'var(--color-text-secondary)',
+            background: 'var(--color-surface-hover)',
+            padding: '8px 12px',
+            borderRadius: 'var(--radius-sm)',
+            marginBottom: '14px',
+            borderLeft: '2px solid var(--color-orange)',
           }}
         >
           {question.context}
-        </p>
+        </div>
       )}
 
-      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#0f172a', lineHeight: '1.4' }}>
-        {question.question}
-      </h3>
+      <div style={{ margin: '0 0 18px 0' }}>
+        <MarkdownRenderer
+          content={question.question}
+          style={{
+            fontSize: 'var(--text-body-lg, 17px)',
+            fontWeight: 600,
+            lineHeight: 1.5,
+            color: 'var(--color-text-primary)',
+          }}
+        />
+      </div>
 
       {/* Options List */}
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
           {options.map((opt) => {
             const isSelected = selectedOption === opt.id;
             return (
               <label
                 key={opt.id}
+                onClick={() => !isSubmitted && setSelectedOption(opt.id)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '6px',
-                  border: `2px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}`,
-                  background: isSelected ? '#eff6ff' : '#ffffff',
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  border: `1.5px solid ${isSelected ? 'var(--color-orange)' : 'var(--color-border)'}`,
+                  background: isSelected ? 'var(--color-surface-hover)' : 'var(--color-surface)',
                   cursor: isSubmitted ? 'default' : 'pointer',
-                  transition: 'all 0.15s ease-in-out',
+                  transition: 'all var(--motion-fast) var(--ease-standard)',
                 }}
               >
                 <input
@@ -161,12 +186,38 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
                   checked={isSelected}
                   onChange={() => !isSubmitted && setSelectedOption(opt.id)}
                   disabled={isSubmitted || isSubmitting}
-                  style={{ marginRight: '0.75rem', cursor: isSubmitted ? 'default' : 'pointer' }}
+                  style={{ display: 'none' }}
                 />
-                <span style={{ fontWeight: 700, marginRight: '0.5rem', color: '#1e293b' }}>
-                  {opt.id}.
+                <span
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: isSelected ? 'var(--color-orange)' : 'var(--color-surface-hover)',
+                    border: `1px solid ${isSelected ? 'var(--color-orange)' : 'var(--color-border)'}`,
+                    color: isSelected ? '#ffffff' : 'var(--color-text-secondary)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: '12px',
+                    flexShrink: 0,
+                    transition: 'all var(--motion-fast) var(--ease-standard)',
+                  }}
+                >
+                  {opt.id}
                 </span>
-                <span style={{ color: '#334155', fontSize: '0.95rem' }}>{opt.text}</span>
+                <span
+                  style={{
+                    color: isSelected ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                    fontSize: 'var(--text-body)',
+                    fontWeight: isSelected ? 600 : 400,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {opt.text}
+                </span>
               </label>
             );
           })}
@@ -176,44 +227,59 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
         {error && (
           <div
             style={{
-              padding: '0.5rem 0.75rem',
-              marginBottom: '1rem',
-              background: '#fef2f2',
-              color: '#991b1b',
-              borderRadius: '6px',
-              fontSize: '0.85rem',
+              padding: '10px 14px',
+              marginBottom: '14px',
+              background: 'var(--color-surface-hover)',
+              border: '1px solid var(--color-danger, #ef4444)',
+              color: 'var(--color-danger, #ef4444)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '13px',
             }}
           >
             {error}
           </div>
         )}
 
-        {/* Submit Button */}
+        {/* Submission Action */}
         {!isSubmitted && (
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="md"
             disabled={!selectedOption || isSubmitting}
-            style={{
-              padding: '0.6rem 1.25rem',
-              background: !selectedOption || isSubmitting ? '#94a3b8' : '#2563eb',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 600,
-              cursor: !selectedOption || isSubmitting ? 'not-allowed' : 'pointer',
-            }}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Answer'}
-          </button>
+            {isSubmitting ? 'Checking answer…' : 'Submit Answer'}
+          </Button>
         )}
       </form>
 
-      {/* Evaluation Feedback Card */}
-      {submissionResult && (
+      {/* Evaluation Feedback */}
+      {submissionResult && !hideEvaluation && (
         <EvaluationFeedbackCard
           evaluation={submissionResult.evaluation}
-          status={submissionResult.status}
+          status={submissionResult.status as any}
+          onAskLumo={onAskLumo}
+          questionText={question.question}
         />
+      )}
+      {submissionResult && hideEvaluation && (
+        <div
+          style={{
+            marginTop: '16px',
+            padding: '12px 16px',
+            background: 'var(--color-surface-hover)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-border-subtle)',
+            color: 'var(--color-text-secondary)',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>✓</span>
+          <span>Response recorded. Detailed evaluation will be revealed at the end of the test.</span>
+        </div>
       )}
     </div>
   );

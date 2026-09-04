@@ -1,0 +1,215 @@
+/* ==========================================================================
+   LUMO LIVE THEATER — CANONICAL DESIGN TOKENS (PHASE 3B)
+   Obsidian, cinematic, restrained, quiet, and meticulously typeset.
+   ========================================================================== */
+
+/* --- Local Font-Face Declarations from /Fonts/ --- */
+@font-face {
+  font-family: 'Geist';
+  src: url('/Fonts/Geist/Geist-VariableFont_wght.ttf') format('truetype-variations'),
+       url('/Fonts/Geist/Geist-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/Fonts/Geist/Geist-Italic-VariableFont_wght.ttf') format('truetype-variations'),
+       url('/Fonts/Geist/Geist-Italic-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  src: url('/Fonts/Newsreader/Newsreader-VariableFont_opsz,wght.ttf') format('truetype-variations'),
+       url('/Fonts/Newsreader/Newsreader-VariableFont_opsz,wght.ttf') format('truetype');
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  src: url('/Fonts/Newsreader/Newsreader-Italic-VariableFont_opsz,wght.ttf') format('truetype-variations'),
+       url('/Fonts/Newsreader/Newsreader-Italic-VariableFont_opsz,wght.ttf') format('truetype');
+  font-weight: 200 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  /* --- Typography --- */
+  --theater-font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --theater-font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --theater-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* --- Core Palette (Obsidian / Charcoal System) --- */
+  --theater-bg: #080808;
+  --theater-bg-secondary: #0B0B0C;
+  --theater-stage-bg: #0D0D0E;
+  --theater-stage-surface: #101011;
+  --theater-card-bg: rgba(16, 16, 17, 0.85);
+  --theater-dock-bg: rgba(16, 16, 17, 0.88);
+  --theater-overlay-bg: rgba(8, 8, 8, 0.85);
+
+  /* --- Extremely Subtle Hairline Borders --- */
+  --theater-border-subtle: rgba(255, 255, 255, 0.06);
+  --theater-border-medium: rgba(255, 255, 255, 0.09);
+  --theater-border-light: rgba(255, 255, 255, 0.12);
+  --theater-border-active: rgba(226, 157, 75, 0.4);
+
+  /* --- Near-White Text Hierarchy --- */
+  --theater-text-primary: #F5F5F2;
+  --theater-text-secondary: #EAEAE6;
+  --theater-text-muted: #B8B8B3;
+  --theater-text-faint: #777773;
+
+  /* --- Rare & Meaningful State Accents --- */
+  /* Warm Lumo Accent (Active learning / progress / subtle focus) */
+  --theater-accent-warm: #E29D4B;
+  --theater-accent-warm-dim: rgba(226, 157, 75, 0.15);
+  --theater-accent-warm-glow: rgba(226, 157, 75, 0.25);
+
+  /* Soft Green (Successful / Completed) */
+  --theater-accent-mint: #55C98A;
+  --theater-accent-mint-dim: rgba(85, 201, 138, 0.15);
+
+  /* Muted Amber (Attention / Question) */
+  --theater-accent-amber: #E5A93C;
+  --theater-accent-amber-dim: rgba(229, 169, 60, 0.15);
+
+  /* Restrained Red (Destructive / Error / End Session) */
+  --theater-accent-coral: #E05252;
+  --theater-accent-coral-dim: rgba(224, 82, 82, 0.15);
+
+  /* Neutral Surface Highlight */
+  --theater-accent-neutral-glow: rgba(255, 255, 255, 0.08);
+
+  /* --- Radii (Refined, Not Over-Rounded) --- */
+  --theater-radius-sm: 8px;
+  --theater-radius-md: 14px;
+  --theater-radius-lg: 20px;
+  --theater-radius-stage: 24px;
+  --theater-radius-pill: 999px;
+
+  /* --- Shadows (Deep, Quiet Ambient Occlusion) --- */
+  --theater-shadow-stage: 0 24px 60px -12px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.08);
+  --theater-shadow-dock: 0 16px 40px -8px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.08);
+  --theater-shadow-drawer: -15px 0 50px rgba(0, 0, 0, 0.85);
+
+  /* --- Motion Timing (150-300ms Expensive Transitions) --- */
+  --theater-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --theater-transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --theater-transition-normal: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  --theater-transition-stage: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Animations & Keyframes --- */
+@keyframes theaterWaveformBounce {
+  0%, 100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes theaterMicPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(226, 157, 75, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(226, 157, 75, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(226, 157, 75, 0);
+  }
+}
+
+@keyframes theaterListeningPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(85, 201, 138, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(85, 201, 138, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(85, 201, 138, 0);
+  }
+}
+
+@keyframes theaterFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes theaterSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes theaterModalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --- Responsive Layout Utilities --- */
+@media (max-width: 960px) {
+  .theater-header-breadcrumbs {
+    display: none !important;
+  }
+
+  .theater-dock {
+    width: 95vw !important;
+    padding: 0.5rem 0.85rem !important;
+    gap: 0.75rem !important;
+    bottom: 1rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .theater-stage-container {
+    flex-direction: column !important;
+    aspect-ratio: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+
+  .theater-dock {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.6rem !important;
+    border-radius: 18px !important;
+  }
+}
+

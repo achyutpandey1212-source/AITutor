@@ -13,6 +13,12 @@ export interface AssessmentRendererProps {
   initialSubmission?: AssessmentSubmission | null;
   sessionId?: string;
   questionStartedAt?: string;
+  hideEvaluation?: boolean;
+  onAskLumo?: (doubtContext: {
+    question?: string;
+    feedback?: string;
+    misconception?: string;
+  }) => void;
 }
 
 /**
@@ -27,6 +33,8 @@ export const AssessmentRenderer: React.FC<AssessmentRendererProps> = ({
   initialSubmission,
   sessionId: _sessionId,
   questionStartedAt: _questionStartedAt,
+  hideEvaluation = false,
+  onAskLumo,
 }) => {
   // If evaluationMode is IMAGE_SOLUTION (e.g. 5-mark Numerical or ImageSolution), route to ImageSolutionQuestion
   if (question.evaluationMode === 'IMAGE_SOLUTION' || question.questionType === 'IMAGE_SOLUTION') {
@@ -36,6 +44,8 @@ export const AssessmentRenderer: React.FC<AssessmentRendererProps> = ({
         idToken={idToken}
         onSubmitted={onSubmitted}
         initialSubmission={initialSubmission}
+        hideEvaluation={hideEvaluation}
+        onAskLumo={onAskLumo}
       />
     );
   }
@@ -48,6 +58,8 @@ export const AssessmentRenderer: React.FC<AssessmentRendererProps> = ({
           idToken={idToken}
           onSubmitted={onSubmitted}
           initialSubmission={initialSubmission}
+          hideEvaluation={hideEvaluation}
+          onAskLumo={onAskLumo}
         />
       );
 
@@ -58,6 +70,8 @@ export const AssessmentRenderer: React.FC<AssessmentRendererProps> = ({
           idToken={idToken}
           onSubmitted={onSubmitted}
           initialSubmission={initialSubmission}
+          hideEvaluation={hideEvaluation}
+          onAskLumo={onAskLumo}
         />
       );
 
@@ -68,6 +82,8 @@ export const AssessmentRenderer: React.FC<AssessmentRendererProps> = ({
           idToken={idToken}
           onSubmitted={onSubmitted}
           initialSubmission={initialSubmission}
+          hideEvaluation={hideEvaluation}
+          onAskLumo={onAskLumo}
         />
       );
 
@@ -78,12 +94,14 @@ export const AssessmentRenderer: React.FC<AssessmentRendererProps> = ({
           idToken={idToken}
           onSubmitted={onSubmitted}
           initialSubmission={initialSubmission}
+          hideEvaluation={hideEvaluation}
+          onAskLumo={onAskLumo}
         />
       );
 
     default:
       return (
-        <div style={{ padding: '1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '6px' }}>
+        <div style={{ padding: '16px', background: 'var(--color-surface)', color: 'var(--color-danger, #ef4444)', borderRadius: '8px' }}>
           Unsupported question type: {(question as any).questionType}
         </div>
       );

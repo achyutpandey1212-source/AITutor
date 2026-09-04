@@ -1,37 +1,63 @@
 import React from 'react';
 import type { EvaluationResult } from '@ai-tutor/shared';
+import { Button } from '../ui/Button';
 
 export interface EvaluationFeedbackCardProps {
   evaluation?: EvaluationResult;
   status: 'SUBMITTED' | 'EVALUATING' | 'EVALUATED' | 'NEEDS_REVIEW' | 'FAILED';
   onRetry?: () => void;
+  onAskLumo?: (doubtContext: {
+    question?: string;
+    feedback?: string;
+    misconception?: string;
+  }) => void;
+  questionText?: string;
 }
 
 export const EvaluationFeedbackCard: React.FC<EvaluationFeedbackCardProps> = ({
   evaluation,
   status,
   onRetry,
+  onAskLumo,
+  questionText,
 }) => {
   if (status === 'SUBMITTED' || status === 'EVALUATING') {
     return (
       <div
         style={{
           marginTop: '1.25rem',
-          padding: '1rem',
-          borderRadius: '8px',
-          background: '#eff6ff',
-          border: '1px solid #bfdbfe',
-          color: '#1e40af',
+          padding: '16px 20px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.75rem',
+          gap: '12px',
+          boxShadow: 'var(--shadow-xs)',
         }}
       >
-        <span style={{ fontSize: '1.4rem' }}>⏳</span>
+        <div
+          style={{
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            border: '2px solid var(--color-orange)',
+            borderTopColor: 'transparent',
+            animation: 'lumo-spin 0.8s linear infinite',
+          }}
+        />
         <div>
-          <strong>AI is checking your working...</strong>
-          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#3b82f6' }}>
-            Analyzing steps, checking arithmetic, and diagnosing conceptual understanding.
+          <strong style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-text-primary)' }}>
+            Lumo is evaluating your answer…
+          </strong>
+          <p
+            style={{
+              margin: '2px 0 0 0',
+              fontSize: '12px',
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            Checking conceptual understanding, steps, and arithmetic.
           </p>
         </div>
       </div>
@@ -43,47 +69,47 @@ export const EvaluationFeedbackCard: React.FC<EvaluationFeedbackCardProps> = ({
       <div
         style={{
           marginTop: '1.25rem',
-          padding: '1.25rem',
-          borderRadius: '8px',
-          background: '#fffbeb',
-          border: '1px solid #fde68a',
-          color: '#92400e',
+          padding: '18px 20px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--color-surface-hover)',
+          border: '1px solid var(--color-border)',
+          color: 'var(--color-text-primary)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '1.3rem' }}>📸</span>
-          <strong style={{ fontSize: '1rem' }}>Your working is partly difficult to read</strong>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <span style={{ fontSize: '18px' }}>📸</span>
+          <strong style={{ fontSize: 'var(--text-body-sm)' }}>
+            Solution photo is partly difficult to read
+          </strong>
         </div>
-        <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', lineHeight: '1.4' }}>
+        <p style={{ margin: '0 0 12px 0', fontSize: 'var(--text-body-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
           {evaluation?.feedback ||
-            'We could not confidently read your handwriting or steps. To ensure your mastery is evaluated fairly, please take a clearer, well-lit photo of your notebook.'}
+            'We could not confidently read your handwriting or steps. To evaluate your solution fairly, please capture a clearer photo.'}
         </p>
 
-        <div style={{ background: '#fef3c7', padding: '0.75rem', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '1rem' }}>
-          <strong>Tips for a clear solution upload:</strong>
-          <ul style={{ margin: '0.25rem 0 0 1.25rem', padding: 0 }}>
-            <li>Keep the full page visible and flat.</li>
-            <li>Use good overhead lighting without strong shadows.</li>
-            <li>Ensure each mathematical step is clearly separated and readable.</li>
+        <div
+          style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '12px',
+            marginBottom: '14px',
+            color: 'var(--color-text-secondary)',
+          }}
+        >
+          <strong style={{ color: 'var(--color-text-primary)' }}>Tips for a clear solution upload:</strong>
+          <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+            <li>Keep the entire page flat with overhead lighting.</li>
+            <li>Avoid harsh shadows or blurry camera angles.</li>
+            <li>Ensure mathematical steps and units are clearly legible.</li>
           </ul>
         </div>
 
         {onRetry && (
-          <button
-            onClick={onRetry}
-            style={{
-              padding: '0.5rem 1rem',
-              background: '#d97706',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-            }}
-          >
-            🔄 Retake / Resubmit Solution
-          </button>
+          <Button variant="secondary" size="sm" onClick={onRetry}>
+            Retake Photo
+          </Button>
         )}
       </div>
     );
@@ -94,33 +120,22 @@ export const EvaluationFeedbackCard: React.FC<EvaluationFeedbackCardProps> = ({
       <div
         style={{
           marginTop: '1.25rem',
-          padding: '1rem',
-          borderRadius: '8px',
-          background: '#fef2f2',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
+          padding: '16px 20px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
         }}
       >
-        <strong>⚠️ Evaluation temporarily unavailable</strong>
-        <p style={{ margin: '0.25rem 0 0.75rem 0', fontSize: '0.85rem' }}>
-          Your submission is saved securely. Please try checking again in a moment.
+        <strong style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-text-primary)' }}>
+          Evaluation temporarily unavailable
+        </strong>
+        <p style={{ margin: '4px 0 12px 0', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+          Your answer was saved securely. Please try evaluating again in a moment.
         </p>
         {onRetry && (
-          <button
-            onClick={onRetry}
-            style={{
-              padding: '0.4rem 0.8rem',
-              background: '#dc2626',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
+          <Button variant="secondary" size="sm" onClick={onRetry}>
             Retry Evaluation
-          </button>
+          </Button>
         )}
       </div>
     );
@@ -132,15 +147,26 @@ export const EvaluationFeedbackCard: React.FC<EvaluationFeedbackCardProps> = ({
 
   const isSuccess = evaluation.percentage >= 75;
   const isModerate = evaluation.percentage >= 40 && evaluation.percentage < 75;
+  const headline = isSuccess
+    ? '✓ Good understanding'
+    : isModerate
+    ? '◐ Almost — let’s check one step'
+    : '🎯 Let’s review how to approach this';
+
+  const firstMisconception =
+    evaluation.misconceptions && evaluation.misconceptions.length > 0
+      ? evaluation.misconceptions[0]
+      : null;
 
   return (
     <div
       style={{
         marginTop: '1.5rem',
-        padding: '1.25rem',
-        borderRadius: '8px',
-        background: isSuccess ? '#f0fdf4' : isModerate ? '#fffbeb' : '#fef2f2',
-        border: `1px solid ${isSuccess ? '#bbf7d0' : isModerate ? '#fde68a' : '#fecaca'}`,
+        padding: '18px 20px',
+        borderRadius: 'var(--radius-md)',
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        boxShadow: 'var(--shadow-xs)',
       }}
     >
       {/* Score Header */}
@@ -149,79 +175,179 @@ export const EvaluationFeedbackCard: React.FC<EvaluationFeedbackCardProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: `1px solid ${isSuccess ? '#dcfce7' : isModerate ? '#fef3c7' : '#fee2e2'}`,
-          paddingBottom: '0.75rem',
-          marginBottom: '0.75rem',
+          borderBottom: '1px solid var(--color-border)',
+          paddingBottom: '10px',
+          marginBottom: '12px',
           flexWrap: 'wrap',
-          gap: '0.5rem',
+          gap: '8px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '1.3rem' }}>{isSuccess ? '🎉' : isModerate ? '💡' : '🎯'}</span>
-          <span style={{ fontWeight: 700, fontSize: '1.1rem', color: isSuccess ? '#166534' : isModerate ? '#92400e' : '#991b1b' }}>
-            Score: {evaluation.score} / {evaluation.maxScore} ({evaluation.percentage}%)
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span
+            style={{
+              fontSize: 'var(--text-body)',
+              fontWeight: 700,
+              color: isSuccess
+                ? 'var(--color-success, #10b981)'
+                : isModerate
+                ? 'var(--color-orange)'
+                : 'var(--color-text-primary)',
+            }}
+          >
+            {headline}
+          </span>
+          <span
+            style={{
+              fontSize: '12px',
+              color: 'var(--color-text-muted)',
+              fontWeight: 500,
+            }}
+          >
+            · {evaluation.score} / {evaluation.maxScore} marks ({evaluation.percentage}%)
           </span>
         </div>
 
-        <span
-          style={{
-            padding: '0.25rem 0.6rem',
-            borderRadius: '999px',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            background: isSuccess ? '#dcfce7' : isModerate ? '#fef3c7' : '#fee2e2',
-            color: isSuccess ? '#166534' : isModerate ? '#92400e' : '#991b1b',
-          }}
-        >
-          {evaluation.recommendedAction.replace('_', ' ')}
-        </span>
+        {onAskLumo && (
+          <button
+            type="button"
+            onClick={() =>
+              onAskLumo({
+                question: questionText,
+                feedback: evaluation.feedback,
+                misconception: firstMisconception || undefined,
+              })
+            }
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-pill)',
+              padding: '3px 10px',
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'var(--color-orange)',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'all var(--motion-fast) var(--ease-standard)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-orange)';
+              e.currentTarget.style.background = 'var(--color-surface-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-border)';
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <span>✦ Ask Lumo</span>
+          </button>
+        )}
       </div>
 
       {/* Main Feedback Message */}
-      <p style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', color: '#1e293b', lineHeight: '1.5' }}>
+      <p
+        style={{
+          margin: '0 0 12px 0',
+          fontSize: 'var(--text-body)',
+          color: 'var(--color-text-primary)',
+          lineHeight: 1.6,
+        }}
+      >
         {evaluation.feedback}
       </p>
 
+      {/* Misconception Diagnosis Callout */}
+      {firstMisconception && (
+        <div
+          style={{
+            marginBottom: '14px',
+            padding: '12px 14px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--color-surface-hover)',
+            borderLeft: '3px solid var(--color-orange)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '11px',
+              fontWeight: 700,
+              color: 'var(--color-orange)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              marginBottom: '4px',
+            }}
+          >
+            Misconception Insight
+          </div>
+          <div style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-text-primary)', lineHeight: 1.5 }}>
+            {firstMisconception}
+          </div>
+        </div>
+      )}
+
       {/* Step Breakdown (for Numerical & Multi-step Image Solutions) */}
       {evaluation.stepEvaluation && evaluation.stepEvaluation.length > 0 && (
-        <div style={{ marginBottom: '1rem' }}>
-          <strong style={{ display: 'block', fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
-            Step-by-Step Working Breakdown:
+        <div style={{ marginBottom: '14px' }}>
+          <strong
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: 'var(--color-text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              marginBottom: '6px',
+            }}
+          >
+            Step-by-Step Breakdown
           </strong>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {evaluation.stepEvaluation.map((step, idx) => (
               <div
                 key={idx}
                 style={{
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '6px',
-                  background: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '0.85rem',
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--color-surface-hover)',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '12px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                 }}
               >
                 <div>
-                  <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
                     Step {step.step}: {step.criterion || ''}
                   </span>
-                  <p style={{ margin: '0.15rem 0 0 0', color: '#64748b' }}>{step.feedback}</p>
+                  <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-secondary)' }}>
+                    {step.feedback}
+                  </p>
                 </div>
                 <span
                   style={{
-                    padding: '0.15rem 0.45rem',
+                    padding: '2px 6px',
                     borderRadius: '4px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
+                    fontSize: '11px',
+                    fontWeight: 600,
                     background:
-                      step.status === 'correct' ? '#dcfce7' : step.status === 'partially_correct' ? '#fef3c7' : '#fee2e2',
+                      step.status === 'correct'
+                        ? 'var(--color-surface)'
+                        : 'var(--color-surface)',
                     color:
-                      step.status === 'correct' ? '#166534' : step.status === 'partially_correct' ? '#92400e' : '#991b1b',
+                      step.status === 'correct'
+                        ? 'var(--color-success, #10b981)'
+                        : step.status === 'partially_correct'
+                        ? 'var(--color-orange)'
+                        : 'var(--color-text-muted)',
                   }}
                 >
-                  {step.status === 'correct' ? '✅ Correct' : step.status === 'partially_correct' ? '⚠️ Partial' : '❌ Incorrect'}
+                  {step.status === 'correct'
+                    ? '✓ Correct'
+                    : step.status === 'partially_correct'
+                    ? '◐ Partial'
+                    : '✗ Needs check'}
                 </span>
               </div>
             ))}
@@ -229,14 +355,36 @@ export const EvaluationFeedbackCard: React.FC<EvaluationFeedbackCardProps> = ({
         </div>
       )}
 
-      {/* Strengths & Weaknesses */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-        {evaluation.strengths.length > 0 && (
-          <div style={{ background: '#ffffff', padding: '0.6rem 0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-            <strong style={{ fontSize: '0.8rem', color: '#166534', display: 'block', marginBottom: '0.25rem' }}>
-              💪 Strengths Identified:
+      {/* Strengths & Improvement Areas */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '10px',
+        }}
+      >
+        {evaluation.strengths && evaluation.strengths.length > 0 && (
+          <div
+            style={{
+              background: 'var(--color-surface-hover)',
+              padding: '10px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <strong
+              style={{
+                fontSize: '11px',
+                color: 'var(--color-success, #10b981)',
+                display: 'block',
+                marginBottom: '4px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              Strengths
             </strong>
-            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.8rem', color: '#334155' }}>
+            <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
               {evaluation.strengths.map((s, i) => (
                 <li key={i}>{s}</li>
               ))}
@@ -244,12 +392,28 @@ export const EvaluationFeedbackCard: React.FC<EvaluationFeedbackCardProps> = ({
           </div>
         )}
 
-        {evaluation.weaknesses.length > 0 && (
-          <div style={{ background: '#ffffff', padding: '0.6rem 0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-            <strong style={{ fontSize: '0.8rem', color: '#991b1b', display: 'block', marginBottom: '0.25rem' }}>
-              🔍 Areas for Improvement:
+        {evaluation.weaknesses && evaluation.weaknesses.length > 0 && (
+          <div
+            style={{
+              background: 'var(--color-surface-hover)',
+              padding: '10px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <strong
+              style={{
+                fontSize: '11px',
+                color: 'var(--color-orange)',
+                display: 'block',
+                marginBottom: '4px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              Areas to Revise
             </strong>
-            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.8rem', color: '#334155' }}>
+            <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
               {evaluation.weaknesses.map((w, i) => (
                 <li key={i}>{w}</li>
               ))}

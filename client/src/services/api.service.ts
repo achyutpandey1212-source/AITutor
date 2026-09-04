@@ -57,6 +57,26 @@ export class LiveTutorApiClient {
     return json.data;
   }
 
+  async sendTextMessage(
+    idToken: string,
+    sessionId: string,
+    message: string,
+    knowledgeContext?: string
+  ): Promise<import('@ai-tutor/shared').RespondSessionResponse> {
+    const res = await fetch(`/api/teaching/sessions/${sessionId}/respond`, {
+      method: 'POST',
+      headers: this.getHeaders(idToken),
+      body: JSON.stringify({ message, knowledgeContext }),
+    });
+
+    const json: ApiResponse<import('@ai-tutor/shared').RespondSessionResponse> = await res.json();
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message || `Failed to process message (HTTP ${res.status})`);
+    }
+
+    return json.data;
+  }
+
   // ==========================================
   // Knowledge & Document Ingestion API Methods
   // ==========================================

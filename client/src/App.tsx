@@ -23,7 +23,7 @@ import { Navbar } from './components/navigation/Navbar';
 // Pages where the Navbar should NOT appear
 // (e.g. Theater full-screen, auth pages with their own layout)
 // ---------------------------------------------------------------
-const NAV_HIDDEN_PATHS = new Set(['/signin', '/signup']);
+const NAV_HIDDEN_PATHS = new Set(['/signin', '/signup', '/tutor']);
 
 // ---------------------------------------------------------------
 // Lumo loading screen
@@ -228,6 +228,7 @@ export const App: React.FC = () => {
             initialConcept={queryParams.get('concept') || undefined}
             initialDocumentId={queryParams.get('documentId') || undefined}
             initialDocumentTitle={queryParams.get('documentTitle') || undefined}
+            initialPrompt={queryParams.get('prompt') || queryParams.get('doubt') || undefined}
             from={queryParams.get('from') || undefined}
           />
         );

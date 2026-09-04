@@ -16,6 +16,7 @@ export interface LumoAIPageProps {
   initialConcept?: string;
   initialDocumentId?: string;
   initialDocumentTitle?: string;
+  initialPrompt?: string;
   from?: string;
 }
 
@@ -27,6 +28,7 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
   initialConcept,
   initialDocumentId,
   initialDocumentTitle,
+  initialPrompt,
   from,
 }) => {
   const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
@@ -184,8 +186,17 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
     setIsGenerating(false);
   };
 
-  const backDestination = from === 'theater' ? '/tutor' : '/dashboard';
-  const backLabel = from === 'theater' ? '← Back to Theater' : '← Home';
+  // Auto-send initial prompt if routed with one (e.g. from Assessment or Live Theater)
+  const initialPromptSentRef = useRef(false);
+  useEffect(() => {
+    if (initialPrompt && !initialPromptSentRef.current && messages.length === 0 && !isGenerating) {
+      initialPromptSentRef.current = true;
+      handleSendMessage(initialPrompt);
+    }
+  }, [initialPrompt, handleSendMessage, messages.length, isGenerating]);
+
+  const backDestination = from === 'theater' ? '/tutor' : from === 'practice' ? '/practice' : '/dashboard';
+  const backLabel = from === 'theater' ? '← Back to Theater' : from === 'practice' ? '← Back to Practice' : '← Home';
 
   return (
     <div
