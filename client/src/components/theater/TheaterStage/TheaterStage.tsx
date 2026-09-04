@@ -13,6 +13,7 @@ export interface TheaterStageProps {
   idToken: string;
   sessionId?: string;
   avatarState: TutorAvatarState;
+  interactionState?: 'READY' | 'LISTENING' | 'THINKING' | 'SPEAKING' | 'INTERRUPTED' | 'PAUSED' | 'ERROR';
   isSpeaking?: boolean;
   isInterrupting?: boolean;
   isListening?: boolean;
@@ -38,6 +39,7 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
   idToken,
   sessionId,
   avatarState,
+  interactionState,
   isSpeaking = false,
   isInterrupting = false,
   isListening = false,
@@ -212,6 +214,7 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
             }}
           >
             <TutorPresence
+              interactionState={interactionState}
               avatarState={avatarState}
               isSpeaking={isSpeaking}
               isInterrupting={isInterrupting}

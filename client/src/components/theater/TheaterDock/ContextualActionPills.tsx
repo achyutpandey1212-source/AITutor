@@ -6,6 +6,7 @@ export interface ContextualActionPillsProps {
   isListening?: boolean;
   isAssessmentActive?: boolean;
   isReplaying?: boolean;
+  onInterrupt?: () => void;
   onExplainAgain?: () => void;
   onExplainDifferently?: () => void;
   onRequestHint?: () => void;
@@ -16,10 +17,11 @@ export interface ContextualActionPillsProps {
 }
 
 export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
-  isSpeaking: _isSpeaking = false,
+  isSpeaking = false,
   isListening: _isListening = false,
   isAssessmentActive = false,
   isReplaying = false,
+  onInterrupt,
   onExplainAgain,
   onExplainDifferently,
   onRequestHint,
@@ -30,6 +32,31 @@ export const ContextualActionPills: React.FC<ContextualActionPillsProps> = ({
 }) => {
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+      {/* 0. Active Speaking Mode: Interrupt Action */}
+      {isSpeaking && onInterrupt && !isAssessmentActive && !isReplaying && (
+        <button
+          onClick={onInterrupt}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.3rem',
+            background: 'var(--theater-surface-elevated)',
+            color: 'var(--theater-text-primary)',
+            border: '1px solid var(--theater-border-strong)',
+            borderRadius: 'var(--theater-radius-sm)',
+            padding: '0.25rem 0.65rem',
+            fontSize: '0.74rem',
+            fontWeight: 550,
+            cursor: 'pointer',
+            transition: 'all var(--theater-transition-fast)',
+            fontFamily: 'var(--theater-font-sans)',
+          }}
+          title="Interrupt Lumo (M)"
+        >
+          <span>Interrupt</span>
+        </button>
+      )}
+
       {/* 1. Replay Mode: Resume Live */}
       {isReplaying && onResumeLive && (
         <button

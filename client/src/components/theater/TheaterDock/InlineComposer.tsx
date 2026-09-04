@@ -43,6 +43,7 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
       }}
     >
       <input
+        id="dock-inline-composer-input"
         type="text"
         value={typedMessage}
         onChange={(e) => setTypedMessage(e.target.value)}
@@ -51,8 +52,9 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
         placeholder={
           isAssessmentActive
             ? "Type your answer..."
-            : "Type a question..."
+            : "Type a question... (⌘K)"
         }
+        title="Type a message (⌘K to focus)"
         disabled={disabled}
         style={{
           flex: 1,

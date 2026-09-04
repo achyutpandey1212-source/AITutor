@@ -15,6 +15,15 @@ import { SessionSummaryStage } from './Modals/SessionSummaryStage';
 import type { ConceptStep } from './TheaterProgress/LessonProgress';
 import { IconPause, IconPlay } from './TheaterIcons';
 
+export type InteractionState =
+  | 'READY'
+  | 'LISTENING'
+  | 'THINKING'
+  | 'SPEAKING'
+  | 'INTERRUPTED'
+  | 'PAUSED'
+  | 'ERROR';
+
 export interface LiveTheaterPageProps {
   idToken: string;
   onNavigate: (path: string) => void;
@@ -273,6 +282,82 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
   const activeDocTitle = sessionContext?.documentTitle || selectedDocObj?.filename;
   const avatarState = mapVoiceToAvatarState(tutorState);
 
+  // Single source of truth for UI presentation interaction state
+  const interactionState: InteractionState = useMemo(() => {
+    if (error) return 'ERROR';
+    if (isPaused) return 'PAUSED';
+    if (tutorState === 'INTERRUPTING' || isInterrupting) return 'INTERRUPTED';
+    if (tutorState === 'SPEAKING' || isSpeaking) return 'SPEAKING';
+    if (tutorState === 'THINKING' || tutorState === 'CONNECTING' || isLoading) return 'THINKING';
+    if (tutorState === 'LISTENING' || isListening) return 'LISTENING';
+    return 'READY';
+  }, [error, isPaused, tutorState, isInterrupting, isSpeaking, isLoading, isListening]);
+
+  // Global Keyboard Shortcuts (M for mic, Esc to close/exit, Cmd/Ctrl+K to focus composer)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isInputFocused =
+        activeEl instanceof HTMLInputElement ||
+        activeEl instanceof HTMLTextAreaElement ||
+        activeEl?.getAttribute('contenteditable') === 'true';
+
+      // Esc: Close any active drawer or exit Focus Mode
+      if (e.key === 'Escape') {
+        if (
+          isMilestonesOpen ||
+          isTranscriptOpen ||
+          isDocumentOpen ||
+          isSettingsOpen ||
+          isDoubtSolverOpen
+        ) {
+          e.preventDefault();
+          closeAllDrawers();
+          return;
+        }
+        if (isFocusMode) {
+          e.preventDefault();
+          setIsFocusMode(false);
+          return;
+        }
+      }
+
+      // Cmd/Ctrl + K: Focus dock composer input
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const composerInput = document.getElementById('dock-inline-composer-input');
+        composerInput?.focus();
+        return;
+      }
+
+      // M only: Toggle microphone (only when focus is outside text inputs)
+      if (!isInputFocused && !e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        if (isSessionActive) {
+          if (isSpeaking) {
+            interruptTutor();
+          } else {
+            toggleMic();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    isMilestonesOpen,
+    isTranscriptOpen,
+    isDocumentOpen,
+    isSettingsOpen,
+    isDoubtSolverOpen,
+    isFocusMode,
+    isSessionActive,
+    isSpeaking,
+    interruptTutor,
+    toggleMic,
+  ]);
+
   return (
     <div
       style={{
@@ -471,6 +556,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
           idToken={idToken}
           sessionId={session?.id}
           avatarState={avatarState}
+          interactionState={interactionState}
           isSpeaking={isSpeaking}
           isInterrupting={isInterrupting}
           isListening={isListening}
@@ -498,6 +584,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
       {isSessionActive && (
         <TheaterDock
           micEnabled={micEnabled}
+          interactionState={interactionState}
           isSpeaking={isSpeaking}
           isListening={isListening}
           isThinking={isLoading}

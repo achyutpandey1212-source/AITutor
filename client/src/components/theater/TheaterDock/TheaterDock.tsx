@@ -6,6 +6,7 @@ import { IconMaximize, IconMinimize } from '../TheaterIcons';
 
 export interface TheaterDockProps {
   micEnabled: boolean;
+  interactionState?: 'READY' | 'LISTENING' | 'THINKING' | 'SPEAKING' | 'INTERRUPTED' | 'PAUSED' | 'ERROR';
   isSpeaking?: boolean;
   isListening?: boolean;
   isThinking?: boolean;
@@ -29,6 +30,7 @@ export interface TheaterDockProps {
 
 export const TheaterDock: React.FC<TheaterDockProps> = ({
   micEnabled,
+  interactionState,
   isSpeaking = false,
   isListening = false,
   isThinking = false,
@@ -77,6 +79,7 @@ export const TheaterDock: React.FC<TheaterDockProps> = ({
       {/* 1. Left Section: Microphone Control & Audio Activity Status */}
       <VoiceActivityWidget
         micEnabled={micEnabled}
+        interactionState={interactionState}
         isSpeaking={isSpeaking}
         isListening={isListening}
         isThinking={isThinking}
@@ -102,6 +105,7 @@ export const TheaterDock: React.FC<TheaterDockProps> = ({
         isListening={isListening}
         isAssessmentActive={isAssessmentActive}
         isReplaying={isReplaying}
+        onInterrupt={onInterrupt}
         onExplainAgain={onExplainAgain}
         onExplainDifferently={onExplainDifferently}
         onRequestHint={onRequestHint}

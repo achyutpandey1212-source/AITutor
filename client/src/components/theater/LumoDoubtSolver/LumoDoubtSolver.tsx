@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { liveTutorApiClient } from '../../../services/api.service';
+import { liveTutorApiClient, type LumoModelTier, type AIChatMessage } from '../../../services/api.service';
 import { speechToTextService } from '../../../services/stt.service';
 import { IconSparkles, IconMic, IconArrowRight } from '../TheaterIcons';
 
@@ -19,6 +19,7 @@ interface DoubtMessage {
   sender: 'student' | 'lumo';
   text: string;
   timestamp: string;
+  tier?: LumoModelTier;
 }
 
 export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
@@ -29,8 +30,9 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
   concept,
   documentTitle,
   idToken,
-  sessionId,
+  sessionId: _sessionId,
 }) => {
+  const [selectedTier, setSelectedTier] = useState<LumoModelTier>('light');
   const [isExpanded, setIsExpanded] = useState(false);
   const [inputQuery, setInputQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -76,20 +78,38 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
 
     try {
       let answerText = '';
-      if (sessionId && idToken) {
-        const response = await liveTutorApiClient.sendTextMessage(
-          idToken,
-          sessionId,
-          `[Student Private Doubt on ${concept}]: ${query}`,
-          documentTitle ? `Grounded in study material: ${documentTitle}` : undefined
-        );
-        answerText =
-          response.teacherResponse.responseText ||
-          "Here is the clarification on that concept: Let's break it down step by step.";
+      if (idToken) {
+        // Build conversation history for genuine multi-turn context
+        const historyForApi: AIChatMessage[] = messages
+          .filter((m) => m.id !== 'welcome')
+          .map((m) => ({
+            role: m.sender === 'student' ? ('user' as const) : ('assistant' as const),
+            content: m.text,
+          }));
+
+        // Directly reaches /api/ai/chat and maps modelTier on the backend
+        const response = await liveTutorApiClient.sendAIChat(idToken, {
+          message: query,
+          modelTier: selectedTier,
+          history: historyForApi,
+          context: {
+            subject,
+            topic,
+            concept,
+            documentTitle,
+          },
+        });
+        answerText = response.text;
       } else {
-        // High quality contextual pedagogical explanation fallback
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        answerText = `Regarding ${concept}: When thinking about "${query}", remember the foundational rule in ${topic}. The force and acceleration are directly proportional, meaning as net force increases, the rate of change of momentum increases proportionally.`;
+        // Thoughtful pedagogical response fallback when dev unauthenticated
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        if (selectedTier === 'fast') {
+          answerText = `In ${topic} (${concept}), regarding "${query}": A net external force causes acceleration proportional to the force and inversely proportional to mass (F = ma).`;
+        } else if (selectedTier === 'pro') {
+          answerText = `Analytical breakdown for "${query}" in ${topic} (${concept}):\n1. Foundational Principle: Acceleration only occurs when the vector sum of forces (ΣF) is non-zero.\n2. Dynamical Equation: a = ΣF / m.\n3. Application: Doubling net force yields twice the acceleration, assuming mass is invariant.`;
+        } else {
+          answerText = `Regarding ${concept}: When considering "${query}", remember the foundational relationship in ${topic}. Net force and acceleration are directly proportional; without net force, motion remains uniform.`;
+        }
       }
 
       const lumoMsg: DoubtMessage = {
@@ -97,13 +117,14 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
         sender: 'lumo',
         text: answerText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        tier: selectedTier,
       };
       setMessages((prev) => [...prev, lumoMsg]);
     } catch (err: any) {
       const errorMsg: DoubtMessage = {
         id: `err-${Date.now()}`,
         sender: 'lumo',
-        text: `I'm analyzing your doubt on ${concept}: ${err?.message || 'Could not fetch response. Please try again.'}`,
+        text: `I encountered an issue analyzing your doubt on ${concept}: ${err?.message || 'Could not fetch response. Please try again.'}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -246,6 +267,74 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
             >
               ✕
             </button>
+          </div>
+        </div>
+
+        {/* Lumo Model Tier Segmented Switcher (Restrained Tonal Contrast) */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.45rem 1.15rem',
+            background: 'var(--theater-surface-elevated)',
+            borderBottom: '1px solid var(--theater-border-subtle)',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '0.72rem',
+              color: 'var(--theater-text-muted)',
+              fontWeight: 500,
+              fontFamily: 'var(--theater-font-sans)',
+              letterSpacing: '0.01em',
+            }}
+          >
+            Lumo model
+          </span>
+          <div
+            role="radiogroup"
+            aria-label="Lumo model selection"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '2px',
+              background: 'var(--theater-surface)',
+              padding: '2px',
+              borderRadius: 'var(--theater-radius-sm)',
+              border: '1px solid var(--theater-border-subtle)',
+            }}
+          >
+            {(['fast', 'light', 'pro'] as const).map((tier) => {
+              const isSelected = selectedTier === tier;
+              const label = tier === 'fast' ? 'Fast' : tier === 'light' ? 'Light' : 'Pro';
+              const description =
+                tier === 'fast' ? 'Fastest response' : tier === 'light' ? 'Balanced' : 'Deep reasoning';
+              return (
+                <button
+                  key={tier}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  onClick={() => setSelectedTier(tier)}
+                  title={`${label} — ${description}`}
+                  style={{
+                    background: isSelected ? 'var(--theater-text-primary)' : 'transparent',
+                    color: isSelected ? 'var(--theater-bg)' : 'var(--theater-text-secondary)',
+                    border: 'none',
+                    borderRadius: 'var(--theater-radius-xs)',
+                    padding: '0.2rem 0.65rem',
+                    fontSize: '0.72rem',
+                    fontWeight: isSelected ? 600 : 450,
+                    cursor: 'pointer',
+                    transition: 'all var(--theater-transition-fast)',
+                    fontFamily: 'var(--theater-font-sans)',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
