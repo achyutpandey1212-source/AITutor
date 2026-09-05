@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../../theme/ThemeContext';
+import { Logo } from '../ui/Logo';
 import {
   IconExit,
   IconNotes,
@@ -97,18 +98,7 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
               cursor: 'default',
             }}
           >
-            <img
-              src="/logo/Lumo_Logo.png"
-              alt="Lumo"
-              style={{
-                height: '22px',
-                width: 'auto',
-                objectFit: 'contain',
-                filter: theme === 'dark' ? 'invert(1)' : 'none',
-                opacity: 0.95,
-                transition: 'filter var(--theater-transition-fast)',
-              }}
-            />
+            <Logo height={32} />
           </div>
 
           {/* Hairline subtle vertical divider */}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth';
 import { auth } from './config/firebase';
 import type { ApiResponse, User as AppUser } from '@ai-tutor/shared';
+import { Logo } from './components/ui/Logo';
 
 // Page Components — all existing pages preserved
 import { LandingPage } from './components/pages/LandingPage';
@@ -9,6 +10,7 @@ import { SignInPage } from './components/pages/SignInPage';
 import { SignUpPage } from './components/pages/SignUpPage';
 import { DashboardPage } from './components/pages/DashboardPage';
 import { TutorPage } from './components/pages/TutorPage';
+import { LearnPage } from './components/pages/LearnPage';
 import { PracticePage } from './components/pages/PracticePage';
 import { BookmarksPage } from './components/pages/BookmarksPage';
 import { MistakesPage } from './components/pages/MistakesPage';
@@ -26,7 +28,7 @@ import { Navbar } from './components/navigation/Navbar';
 // Pages where the Navbar should NOT appear
 // (e.g. Theater full-screen, auth pages with their own layout)
 // ---------------------------------------------------------------
-const NAV_HIDDEN_PATHS = new Set(['/signin', '/signup', '/tutor', '/avatar-lab']);
+const NAV_HIDDEN_PATHS = new Set(['/signin', '/signup', '/avatar-lab']);
 
 // ---------------------------------------------------------------
 // Lumo loading screen
@@ -43,13 +45,9 @@ const LoadingScreen: React.FC = () => (
       gap: '16px',
     }}
   >
-    <img
-      src="/logo/Lumo_Logo.png"
-      alt="Lumo"
+    <Logo
+      height={64}
       style={{
-        height: '48px',
-        width: '48px',
-        objectFit: 'contain',
         opacity: 0.25,
         animation: 'lumo-pulse 1.6s ease-in-out infinite',
       }}
@@ -193,17 +191,30 @@ export const App: React.FC = () => {
       case '/dashboard':
         return <DashboardPage user={syncedUser} idToken={idToken} onNavigate={navigate} onSignOut={handleSignOut} />;
 
-      case '/tutor':
+      case '/tutor': {
+        const sessionId = queryParams.get('sessionId');
+        if (sessionId) {
+          return (
+            <TutorPage
+              idToken={idToken}
+              onNavigate={navigate}
+              initialSessionId={sessionId}
+              initialTopic={queryParams.get('topic') || undefined}
+              initialSubject={queryParams.get('subject') || undefined}
+              initialDocumentId={queryParams.get('documentId') || undefined}
+            />
+          );
+        }
         return (
-          <TutorPage
+          <LearnPage
             idToken={idToken}
             onNavigate={navigate}
-            initialSessionId={queryParams.get('sessionId') || undefined}
             initialTopic={queryParams.get('topic') || undefined}
             initialSubject={queryParams.get('subject') || undefined}
             initialDocumentId={queryParams.get('documentId') || undefined}
           />
         );
+      }
 
       case '/practice':
         return <PracticePage idToken={idToken} onNavigate={navigate} initialQuestionId={queryParams.get('questionId') || undefined} />;
@@ -225,7 +236,6 @@ export const App: React.FC = () => {
         return (
           <LumoAIPage
             idToken={idToken}
-            onNavigate={navigate}
             initialTopic={queryParams.get('topic') || undefined}
             initialSubject={queryParams.get('subject') || undefined}
             initialConcept={queryParams.get('concept') || undefined}

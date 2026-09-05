@@ -198,23 +198,6 @@ export const PracticePage: React.FC<PracticePageProps> = ({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => onNavigate('/dashboard')}
-          style={{
-            padding: '5px 12px',
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-sm)',
-            color: 'var(--color-text-secondary)',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: 500,
-            transition: 'all var(--motion-fast) var(--ease-standard)',
-          }}
-        >
-          &larr; Dashboard
-        </button>
       </div>
 
       {/* Initial Question Loading / Error */}

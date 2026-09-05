@@ -15,7 +15,7 @@ interface LogoProps {
   style?: React.CSSProperties;
 }
 
-export const Logo: React.FC<LogoProps> = ({ height = 28, className, style }) => {
+export const Logo: React.FC<LogoProps> = ({ height = 40, className, style }) => {
   const { theme } = useTheme();
 
   return (
@@ -30,10 +30,10 @@ export const Logo: React.FC<LogoProps> = ({ height = 28, className, style }) => 
         objectFit: 'contain',
         display: 'block',
         flexShrink: 0,
-        // In dark mode: invert the pure-black logo to become white.
-        // This is safe because the Lumo logo is pure black on transparent.
-        filter: theme === 'dark' ? 'invert(1) brightness(10)' : 'none',
-        opacity: theme === 'dark' ? 0.95 : 1,
+        // Light mode: logo renders as-is (black on transparent).
+        // Dark mode: invert the pure-black logo so it becomes white.
+        filter: theme === 'dark' ? 'invert(1) brightness(2)' : 'none',
+        opacity: theme === 'dark' ? 1 : 1,
         transition: `filter var(--motion-standard) var(--ease-standard),
                      opacity var(--motion-standard) var(--ease-standard)`,
         ...style,
@@ -54,7 +54,7 @@ interface LogoWordmarkProps {
 }
 
 export const LogoWordmark: React.FC<LogoWordmarkProps> = ({
-  height = 28,
+  height = 40,
   className,
   style,
 }) => {

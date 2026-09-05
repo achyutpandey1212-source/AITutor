@@ -3,6 +3,7 @@ import type { WorkspaceMessage, WorkspaceContext, ModelTier } from './types';
 import { EmptyState } from './EmptyState';
 import { MessageBubble } from './MessageBubble';
 import { AIPresence } from '../ui/AIPresence';
+import { Logo } from '../ui/Logo';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { MODEL_TIER_OPTIONS } from './types';
 
@@ -103,11 +104,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                 marginTop: '2px',
               }}
             >
-              <img
-                src="/logo/Lumo_Logo.png"
-                alt="Lumo"
-                style={{ width: '18px', height: '18px', objectFit: 'contain' }}
-              />
+              <Logo height={22} />
             </div>
 
             <div style={{ flex: 1, minWidth: 0, maxWidth: '100%' }}>

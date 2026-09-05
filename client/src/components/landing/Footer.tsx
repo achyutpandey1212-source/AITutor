@@ -26,7 +26,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <LogoWordmark height={24} />
+          <LogoWordmark height={36} />
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)' }}>
             AI-native learning environment built for real understanding.
           </p>

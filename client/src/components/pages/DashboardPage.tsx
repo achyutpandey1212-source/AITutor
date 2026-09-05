@@ -8,11 +8,13 @@ import type {
 } from '@ai-tutor/shared';
 import { liveTutorApiClient } from '../../services/api.service';
 import { ContinueLearningCard } from '../dashboard/ContinueLearningCard';
-import { StartLearningModal } from '../dashboard/StartLearningModal';
+import { StartLearningForm } from '../learning/StartLearningForm';
+import { Modal } from '../ui/Modal';
 import { RecentDocumentsSection } from '../dashboard/RecentDocumentsSection';
 import { RecommendedLearningSection } from '../dashboard/RecommendedLearningSection';
 import { LearningMasterySection } from '../dashboard/LearningMasterySection';
 import { QuickActionsBar } from '../dashboard/QuickActionsBar';
+import { Footer } from '../landing/Footer';
 
 // ---------------------------------------------------------------
 // Lumo Dashboard / Learning Home (Phase 2A Editorial Edition)
@@ -50,9 +52,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   // Start Learning Modal State
   const [isStartModalOpen, setIsStartModalOpen] = useState(false);
-  const [modalTopic, setModalTopic] = useState('');
-  const [modalSubject, setModalSubject] = useState('Physics');
-  const [modalDocumentId, setModalDocumentId] = useState('none');
 
   // 1. Fetch teaching sessions
   const fetchSessions = useCallback(async () => {
@@ -137,10 +136,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   }, [documents, fetchDocuments]);
 
   // Action handlers
-  const handleOpenStartModal = (topic = '', subject = 'Physics', docId = 'none') => {
-    setModalTopic(topic);
-    setModalSubject(subject);
-    setModalDocumentId(docId);
+  const handleOpenStartModal = () => {
     setIsStartModalOpen(true);
   };
 
@@ -197,13 +193,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         minHeight: 'calc(100vh - 64px)',
         background: 'var(--color-background)',
         paddingTop: 'var(--space-12)',
-        paddingBottom: 'var(--space-24)',
+        display: 'flex',
+        flexDirection: 'column',
         position: 'relative',
         overflow: 'hidden',
       }}
       className="lumo-radial-substrate"
     >
-      <div className="lumo-container" style={{ maxWidth: '1040px' }}>
+      <div className="lumo-container" style={{ maxWidth: '1040px', paddingBlockEnd: 'var(--space-24)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
           {/* ========================================================= */}
           {/* 1. EDITORIAL LEARNING HOME HERO                            */}
@@ -470,17 +467,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       {/* ========================================================= */}
       {/* START LEARNING MODAL                                      */}
       {/* ========================================================= */}
-      <StartLearningModal
+      <Modal
         isOpen={isStartModalOpen}
         onClose={() => setIsStartModalOpen(false)}
-        idToken={idToken}
-        existingDocuments={documents}
-        onDocumentUploaded={fetchDocuments}
-        onSessionStarted={handleSessionStarted}
-        initialTopic={modalTopic}
-        initialSubject={modalSubject}
-        initialDocumentId={modalDocumentId}
-      />
+        maxWidth="680px"
+      >
+        <StartLearningForm
+          idToken={idToken}
+          onSessionStarted={(session) => {
+            setIsStartModalOpen(false);
+            onNavigate(`/tutor?sessionId=${session.id}`);
+          }}
+        />
+      </Modal>
+
+      {/* ========================================================= */}
+      {/* FOOTER                                                    */}
+      {/* ========================================================= */}
+      <div style={{ marginTop: 'auto' }}>
+        <Footer onNavigate={onNavigate} />
+      </div>
     </div>
   );
 };

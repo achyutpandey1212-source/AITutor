@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { WorkspaceMessage } from './types';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { MODEL_TIER_OPTIONS } from './types';
+import { Logo } from '../ui/Logo';
 
 interface MessageBubbleProps {
   message: WorkspaceMessage;
@@ -83,11 +84,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           boxShadow: 'var(--shadow-xs)',
         }}
       >
-        <img
-          src="/logo/Lumo_Logo.png"
-          alt="Lumo"
-          style={{ width: '16px', height: '16px', objectFit: 'contain' }}
-        />
+        <Logo height={20} style={{ borderRadius: 'var(--radius-sm)' }} />
       </div>
 
       {/* Content Container */}

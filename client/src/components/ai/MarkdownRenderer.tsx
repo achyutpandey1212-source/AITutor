@@ -231,52 +231,75 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     // Headings: #, ##, ###
     if (line.startsWith('# ')) {
       blocks.push(
-        <h2
+        <h1
           key={`h1-${i}`}
           style={{
-            fontSize: 'var(--text-h3)',
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            margin: '16px 0 8px 0',
+            fontSize: 'var(--text-h1, 32px)',
+            fontWeight: 800,
+            letterSpacing: '-0.025em',
+            lineHeight: 1.2,
+            margin: '24px 0 12px 0',
             color: 'var(--color-text-primary)',
           }}
         >
           {renderInlineText(line.slice(2))}
-        </h2>
+        </h1>
       );
       i++;
       continue;
     }
     if (line.startsWith('## ')) {
       blocks.push(
-        <h3
+        <h2
           key={`h2-${i}`}
           style={{
-            fontSize: 'var(--text-body)',
+            fontSize: 'var(--text-h3, 22px)',
             fontWeight: 700,
-            letterSpacing: '-0.01em',
-            margin: '14px 0 6px 0',
+            letterSpacing: '-0.018em',
+            lineHeight: 1.25,
+            margin: '20px 0 10px 0',
             color: 'var(--color-text-primary)',
           }}
         >
           {renderInlineText(line.slice(3))}
-        </h3>
+        </h2>
       );
       i++;
       continue;
     }
     if (line.startsWith('### ')) {
       blocks.push(
-        <h4
+        <h3
           key={`h3-${i}`}
           style={{
-            fontSize: 'var(--text-body-sm)',
+            fontSize: 'var(--text-h4, 18px)',
             fontWeight: 700,
-            margin: '12px 0 4px 0',
+            letterSpacing: '-0.01em',
+            lineHeight: 1.3,
+            margin: '16px 0 8px 0',
             color: 'var(--color-text-primary)',
           }}
         >
           {renderInlineText(line.slice(4))}
+        </h3>
+      );
+      i++;
+      continue;
+    }
+    if (line.startsWith('#### ')) {
+      blocks.push(
+        <h4
+          key={`h4-${i}`}
+          style={{
+            fontSize: 'var(--text-body-lg, 16px)',
+            fontWeight: 600,
+            letterSpacing: '-0.005em',
+            lineHeight: 1.35,
+            margin: '14px 0 6px 0',
+            color: 'var(--color-text-primary)',
+          }}
+        >
+          {renderInlineText(line.slice(5))}
         </h4>
       );
       i++;
@@ -295,13 +318,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         <blockquote
           key={`quote-${i}`}
           style={{
-            margin: '12px 0',
-            padding: '8px 16px',
+            margin: '14px 0',
+            padding: '10px 16px',
             borderLeft: '3px solid var(--color-orange)',
             background: 'var(--color-surface-hover)',
             borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
             color: 'var(--color-text-secondary)',
             fontStyle: 'italic',
+            lineHeight: 1.6,
           }}
         >
           {quoteLines.map((ql, qidx) => (
@@ -329,13 +353,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         <ul
           key={`ul-${i}`}
           style={{
-            margin: '8px 0 12px 0',
+            margin: '10px 0 14px 0',
             paddingLeft: '22px',
             color: 'var(--color-text-primary)',
+            lineHeight: 1.65,
           }}
         >
           {listItems.map((item, lidx) => (
-            <li key={lidx} style={{ margin: '4px 0', lineHeight: 1.6 }}>
+            <li key={lidx} style={{ margin: '6px 0', lineHeight: 1.65 }}>
               {renderInlineText(item)}
             </li>
           ))}
@@ -356,13 +381,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         <ol
           key={`ol-${i}`}
           style={{
-            margin: '8px 0 12px 0',
+            margin: '10px 0 14px 0',
             paddingLeft: '22px',
             color: 'var(--color-text-primary)',
+            lineHeight: 1.65,
           }}
         >
           {listItems.map((item, lidx) => (
-            <li key={lidx} style={{ margin: '4px 0', lineHeight: 1.6 }}>
+            <li key={lidx} style={{ margin: '6px 0', lineHeight: 1.65 }}>
               {renderInlineText(item)}
             </li>
           ))}
@@ -401,7 +427,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         !lines[i].trim().startsWith('- ') &&
         !lines[i].trim().startsWith('* ') &&
         !/^\d+\.\s/.test(lines[i].trim()) &&
-        lines[i].trim() !== '---'
+        lines[i].trim() !== '---' &&
+        lines[i].trim() !== '***'
       ) {
         paragraphLines.push(lines[i]);
         i++;
@@ -410,8 +437,9 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         <p
           key={`p-${i}`}
           style={{
-            margin: '8px 0',
-            lineHeight: 1.65,
+            margin: '10px 0',
+            lineHeight: 1.7,
+            fontSize: 'var(--text-body-sm, 14.5px)',
             color: 'var(--color-text-primary)',
           }}
         >
@@ -428,7 +456,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     <div
       className={className}
       style={{
-        fontSize: 'var(--text-body)',
+        fontSize: 'var(--text-body-sm, 14.5px)',
         color: 'var(--color-text-primary)',
         ...style,
       }}

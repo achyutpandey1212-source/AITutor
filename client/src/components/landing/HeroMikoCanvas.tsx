@@ -42,17 +42,19 @@ export const HeroMikoCanvas: React.FC<HeroMikoCanvasProps> = ({ className, style
   const targetRotationYRef = useRef(0);
 
   // Camera zoom bounds and state
-  const minCamDistance = 0.95; // Close-up portrait
-  const maxCamDistance = 2.60; // Wide view
-  const defaultCamDistance = 2.60;
+  // Fully fits Miku head-to-toe inside container at default, with portrait zoom-in capability
+  const minCamDistance = 1.30; // Portrait close-up
+  const maxCamDistance = 3.60; // Wide full-body view
+  const defaultCamDistance = 3.20; // Default: perfectly frames full body with margins
   const currentCamDistanceRef = useRef(defaultCamDistance);
   const targetCamDistanceRef = useRef(defaultCamDistance);
 
   // Camera vertical offset refs for dynamic adjustment
-  const cameraYRef = useRef(0.95);
-  const lookAtYRef = useRef(0.88);
-  const targetCameraYRef = useRef(0.95);
-  const targetLookAtYRef = useRef(0.88);
+  // Default centers around mid-body (y ~ 0.76) so head and feet both have breathing room
+  const cameraYRef = useRef(0.78);
+  const lookAtYRef = useRef(0.74);
+  const targetCameraYRef = useRef(0.78);
+  const targetLookAtYRef = useRef(0.74);
 
   // Idle animation timings
   const blinkTimerRef = useRef(2.5);
@@ -72,7 +74,7 @@ export const HeroMikoCanvas: React.FC<HeroMikoCanvasProps> = ({ className, style
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    // 2. Camera: target center around upper torso/hest (y = 0.95)
+    // 2. Camera: target center around mid-body so head and feet are completely visible
     const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 20);
     camera.position.set(0, cameraYRef.current, defaultCamDistance);
     camera.lookAt(0, lookAtYRef.current, 0);
@@ -278,8 +280,37 @@ export const HeroMikoCanvas: React.FC<HeroMikoCanvasProps> = ({ className, style
 
     animate();
 
+    // 8. Native Wheel Listener for reliable non-passive scroll capture
+    // By attaching with { passive: false }, e.preventDefault() blocks the whole page from scrolling
+    const handleNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const zoomSpeed = 0.0022;
+      const newDistance = targetCamDistanceRef.current + e.deltaY * zoomSpeed;
+      targetCamDistanceRef.current = THREE.MathUtils.clamp(
+        newDistance,
+        minCamDistance,
+        maxCamDistance
+      );
+
+      // Dynamically adjust camera vertical framing based on zoom level
+      // When zoomed in (portrait), focus higher up on head/bust (y ~ 1.05 to 1.15)
+      // When zoomed out (full body), focus at mid-body (y ~ 0.74 to 0.78)
+      const t = (targetCamDistanceRef.current - minCamDistance) / (maxCamDistance - minCamDistance);
+      const wideCameraY = 0.78;
+      const narrowCameraY = 1.15;
+      const wideLookAtY = 0.74;
+      const narrowLookAtY = 1.08;
+      targetCameraYRef.current = narrowCameraY + t * (wideCameraY - narrowCameraY);
+      targetLookAtYRef.current = narrowLookAtY + t * (wideLookAtY - narrowLookAtY);
+    };
+
+    container.addEventListener('wheel', handleNativeWheel, { passive: false });
+
     return () => {
       isMounted = false;
+      container.removeEventListener('wheel', handleNativeWheel);
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
       resizeObserver.disconnect();
       renderer.dispose();
@@ -319,34 +350,9 @@ export const HeroMikoCanvas: React.FC<HeroMikoCanvasProps> = ({ className, style
     }
   };
 
-  // -------------------------------------------------------------
-  // Scroll Wheel Zoom: Clamped between portrait and full-body
-  // -------------------------------------------------------------
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const zoomSpeed = 0.0018;
-    const newDistance = targetCamDistanceRef.current + e.deltaY * zoomSpeed;
-    targetCamDistanceRef.current = THREE.MathUtils.clamp(
-      newDistance,
-      minCamDistance,
-      maxCamDistance
-    );
-
-    // Dynamically adjust camera vertical framing based on zoom
-    const t = (targetCamDistanceRef.current - minCamDistance) / (maxCamDistance - minCamDistance);
-    const wideCameraY = 1.05;
-    const narrowCameraY = 0.95;
-    const wideLookAtY = 1.0;
-    const narrowLookAtY = 0.88;
-    targetCameraYRef.current = narrowCameraY + t * (wideCameraY - narrowCameraY);
-    targetLookAtYRef.current = narrowLookAtY + t * (wideLookAtY - narrowLookAtY);
-  }, []);
-
   return (
     <div
       ref={containerRef}
-      onWheel={handleWheel}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUpOrLeave}
@@ -364,6 +370,7 @@ export const HeroMikoCanvas: React.FC<HeroMikoCanvasProps> = ({ className, style
         cursor: isInteracting ? 'grabbing' : 'grab',
         userSelect: 'none',
         touchAction: 'none',
+        overscrollBehavior: 'none',
         ...style,
       }}
       aria-label="3D Interactive Miko Avatar: Drag to rotate horizontally, scroll to zoom"
@@ -386,11 +393,11 @@ export const HeroMikoCanvas: React.FC<HeroMikoCanvasProps> = ({ className, style
         className="lumo-miko-glow-outer"
         style={{
           position: 'absolute',
-          bottom: '-40px',
+          bottom: '8px',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '600px',
-          height: '200px',
+          width: '560px',
+          height: '180px',
           borderRadius: '50%',
           background: 'radial-gradient(ellipse at center, var(--color-purple-soft) 0%, transparent 65%)',
           filter: 'blur(40px)',
@@ -405,11 +412,11 @@ export const HeroMikoCanvas: React.FC<HeroMikoCanvasProps> = ({ className, style
         className="lumo-miko-glow-medium"
         style={{
           position: 'absolute',
-          bottom: '0px',
+          bottom: '36px',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '440px',
-          height: '120px',
+          width: '420px',
+          height: '100px',
           borderRadius: '50%',
           background: 'radial-gradient(ellipse at center, rgba(168, 85, 247, 0.28) 0%, rgba(168, 85, 247, 0.08) 50%, transparent 72%)',
           filter: 'blur(20px)',
@@ -419,16 +426,16 @@ export const HeroMikoCanvas: React.FC<HeroMikoCanvasProps> = ({ className, style
         aria-hidden="true"
       />
 
-      {/* Layer 3: Tight bright core ring */}
+      {/* Layer 3: Tight bright core ring underneath Miku's feet */}
       <div
         className="lumo-miko-glow-core"
         style={{
           position: 'absolute',
-          bottom: '24px',
+          bottom: '56px',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '280px',
-          height: '40px',
+          width: '260px',
+          height: '36px',
           borderRadius: '50%',
           border: '1.5px solid rgba(168, 85, 247, 0.55)',
           background: 'radial-gradient(ellipse at center, rgba(168, 85, 247, 0.35) 0%, rgba(168, 85, 247, 0.05) 60%, transparent 80%)',
@@ -444,7 +451,7 @@ export const HeroMikoCanvas: React.FC<HeroMikoCanvasProps> = ({ className, style
         className="lumo-miko-glow-beam"
         style={{
           position: 'absolute',
-          bottom: '0px',
+          bottom: '40px',
           left: '50%',
           transform: 'translateX(-50%)',
           width: '320px',
@@ -462,7 +469,7 @@ export const HeroMikoCanvas: React.FC<HeroMikoCanvasProps> = ({ className, style
       <div
         style={{
           position: 'absolute',
-          bottom: '8px',
+          bottom: '12px',
           left: '50%',
           transform: 'translateX(-50%)',
           fontSize: '11px',

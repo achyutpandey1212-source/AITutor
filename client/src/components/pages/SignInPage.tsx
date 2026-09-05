@@ -209,7 +209,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onNavigate, onSuccess })
             }}
             aria-label="Return to Lumo home"
           >
-            <LogoWordmark height={26} />
+            <LogoWordmark height={38} />
           </button>
 
           <button

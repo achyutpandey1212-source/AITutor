@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogoWordmark } from '../ui/Logo';
+import { Logo } from '../ui/Logo';
 import { Button } from '../ui/Button';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -121,10 +121,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const landingLinks = [
     { href: '/#product',        label: 'Product' },
     { href: '/#how',            label: 'How it works' },
-    { href: '/#for-students',   label: 'For students' },
-    { href: '/#institutions',   label: 'For institutions' },
-    { href: '/#resources',      label: 'Resources' },
-    { href: '/#pricing',        label: 'Pricing' },
   ];
 
   const appLinks = [
@@ -132,7 +128,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     { href: '/tutor',      label: 'Learn' },
     { href: '/practice',   label: 'Practice' },
     { href: '/ai',         label: 'Lumo AI' },
-    { href: '/documents',  label: 'Documents' },
   ];
 
   const links = isAuthenticated ? appLinks : landingLinks;
@@ -216,7 +211,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}
             aria-label="Go to Lumo home"
           >
-            <LogoWordmark height={24} />
+            <Logo height={44} />
           </button>
 
           {/* Center links — hidden on mobile via inline style, shown via class override */}
@@ -350,7 +345,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         className="lumo-mobile-drawer"
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)' }}>
-          <LogoWordmark height={24} />
+          <Logo height={44} />
           <button onClick={() => setMobileOpen(false)} style={mobileMenuBtnStyle} aria-label="Close menu">
             <CloseIcon />
           </button>

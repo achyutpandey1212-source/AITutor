@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import type { Document as KnowledgeDoc, TeachingSession, AssessmentSubmission } from '@ai-tutor/shared';
+import type { Document as KnowledgeDoc, AssessmentSubmission } from '@ai-tutor/shared';
 import { useLiveTutor, mapVoiceToAvatarState } from '../../hooks/useLiveTutor';
 import { liveTutorApiClient } from '../../services/api.service';
 import { TheaterHeader, type ActiveSurface } from './TheaterHeader';
@@ -9,7 +9,6 @@ import { MilestonesDrawer } from './TheaterDrawers/MilestonesDrawer';
 import { TranscriptDrawer } from './TheaterDrawers/TranscriptDrawer';
 import { TheaterSettingsSheet } from './TheaterDrawers/TheaterSettingsSheet';
 import { LumoDoubtSolver } from './LumoDoubtSolver/LumoDoubtSolver';
-import { LaunchpadModal } from './Modals/LaunchpadModal';
 import { SessionSummaryStage } from './Modals/SessionSummaryStage';
 import type { ConceptStep } from './TheaterProgress/LessonProgress';
 import { IconPause, IconPlay } from './TheaterIcons';
@@ -42,14 +41,13 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
   initialDocumentId,
 }) => {
   // Session parameters
-  const [topicInput, setTopicInput] = useState<string>(initialTopic || '');
-  const [selectedSubject, setSelectedSubject] = useState<string>(initialSubject || 'General');
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string>(initialDocumentId || 'none');
+  const [topicInput, _setTopicInput] = useState<string>(initialTopic || '');
+  const [selectedSubject, _setSelectedSubject] = useState<string>(initialSubject || 'General');
+  const [selectedDocumentId, _setSelectedDocumentId] = useState<string>(initialDocumentId || 'none');
   const [selectedLanguage, setSelectedLanguage] = useState<'english' | 'hindi' | 'hinglish'>('english');
 
   // Documents & Past Sessions
   const [userDocs, setUserDocs] = useState<KnowledgeDoc[]>([]);
-  const [pastSessions, setPastSessions] = useState<TeachingSession[]>([]);
 
   // Surface & Modal States (single active surface for mutual exclusivity)
   const [activeSurface, setActiveSurface] = useState<ActiveSurface>('none');
@@ -82,15 +80,6 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
     };
   }, [idToken]);
 
-  // Load Past Sessions
-  useEffect(() => {
-    if (!idToken) return;
-    liveTutorApiClient
-      .listTeachingSessions(idToken)
-      .then((sessions) => setPastSessions(sessions))
-      .catch((err) => console.warn('[LiveTheater] Could not load sessions:', err));
-  }, [idToken]);
-
   const selectedDocObj = userDocs.find((d) => d.id === selectedDocumentId);
 
   // Core Live Tutor Hook Integration
@@ -107,7 +96,6 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
     interimTranscript,
     micEnabled,
     toggleMic,
-    startSession,
     resumeSession,
     pauseSession,
     endSession,
@@ -139,28 +127,6 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
       resumeSession(initialSessionId);
     }
   }, [initialSessionId, idToken, tutorState, session, resumeSession]);
-
-  // Start Session Handler
-  const handleStartSession = async (
-    topic: string,
-    subject: string,
-    language: 'english' | 'hindi' | 'hinglish',
-    documentId?: string,
-    documentTitle?: string
-  ) => {
-    setIsPaused(false);
-    setTopicInput(topic);
-    setSelectedSubject(subject);
-    setSelectedLanguage(language);
-    if (documentId) setSelectedDocumentId(documentId);
-    await startSession(topic, language, subject, documentId, documentTitle);
-  };
-
-  // Resume Session Handler
-  const handleResumeSession = async (sessionId: string) => {
-    setIsPaused(false);
-    await resumeSession(sessionId);
-  };
 
   // Pause Session Handler
   const handlePauseSession = async () => {
@@ -355,20 +321,6 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
         transition: 'background-color var(--theater-transition-normal), color var(--theater-transition-normal)',
       }}
     >
-      {/* 1. Pre-Session Launchpad Modal (when IDLE and not paused) */}
-      {!isSessionActive && (
-        <LaunchpadModal
-          initialTopic={topicInput}
-          initialSubject={selectedSubject}
-          initialDocumentId={selectedDocumentId}
-          userDocs={userDocs}
-          pastSessions={pastSessions}
-          onStartSession={handleStartSession}
-          onResumeSession={handleResumeSession}
-          isLoading={isLoading}
-        />
-      )}
-
       {/* 2. Top Header Utility Bar */}
       <TheaterHeader
         subject={activeSubject}

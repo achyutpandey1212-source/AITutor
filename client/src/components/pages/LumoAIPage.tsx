@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { WorkspaceMessage, WorkspaceContext, ModelTier } from '../ai/types';
-import { ModelSelector } from '../ai/ModelSelector';
 import { ContextChip } from '../ai/ContextChip';
 import { ContextModal } from '../ai/ContextModal';
 import { MessageList } from '../ai/MessageList';
@@ -10,7 +9,6 @@ import { Button } from '../ui/Button';
 
 export interface LumoAIPageProps {
   idToken: string;
-  onNavigate: (path: string) => void;
   initialTopic?: string;
   initialSubject?: string;
   initialConcept?: string;
@@ -22,14 +20,13 @@ export interface LumoAIPageProps {
 
 export const LumoAIPage: React.FC<LumoAIPageProps> = ({
   idToken,
-  onNavigate,
   initialTopic,
   initialSubject,
   initialConcept,
   initialDocumentId,
   initialDocumentTitle,
   initialPrompt,
-  from,
+  from: _from,
 }) => {
   const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
   const [modelTier, setModelTier] = useState<ModelTier>('light');
@@ -48,6 +45,8 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
 
   // Abort controller reference for cancelling generation
   const abortControllerRef = useRef<AbortController | null>(null);
+  const streamedContentRef = useRef('');
+  const rafRef = useRef<number | null>(null);
 
   // Fetch document title if documentId is provided without title
   useEffect(() => {
@@ -88,6 +87,11 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
           : 'Formulating explanation…'
       );
       setCurrentStreamText('');
+      streamedContentRef.current = '';
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
 
       try {
         const history = messages.slice(-6).map((m) => ({
@@ -95,7 +99,6 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
           content: m.content,
         }));
 
-        let streamedContent = '';
         let finalSuggestions: string[] = [];
         let finalModelName = '';
 
@@ -114,8 +117,12 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
             },
           },
           (chunk) => {
-            streamedContent += chunk;
-            setCurrentStreamText(streamedContent);
+            streamedContentRef.current += chunk;
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+            rafRef.current = requestAnimationFrame(() => {
+              setCurrentStreamText(streamedContentRef.current);
+              rafRef.current = null;
+            });
           },
           (meta) => {
             if (meta.suggestions) finalSuggestions = meta.suggestions;
@@ -132,7 +139,7 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
         const assistantMsg: WorkspaceMessage = {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
-          content: result.fullText || streamedContent,
+          content: result.fullText || streamedContentRef.current,
           createdAt: Date.now(),
           modelTier,
           modelName: finalModelName,
@@ -153,9 +160,14 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
         };
         setMessages((prev) => [...prev, errorMsg]);
       } finally {
+        if (rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
         setIsGenerating(false);
         setCurrentStreamText('');
         setGenerationStatus('');
+        streamedContentRef.current = '';
       }
     },
     [idToken, isGenerating, messages, modelTier, context]
@@ -164,6 +176,10 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
   const handleCancelGeneration = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+    }
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
     if (currentStreamText) {
       const partialMsg: WorkspaceMessage = {
@@ -178,6 +194,7 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
     setIsGenerating(false);
     setCurrentStreamText('');
     setGenerationStatus('');
+    streamedContentRef.current = '';
   };
 
   const handleClearChat = () => {
@@ -195,9 +212,6 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
     }
   }, [initialPrompt, handleSendMessage, messages.length, isGenerating]);
 
-  const backDestination = from === 'theater' ? '/tutor' : from === 'practice' ? '/practice' : '/dashboard';
-  const backLabel = from === 'theater' ? '← Back to Theater' : from === 'practice' ? '← Back to Practice' : '← Home';
-
   return (
     <div
       style={{
@@ -208,101 +222,6 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
         overflow: 'hidden',
       }}
     >
-      {/* Workspace Sub-Header / Control Strip */}
-      <header
-        style={{
-          height: '46px',
-          borderBottom: '1px solid var(--color-border)',
-          background: 'var(--color-surface)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 var(--space-6)',
-          gap: 'var(--space-4)',
-          flexShrink: 0,
-          zIndex: 10,
-        }}
-      >
-        {/* Left: Back Link & Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            type="button"
-            onClick={() => onNavigate(backDestination)}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              fontSize: '12px',
-              fontWeight: 600,
-              color: 'var(--color-text-secondary)',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              transition: 'color var(--motion-fast) var(--ease-standard)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-orange)')}
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = 'var(--color-text-secondary)')
-            }
-          >
-            {backLabel}
-          </button>
-
-          <div
-            style={{
-              height: '14px',
-              width: '1px',
-              background: 'var(--color-border)',
-            }}
-          />
-
-          <span
-            style={{
-              fontSize: '13px',
-              fontWeight: 700,
-              letterSpacing: '-0.01em',
-              color: 'var(--color-text-primary)',
-            }}
-          >
-            Lumo AI
-          </span>
-
-          {/* Context Chip */}
-          <ContextChip
-            context={context}
-            onChangeContext={() => setIsContextModalOpen(true)}
-            onClearContext={() => setContext({})}
-          />
-        </div>
-
-        {/* Right: Model Selector & Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <ModelSelector
-            selectedTier={modelTier}
-            onSelectTier={(t) => setModelTier(t)}
-            disabled={isGenerating}
-          />
-
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearChat}
-              disabled={isGenerating}
-              style={{
-                fontSize: '12px',
-                color: 'var(--color-text-muted)',
-                padding: '4px 8px',
-              }}
-              title="Start a new conversation"
-            >
-              New chat
-            </Button>
-          )}
-        </div>
-      </header>
-
       {/* Main Conversation Feed */}
       <MessageList
         messages={messages}
@@ -316,21 +235,60 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
         onSelectSuggestion={(s) => handleSendMessage(s)}
       />
 
-      {/* Composer Fixed at Bottom */}
-      <Composer
-        onSendMessage={handleSendMessage}
-        onOpenContextModal={() => setIsContextModalOpen(true)}
-        isGenerating={isGenerating}
-        onCancelGeneration={handleCancelGeneration}
-        context={context}
-        placeholder={
-          context.topic
-            ? `Ask about ${context.concept || context.topic}…`
-            : context.documentTitle
-            ? `Ask questions about ${context.documentTitle}…`
-            : 'Ask Lumo anything…'
-        }
-      />
+      {/* Composer area — includes New Chat + Context row above input when there are messages */}
+      <div style={{ flexShrink: 0 }}>
+        {messages.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px var(--space-4) 0 var(--space-4)',
+              maxWidth: '800px',
+              width: '100%',
+              margin: '0 auto',
+            }}
+          >
+            <ContextChip
+              context={context}
+              onChangeContext={() => setIsContextModalOpen(true)}
+              onClearContext={() => setContext({})}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearChat}
+              disabled={isGenerating}
+              style={{
+                fontSize: '12px',
+                color: 'var(--color-text-muted)',
+                height: '28px',
+                padding: '0 10px',
+              }}
+              title="Start a new conversation"
+            >
+              New chat
+            </Button>
+          </div>
+        )}
+
+        <Composer
+          onSendMessage={handleSendMessage}
+          onOpenContextModal={() => setIsContextModalOpen(true)}
+          isGenerating={isGenerating}
+          onCancelGeneration={handleCancelGeneration}
+          context={context}
+          modelTier={modelTier}
+          onSelectTier={(t) => setModelTier(t)}
+          placeholder={
+            context.topic
+              ? `Ask about ${context.concept || context.topic}…`
+              : context.documentTitle
+              ? `Ask questions about ${context.documentTitle}…`
+              : 'Ask Lumo anything…'
+          }
+        />
+      </div>
 
       {/* Context Attachment Modal */}
       <ContextModal
