@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   AvatarAssetConfig,
   AvatarCapabilities,
@@ -85,6 +85,8 @@ export const AvatarLabPage: React.FC<AvatarLabPageProps> = ({ onNavigate }) => {
 
   // Speech Testing State
   const [isSpeakingAudio, setIsSpeakingAudio] = useState<boolean>(false);
+  const [isPerformanceActive, setIsPerformanceActive] = useState<boolean>(false);
+  const performanceTimeoutRef = useRef<any>(null);
 
   // Hard Runtime Diagnostic States (Steps 1 - 7)
   const [freezeVrmUpdate, setFreezeVrmUpdate] = useState<boolean>(false);
@@ -116,11 +118,19 @@ export const AvatarLabPage: React.FC<AvatarLabPageProps> = ({ onNavigate }) => {
   // Stop TTS when leaving page or switching avatar
   useEffect(() => {
     return () => {
+      if (performanceTimeoutRef.current) {
+        clearTimeout(performanceTimeoutRef.current);
+      }
       textToSpeechService.cancel();
     };
   }, []);
 
   const handleAvatarChange = (id: AvatarId) => {
+    if (performanceTimeoutRef.current) {
+      clearTimeout(performanceTimeoutRef.current);
+      performanceTimeoutRef.current = null;
+    }
+    setIsPerformanceActive(false);
     textToSpeechService.cancel();
     setIsSpeakingAudio(false);
     setSelectedAvatarId(id);
@@ -141,12 +151,22 @@ export const AvatarLabPage: React.FC<AvatarLabPageProps> = ({ onNavigate }) => {
     setRawLockTarget(null);
     engine?.setManualOverride(false);
     if (state === 'INTERRUPTED') {
+      if (performanceTimeoutRef.current) {
+        clearTimeout(performanceTimeoutRef.current);
+        performanceTimeoutRef.current = null;
+      }
+      setIsPerformanceActive(false);
       textToSpeechService.cancel();
       setIsSpeakingAudio(false);
       engine?.stopSpeaking(true);
     } else if (state === 'SPEAKING') {
       engine?.startSpeaking();
     } else {
+      if (performanceTimeoutRef.current) {
+        clearTimeout(performanceTimeoutRef.current);
+        performanceTimeoutRef.current = null;
+      }
+      setIsPerformanceActive(false);
       if (isSpeakingAudio) {
         textToSpeechService.cancel();
         setIsSpeakingAudio(false);
@@ -155,6 +175,7 @@ export const AvatarLabPage: React.FC<AvatarLabPageProps> = ({ onNavigate }) => {
     }
     setLabState(state);
   };
+
 
   const handleResetAll = () => {
     setIsManualOverrideActive(true);
@@ -213,6 +234,11 @@ export const AvatarLabPage: React.FC<AvatarLabPageProps> = ({ onNavigate }) => {
 
   const handleTestSpeech = () => {
     if (isSpeakingAudio) {
+      if (performanceTimeoutRef.current) {
+        clearTimeout(performanceTimeoutRef.current);
+        performanceTimeoutRef.current = null;
+      }
+      setIsPerformanceActive(false);
       textToSpeechService.cancel();
       setIsSpeakingAudio(false);
       setLabState('INTERRUPTED');
@@ -220,6 +246,11 @@ export const AvatarLabPage: React.FC<AvatarLabPageProps> = ({ onNavigate }) => {
       return;
     }
 
+    if (performanceTimeoutRef.current) {
+      clearTimeout(performanceTimeoutRef.current);
+      performanceTimeoutRef.current = null;
+    }
+    setIsPerformanceActive(false);
     setIsManualOverrideActive(false);
     setLabState('SPEAKING');
     setIsSpeakingAudio(true);
@@ -249,6 +280,73 @@ export const AvatarLabPage: React.FC<AvatarLabPageProps> = ({ onNavigate }) => {
       }
     );
   };
+
+  /**
+   * Dedicated 20-25 second Choreographed Speaking Performance Simulation.
+   * Plays the complete teaching choreography continuously with lip-sync and voice.
+   */
+  const handlePlaySpeakingPerformance = () => {
+    if (isPerformanceActive || (isSpeakingAudio && labState === 'SPEAKING')) {
+      // Immediate cancellation
+      if (performanceTimeoutRef.current) {
+        clearTimeout(performanceTimeoutRef.current);
+        performanceTimeoutRef.current = null;
+      }
+      textToSpeechService.cancel();
+      setIsSpeakingAudio(false);
+      setIsPerformanceActive(false);
+      setLabState('INTERRUPTED');
+      engine?.stopSpeaking(true);
+      return;
+    }
+
+    setIsManualOverrideActive(false);
+    setLabState('SPEAKING');
+    setIsSpeakingAudio(true);
+    setIsPerformanceActive(true);
+    engine?.startSpeaking();
+
+    const performanceScript =
+      "Welcome back! Today we are exploring the fundamental principles of quantum mechanics. Notice how wave-particle duality transforms our understanding of energy states. When an electron transitions between discrete orbital levels, it emits or absorbs a single quantum of light. Keep this framework in mind as we analyze the experiment.";
+
+    if (performanceTimeoutRef.current) {
+      clearTimeout(performanceTimeoutRef.current);
+    }
+    performanceTimeoutRef.current = setTimeout(() => {
+      setIsSpeakingAudio(false);
+      setIsPerformanceActive(false);
+      setLabState('READY');
+      engine?.stopSpeaking(false);
+      performanceTimeoutRef.current = null;
+    }, 24000);
+
+    textToSpeechService.speak(
+      performanceScript,
+      'english',
+      {
+        onStart: () => {
+          setIsSpeakingAudio(true);
+          setIsPerformanceActive(true);
+          setLabState('SPEAKING');
+          engine?.startSpeaking();
+        },
+        onEnd: () => {
+          setIsSpeakingAudio(false);
+          setIsPerformanceActive(false);
+          setLabState('READY');
+          engine?.stopSpeaking(false);
+          if (performanceTimeoutRef.current) {
+            clearTimeout(performanceTimeoutRef.current);
+            performanceTimeoutRef.current = null;
+          }
+        },
+        onError: () => {
+          // If browser speech synthesis fails or is muted, visual choreography continues via the backup timer
+        },
+      }
+    );
+  };
+
 
   const formatFileSize = (bytes: number) => {
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
@@ -874,6 +972,186 @@ export const AvatarLabPage: React.FC<AvatarLabPageProps> = ({ onNavigate }) => {
                       </span>
                     </div>
                   </div>
+
+                  {/* Teacher Performance: Choreographed Speaking & Teaching Poses */}
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '8px',
+                      padding: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    {/* PRIMARY ACCEPTANCE ACTION: PLAY SPEAKING PERFORMANCE */}
+                    <div>
+                      <button
+                        onClick={handlePlaySpeakingPerformance}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          background: isPerformanceActive
+                            ? '#E5534B'
+                            : 'linear-gradient(135deg, rgba(85, 201, 138, 0.25) 0%, rgba(85, 201, 138, 0.10) 100%)',
+                          color: isPerformanceActive ? '#FFFFFF' : '#55C98A',
+                          border: isPerformanceActive ? '1px solid #FF7B72' : '1px solid rgba(85, 201, 138, 0.4)',
+                          borderRadius: '7px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          fontFamily: 'var(--theater-font-mono, monospace)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          transition: 'all 120ms ease',
+                          boxShadow: isPerformanceActive ? '0 0 16px rgba(229, 83, 75, 0.4)' : 'none',
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: isPerformanceActive ? '#FFFFFF' : '#55C98A',
+                          }}
+                        />
+                        {isPerformanceActive
+                          ? '[ ⏹ STOP PERFORMANCE ]'
+                          : '[ ▶ PLAY SPEAKING PERFORMANCE (~25s) ]'}
+                      </button>
+                      <div
+                        style={{
+                          fontFamily: 'var(--theater-font-mono, monospace)',
+                          fontSize: '9px',
+                          color: '#89909D',
+                          marginTop: '4px',
+                          textAlign: 'center',
+                        }}
+                      >
+                        Choreographed Director loop: Rest → Explain → Settle → Emphasize
+                      </div>
+                    </div>
+
+                    {/* BODY TEST */}
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: 'var(--theater-font-mono, monospace)',
+                          fontSize: '10px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          color: '#89909D',
+                          marginBottom: '6px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span>BODY TEST</span>
+                        <span style={{ color: '#55C98A', fontSize: '9px' }}>State: {labState}</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px' }}>
+                        {(['READY', 'LISTENING', 'THINKING', 'SPEAKING', 'INTERRUPTED', 'PAUSED', 'ERROR'] as AvatarLabState[]).map(
+                          (state) => {
+                            const isActive = labState === state && !isManualOverrideActive;
+                            return (
+                              <button
+                                key={state}
+                                onClick={() => handleStateSelect(state)}
+                                style={{
+                                  background: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.06)',
+                                  color: isActive ? '#0B0C0E' : '#FFFFFF',
+                                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                                  padding: '6px 4px',
+                                  borderRadius: '5px',
+                                  fontSize: '10px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  fontFamily: 'var(--theater-font-mono, monospace)',
+                                  transition: 'all 100ms ease',
+                                }}
+                              >
+                                [ {state} ]
+                              </button>
+                            );
+                          }
+                        )}
+                      </div>
+                    </div>
+
+                    {/* TEACHING POSES */}
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: 'var(--theater-font-mono, monospace)',
+                          fontSize: '10px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          color: '#89909D',
+                          marginBottom: '6px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span>TEACHING POSES</span>
+                        <span style={{ color: '#A1A1A5', fontSize: '9px' }}>Choreography Vocabulary</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '5px', marginBottom: '6px' }}>
+                        {(
+                          [
+                            { id: 'OPEN_EXPLANATION', label: 'OPEN EXPLAIN' },
+                            { id: 'RIGHT_EMPHASIS', label: 'RIGHT EMPHASIS' },
+                            { id: 'LEFT_PRESENT', label: 'LEFT PRESENT' },
+                            { id: 'BOTH_HAND_FRAME', label: 'BOTH-HAND FRAME' },
+                            { id: 'COUNT_EMPHASIS', label: 'COUNT POINT' },
+                            { id: 'ACKNOWLEDGEMENT', label: 'ACKNOWLEDGE' },
+                          ] as const
+                        ).map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => engine?.triggerGesture(item.id)}
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.06)',
+                              color: '#FFFFFF',
+                              border: '1px solid rgba(255, 255, 255, 0.12)',
+                              padding: '6px 4px',
+                              borderRadius: '5px',
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              fontFamily: 'var(--theater-font-mono, monospace)',
+                              transition: 'all 100ms ease',
+                            }}
+                          >
+                            [ {item.label} ]
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => engine?.resetBody()}
+                        style={{
+                          width: '100%',
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          color: '#A1A1A5',
+                          border: '1px dashed rgba(255, 255, 255, 0.18)',
+                          padding: '6px 4px',
+                          borderRadius: '5px',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontFamily: 'var(--theater-font-mono, monospace)',
+                          transition: 'all 100ms ease',
+                        }}
+                      >
+                        [ RESET BODY ]
+                      </button>
+                    </div>
+                  </div>
+
 
                   {/* Visual Layer Isolation Controls (Part 2 & Part 7) */}
                   <div

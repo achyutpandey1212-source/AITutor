@@ -15,6 +15,9 @@ import {
   SemanticWeights,
   VowelKey,
 } from './mikoController';
+import { MikoBodyController, GestureType, TeachingPose } from './mikoBodyController';
+
+export type { GestureType, TeachingPose };
 
 let globalEngineCounter = 0;
 
@@ -35,6 +38,7 @@ export class MikoAvatarEngine {
   public readonly root: THREE.Object3D;
   private vrm: VRM | null;
   public readonly registry: ModelMorphRegistry;
+  public readonly body: MikoBodyController;
   private isMiko: boolean;
 
   // Semantic mappings
@@ -57,9 +61,9 @@ export class MikoAvatarEngine {
   // Speaking driver state
   private isSpeaking: boolean = false;
   private speechElapsed: number = 0;
-  private currentVowelIndex: number = 0;
   private nextVowelSwitchTime: number = 0;
   private activeVowel: VowelKey = 'A';
+  private isMouthInPause: boolean = false;
 
   // Manual override state
   private manualOverrideActive: boolean = false;
@@ -86,6 +90,7 @@ export class MikoAvatarEngine {
     this.instanceId = `MikoAvatarEngine #${globalEngineCounter}`;
     this.root = root;
     this.vrm = vrm;
+    this.body = new MikoBodyController(vrm);
 
     // Disconnect VRM expressionManager from interfering with direct morphs
     if (this.vrm && this.vrm.expressionManager) {
@@ -256,25 +261,29 @@ export class MikoAvatarEngine {
 
   public resetAll(): void {
     this.neutral();
+    this.body.resetBody();
     this.individualTargets.clear();
     this.individualCurrents.clear();
     this.isSpeaking = false;
+    this.isMouthInPause = false;
     this.blinkState = 'idle';
     this.naturalBlinkWeight = 0;
   }
 
   // -------------------------------------------------------------
-  // Speaking Mouth Driver
+  // Speaking Mouth Driver (Subtle, irregular, human-cadence lip sync)
   // -------------------------------------------------------------
   public startSpeaking(): void {
     this.isSpeaking = true;
     this.speechElapsed = 0;
     this.nextVowelSwitchTime = 0;
-    this.currentVowelIndex = 0;
+    this.isMouthInPause = false;
   }
 
   public stopSpeaking(immediate: boolean = false): void {
     this.isSpeaking = false;
+    this.isMouthInPause = false;
+    this.body.cancelGesture();
     this.targetWeights.vowelA = 0;
     this.targetWeights.vowelI = 0;
     this.targetWeights.vowelU = 0;
@@ -300,20 +309,39 @@ export class MikoAvatarEngine {
     const vowels: VowelKey[] = ['A', 'O', 'E', 'I', 'U'];
 
     if (this.speechElapsed >= this.nextVowelSwitchTime) {
-      this.currentVowelIndex = (this.currentVowelIndex + 1) % vowels.length;
-      const duration = 0.11 + Math.random() * 0.11;
-      this.nextVowelSwitchTime = this.speechElapsed + duration;
+      // 18% chance of brief micro-pause (neutral mouth between syllables/words)
+      if (Math.random() < 0.18 && !this.isMouthInPause) {
+        this.isMouthInPause = true;
+        const pauseDuration = 0.08 + Math.random() * 0.10;
+        this.nextVowelSwitchTime = this.speechElapsed + pauseDuration;
+      } else {
+        this.isMouthInPause = false;
+        // Non-sequential vowel selection avoiding immediate repeat
+        const choices = vowels.filter((v) => v !== this.activeVowel);
+        this.activeVowel = choices[Math.floor(Math.random() * choices.length)];
+        const vowelDuration = 0.12 + Math.random() * 0.14;
+        this.nextVowelSwitchTime = this.speechElapsed + vowelDuration;
+      }
     }
 
-    const syllableWave = Math.sin(this.speechElapsed * 11.0);
-    const openness = Math.max(0.18, Math.min(0.85, 0.48 + syllableWave * 0.35));
+    if (this.isMouthInPause) {
+      this.targetWeights.vowelA = 0;
+      this.targetWeights.vowelO = 0;
+      this.targetWeights.vowelE = 0;
+      this.targetWeights.vowelI = 0;
+      this.targetWeights.vowelU = 0;
+      return;
+    }
 
-    this.activeVowel = vowels[this.currentVowelIndex];
+    // Subtle, human-scaled openness (0.18 to 0.46, never cartoonish wide mouth)
+    const syllableWave = Math.sin(this.speechElapsed * 9.0);
+    const openness = Math.max(0.18, Math.min(0.46, 0.30 + syllableWave * 0.14));
+
     this.targetWeights.vowelA = this.activeVowel === 'A' ? openness : 0;
-    this.targetWeights.vowelO = this.activeVowel === 'O' ? openness * 0.8 : 0;
-    this.targetWeights.vowelE = this.activeVowel === 'E' ? openness * 0.7 : 0;
+    this.targetWeights.vowelO = this.activeVowel === 'O' ? openness * 0.85 : 0;
+    this.targetWeights.vowelE = this.activeVowel === 'E' ? openness * 0.70 : 0;
     this.targetWeights.vowelI = this.activeVowel === 'I' ? openness * 0.65 : 0;
-    this.targetWeights.vowelU = this.activeVowel === 'U' ? openness * 0.6 : 0;
+    this.targetWeights.vowelU = this.activeVowel === 'U' ? openness * 0.60 : 0;
   }
 
   // -------------------------------------------------------------
@@ -363,78 +391,28 @@ export class MikoAvatarEngine {
   }
 
   // -------------------------------------------------------------
-  // Step 1: Body Posture & Breathing (MikoBodyController)
+  // Step 1: Body Posture, Breathing & Gestures (MikoBodyController)
   // -------------------------------------------------------------
-  public updateBody(_delta: number, elapsed: number, labState: AvatarLabState): void {
-    if (!this.vrm || !this.vrm.humanoid) return;
-    const humanoid = this.vrm.humanoid;
-
-    // Natural breathing (chest & spine cycle: ~3.5s period)
-    const breathPhase = elapsed * 1.8;
-    const breathSin = Math.sin(breathPhase);
-    const chestAngle = breathSin * 0.012;
-    const spineAngle = breathSin * 0.006;
-
-    const chestNode = humanoid.getNormalizedBoneNode('chest');
-    if (chestNode) {
-      chestNode.rotation.x = chestAngle;
-    }
-
-    const spineNode = humanoid.getNormalizedBoneNode('spine');
-    if (spineNode) {
-      spineNode.rotation.x = spineAngle;
-    }
-
-    // State-specific grounded head and neck posture
-    const headNode = humanoid.getNormalizedBoneNode('head');
-    const neckNode = humanoid.getNormalizedBoneNode('neck');
-
-    if (headNode && neckNode) {
-      if (labState === 'LISTENING') {
-        // Attentive micro-nod: gentle pitch forward with subtle tilt
-        const nod = Math.sin(elapsed * 1.2) * 0.015 + 0.035;
-        headNode.rotation.x = THREE.MathUtils.lerp(headNode.rotation.x, nod, 0.06);
-        headNode.rotation.y = THREE.MathUtils.lerp(headNode.rotation.y, 0, 0.06);
-        headNode.rotation.z = THREE.MathUtils.lerp(headNode.rotation.z, 0.01, 0.06);
-        neckNode.rotation.x = THREE.MathUtils.lerp(neckNode.rotation.x, 0.01, 0.06);
-        neckNode.rotation.y = THREE.MathUtils.lerp(neckNode.rotation.y, 0, 0.06);
-        neckNode.rotation.z = THREE.MathUtils.lerp(neckNode.rotation.z, 0, 0.06);
-      } else if (labState === 'THINKING') {
-        // Subtle contemplative tilt upward and to the side
-        headNode.rotation.x = THREE.MathUtils.lerp(headNode.rotation.x, -0.045, 0.04);
-        headNode.rotation.y = THREE.MathUtils.lerp(headNode.rotation.y, 0.055, 0.04);
-        headNode.rotation.z = THREE.MathUtils.lerp(headNode.rotation.z, 0.035, 0.04);
-        neckNode.rotation.x = THREE.MathUtils.lerp(neckNode.rotation.x, -0.01, 0.04);
-        neckNode.rotation.y = THREE.MathUtils.lerp(neckNode.rotation.y, 0.02, 0.04);
-        neckNode.rotation.z = THREE.MathUtils.lerp(neckNode.rotation.z, 0.01, 0.04);
-      } else if (labState === 'SPEAKING') {
-        // Conversational head rhythm
-        const cadenceX = Math.sin(elapsed * 2.8) * 0.020;
-        const cadenceY = Math.cos(elapsed * 1.4) * 0.015;
-        headNode.rotation.x = THREE.MathUtils.lerp(headNode.rotation.x, cadenceX, 0.08);
-        headNode.rotation.y = THREE.MathUtils.lerp(headNode.rotation.y, cadenceY, 0.08);
-        headNode.rotation.z = THREE.MathUtils.lerp(headNode.rotation.z, 0, 0.08);
-        neckNode.rotation.x = THREE.MathUtils.lerp(neckNode.rotation.x, cadenceX * 0.3, 0.08);
-        neckNode.rotation.y = THREE.MathUtils.lerp(neckNode.rotation.y, cadenceY * 0.3, 0.08);
-      } else if (labState === 'INTERRUPTED') {
-        // Clean instant/rapid return to upright attentive posture
-        headNode.rotation.x = THREE.MathUtils.lerp(headNode.rotation.x, 0, 0.22);
-        headNode.rotation.y = THREE.MathUtils.lerp(headNode.rotation.y, 0, 0.22);
-        headNode.rotation.z = THREE.MathUtils.lerp(headNode.rotation.z, 0, 0.22);
-        neckNode.rotation.x = THREE.MathUtils.lerp(neckNode.rotation.x, 0, 0.22);
-        neckNode.rotation.y = THREE.MathUtils.lerp(neckNode.rotation.y, 0, 0.22);
-        neckNode.rotation.z = THREE.MathUtils.lerp(neckNode.rotation.z, 0, 0.22);
-      } else {
-        // READY / PAUSED / ERROR: return to baseline upright posture
-        headNode.rotation.x = THREE.MathUtils.lerp(headNode.rotation.x, 0, 0.05);
-        headNode.rotation.y = THREE.MathUtils.lerp(headNode.rotation.y, 0, 0.05);
-        headNode.rotation.z = THREE.MathUtils.lerp(headNode.rotation.z, 0, 0.05);
-        neckNode.rotation.x = THREE.MathUtils.lerp(neckNode.rotation.x, 0, 0.05);
-        neckNode.rotation.y = THREE.MathUtils.lerp(neckNode.rotation.y, 0, 0.05);
-        neckNode.rotation.z = THREE.MathUtils.lerp(neckNode.rotation.z, 0, 0.05);
-      }
-    }
+  public updateBody(delta: number, elapsed: number, labState: AvatarLabState): void {
+    this.body.update(delta, elapsed, labState, this.isSpeaking);
   }
+
+  public triggerGesture(type: GestureType): void {
+    this.body.triggerGesture(type);
+  }
+
+  public cancelGesture(): void {
+    this.body.cancelGesture();
+  }
+
+  public resetBody(): void {
+    this.body.resetBody();
+  }
+
+  public getAvailableBonesReport(): Record<string, boolean> {
+    return this.body.getAvailableBonesReport();
+  }
+
 
   // -------------------------------------------------------------
   // Step 2: Facial Smoothing & Multi-Mesh Application (Post vrm.update)
