@@ -52,6 +52,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   // Start Learning Modal State
   const [isStartModalOpen, setIsStartModalOpen] = useState(false);
+  const [modalTopic, setModalTopic] = useState('');
+  const [modalSubject, setModalSubject] = useState('Physics');
+  const [modalDocumentId, setModalDocumentId] = useState('none');
 
   // 1. Fetch teaching sessions
   const fetchSessions = useCallback(async () => {
@@ -136,7 +139,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   }, [documents, fetchDocuments]);
 
   // Action handlers
-  const handleOpenStartModal = () => {
+  const handleOpenStartModal = (topic = '', subject = 'Physics', docId = 'none') => {
+    setModalTopic(topic);
+    setModalSubject(subject);
+    setModalDocumentId(docId);
     setIsStartModalOpen(true);
   };
 
@@ -177,10 +183,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const handleSelectRecommendation = (topic: string, subject: string) => {
     handleOpenStartModal(topic, subject);
-  };
-
-  const handleSessionStarted = (newSession: TeachingSession) => {
-    onNavigate(`/tutor?sessionId=${newSession.id}`);
   };
 
   const firstName = user?.displayName
@@ -478,6 +480,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             setIsStartModalOpen(false);
             onNavigate(`/tutor?sessionId=${session.id}`);
           }}
+          initialTopic={modalTopic}
+          initialSubject={modalSubject}
+          initialDocumentId={modalDocumentId}
         />
       </Modal>
 

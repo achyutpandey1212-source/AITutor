@@ -1,1 +1,0 @@
-{"name":"ai-teacher-poc-2-realtime-voice","private":true,"version":"0.1.0","type":"module","scripts":{"dev":"tsx server.ts","build":"tsc --noEmit"},"dependencies":{"dotenv":"^16.6.1","express":"^5.1.0"},"devDependencies":{"@types/express":"^5.0.3","@types/node":"^24.3.0","tsx":"^4.20.5","typescript":"^5.9.2"}}

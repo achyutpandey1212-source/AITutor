@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import type { Document as KnowledgeDoc, TeachingSession } from '@ai-tutor/shared';
+import React, { useState, useEffect } from 'react';
+import type { TeachingSession } from '@ai-tutor/shared';
 import { liveTutorApiClient } from '../../services/api.service';
 import { Button } from '../ui/Button';
 import { StartLearningForm } from '../learning/StartLearningForm';

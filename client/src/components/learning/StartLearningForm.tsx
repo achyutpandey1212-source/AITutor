@@ -48,7 +48,6 @@ export const StartLearningForm: React.FC<StartLearningFormProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const [userDocs, setUserDocs] = useState<KnowledgeDoc[]>([]);
-  const [pastSessions, setPastSessions] = useState<TeachingSession[]>([]);
 
   const [speed, setSpeed] = useState<number>(() => textToSpeechService.getRate());
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -69,14 +68,6 @@ export const StartLearningForm: React.FC<StartLearningFormProps> = ({
       .listDocuments(idToken)
       .then((docs) => setUserDocs(docs))
       .catch(() => setUserDocs([]));
-  }, [idToken]);
-
-  useEffect(() => {
-    if (!idToken) return;
-    liveTutorApiClient
-      .listTeachingSessions(idToken)
-      .then((sessions) => setPastSessions(sessions))
-      .catch(() => setPastSessions([]));
   }, [idToken]);
 
   useEffect(() => {
@@ -220,27 +211,6 @@ export const StartLearningForm: React.FC<StartLearningFormProps> = ({
     } finally {
       setIsStarting(false);
     }
-  };
-
-  const handleResumeSession = (sessionId: string) => {
-    onSessionStarted({ id: sessionId } as TeachingSession);
-  };
-
-  const formatRelativeTime = (dateStr?: string): string => {
-    if (!dateStr) return 'Recently';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return 'Recently';
-    const now = new Date();
-    const diffMs = Math.max(0, now.getTime() - date.getTime());
-    const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
   return (
