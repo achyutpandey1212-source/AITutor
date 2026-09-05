@@ -6,6 +6,7 @@ export interface StageSubtitlePillProps {
   isInterrupting?: boolean;
   isVisible: boolean;
   bottom?: string;
+  isStatic?: boolean;
 }
 
 export const StageSubtitlePill: React.FC<StageSubtitlePillProps> = ({
@@ -14,6 +15,7 @@ export const StageSubtitlePill: React.FC<StageSubtitlePillProps> = ({
   isInterrupting = false,
   isVisible,
   bottom = '1.25rem',
+  isStatic = false,
 }) => {
   // Immediate clearance upon interruption (zero ghost text or lagging snippets)
   if (isInterrupting) return null;
@@ -29,11 +31,11 @@ export const StageSubtitlePill: React.FC<StageSubtitlePillProps> = ({
     <div
       className="stage-subtitle-overlay"
       style={{
-        position: 'absolute',
-        bottom: bottom,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        maxWidth: '82%',
+        position: isStatic ? 'relative' : 'absolute',
+        bottom: isStatic ? 'auto' : bottom,
+        left: isStatic ? 'auto' : '50%',
+        transform: isStatic ? 'none' : 'translateX(-50%)',
+        maxWidth: isStatic ? '100%' : '82%',
         width: 'auto',
         pointerEvents: 'none',
         userSelect: 'none',

@@ -73,15 +73,15 @@ export const WorkedExampleScene: React.FC<WorkedExampleSceneProps> = ({ data }) 
       <div
         style={{
           width: '100%',
-          maxWidth: '620px',
+          maxWidth: '860px',
           background: 'rgba(15, 23, 42, 0.7)',
           border: '1px solid rgba(148, 163, 184, 0.3)',
           borderRadius: '8px',
-          padding: '10px 14px',
+          padding: '12px 18px',
           marginBottom: '14px',
-          fontSize: '12px',
+          fontSize: '14px',
           color: '#cbd5e1',
-          lineHeight: 1.4,
+          lineHeight: 1.45,
         }}
       >
         <strong style={{ color: '#38bdf8' }}>Problem: </strong>
@@ -92,7 +92,7 @@ export const WorkedExampleScene: React.FC<WorkedExampleSceneProps> = ({ data }) 
       <div
         style={{
           width: '100%',
-          maxWidth: '620px',
+          maxWidth: '860px',
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
@@ -116,15 +116,15 @@ export const WorkedExampleScene: React.FC<WorkedExampleSceneProps> = ({ data }) 
                 background: 'rgba(30, 41, 59, 0.75)',
                 border: '1px solid rgba(148, 163, 184, 0.2)',
                 borderRadius: '6px',
-                padding: '8px 12px',
+                padding: '10px 14px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                fontSize: '12px',
+                fontSize: '13px',
               }}
             >
               <div style={{ color: '#94a3b8', fontWeight: 500 }}>
-                <span style={{ color: '#10b981', fontWeight: 700, marginRight: '6px' }}>
+                <span style={{ color: '#10b981', fontWeight: 700, marginRight: '8px' }}>
                   {step.stepNumber}.
                 </span>
                 {step.description}
@@ -134,9 +134,10 @@ export const WorkedExampleScene: React.FC<WorkedExampleSceneProps> = ({ data }) 
                   fontFamily: 'monospace',
                   color: '#f8fafc',
                   background: 'rgba(15, 23, 42, 0.6)',
-                  padding: '3px 8px',
+                  padding: '4px 10px',
                   borderRadius: '4px',
                   border: '1px solid rgba(148, 163, 184, 0.2)',
+                  fontSize: '12px',
                 }}
               >
                 {step.expression}
@@ -150,14 +151,14 @@ export const WorkedExampleScene: React.FC<WorkedExampleSceneProps> = ({ data }) 
       <div
         style={{
           width: '100%',
-          maxWidth: '620px',
+          maxWidth: '860px',
           opacity: interpolate(frame, [40, 55], [0, 1], { extrapolateRight: 'clamp' }),
           background: 'rgba(16, 185, 129, 0.15)',
           border: '1px solid rgba(16, 185, 129, 0.4)',
           borderRadius: '8px',
-          padding: '10px 14px',
+          padding: '12px 18px',
           textAlign: 'center',
-          fontSize: '13px',
+          fontSize: '15px',
           fontWeight: 700,
           color: '#34d399',
           boxShadow: '0 4px 16px rgba(16, 185, 129, 0.15)',

@@ -282,7 +282,7 @@ export const TutorVisualDataSchema = z.object({
         highlightState: z.string().optional(),
       })
     ),
-    animationType: z.enum(['ray_bend', 'flow', 'cycle', 'step']).default('step'),
+    animationType: z.enum(['step', 'flow', 'cycle', 'linear', 'fade', 'ray_bend']).default('step'),
   }).optional(),
   // External / PDF asset reference
   assetUrl: z.string().optional(),
@@ -1944,3 +1944,501 @@ export const SessionSummarySchema = z.object({
   endedAt: z.string().optional(),
 });
 export type SessionSummary = z.infer<typeof SessionSummarySchema>;
+
+// ==========================================
+// 14. Phase 6A: Universal Teaching Architecture Contracts
+// ==========================================
+// Architectural Principles & Separation of Concerns:
+//
+// 1. ContentBlock = Semantic knowledge representation (WHAT is being taught)
+//    - Pure semantic blocks (headings, definitions, formulas, steps, examples)
+//    - Free from visual styling properties (NO colors, margins, fonts, or borders)
+//
+// 2. VisualIntent = Pedagogical visual purpose (WHY a visual is being shown)
+//    - High-level intent (DIAGRAM, PROCESS, COMPARISON, FORMULA, GRAPH, etc.)
+//    - Decoupled from any concrete component or library implementation
+//
+// 3. VisualTemplate = Concrete structural layout (HOW data is organized)
+//    - Reusable, subject-agnostic structural templates (matrix, derivation, cartesian)
+//    - Cross-disciplinary: identical comparison matrix for Biology, CS, and Economics
+//
+// 4. SubjectEnvironment = Atmospheric context (WHERE learning is situated)
+//    - Subtle, low-opacity ambient cues (drafting grid for Math, lab slate for Chemistry)
+//    - Never competes with pedagogical content hierarchy (opacity <= 5%)
+//
+// 5. Visual Primitives = Domain-agnostic building blocks
+//    - Nodes, connectors, annotations, coordinate axes, data series, equation lines
+//    - Layout-agnostic: LLM specifies semantic relationships, renderer computes geometry
+//
+// 6. AvatarDirective = Teaching choreography instructions
+//    - Decoupled from Miko's low-level lifecycle state machine (SPEAKING, LISTENING)
+//    - Directs framing, pointing gestures, and gaze target towards student or board
+//
+// 7. UniversalTeachingBeat = The single authoritative source of truth
+//    - Encapsulates speech channels, semantic content, visual payload, and avatar directives
+// ==========================================
+
+// 14.1 Inline Content Semantics
+export const InlineMarkSchema = z.enum([
+  'bold',
+  'italic',
+  'highlight',
+  'term',
+  'variable',
+  'emphasis',
+  'definition',
+]);
+export type InlineMark = z.infer<typeof InlineMarkSchema>;
+
+export const InlineContentSchema = z.object({
+  text: z.string(),
+  marks: z.array(InlineMarkSchema).optional(),
+});
+export type InlineContent = z.infer<typeof InlineContentSchema>;
+
+// 14.2 Semantic Content Blocks
+export const HeadingBlockSchema = z.object({
+  type: z.literal('heading'),
+  level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  content: z.array(InlineContentSchema),
+});
+export type HeadingBlock = z.infer<typeof HeadingBlockSchema>;
+
+export const ParagraphBlockSchema = z.object({
+  type: z.literal('paragraph'),
+  content: z.array(InlineContentSchema),
+});
+export type ParagraphBlock = z.infer<typeof ParagraphBlockSchema>;
+
+export const DefinitionBlockSchema = z.object({
+  type: z.literal('definition'),
+  term: z.string(),
+  definition: z.array(InlineContentSchema),
+});
+export type DefinitionBlock = z.infer<typeof DefinitionBlockSchema>;
+
+export const FormulaBlockSchema = z.object({
+  type: z.literal('formula'),
+  latex: z.string(),
+  explanation: z.array(InlineContentSchema).optional(),
+});
+export type FormulaBlock = z.infer<typeof FormulaBlockSchema>;
+
+export const ListBlockSchema = z.object({
+  type: z.literal('list'),
+  ordered: z.boolean().default(false),
+  items: z.array(z.array(InlineContentSchema)),
+});
+export type ListBlock = z.infer<typeof ListBlockSchema>;
+
+export const QuoteBlockSchema = z.object({
+  type: z.literal('quote'),
+  content: z.array(InlineContentSchema),
+  attribution: z.string().optional(),
+});
+export type QuoteBlock = z.infer<typeof QuoteBlockSchema>;
+
+export const NoteBlockSchema = z.object({
+  type: z.literal('note'),
+  variant: z.enum(['info', 'observation', 'rule', 'warning', 'tip']).default('info'),
+  content: z.array(InlineContentSchema),
+});
+export type NoteBlock = z.infer<typeof NoteBlockSchema>;
+
+export const StepBlockSchema = z.object({
+  type: z.literal('step'),
+  stepNumber: z.number().int().min(1),
+  title: z.string().optional(),
+  content: z.array(InlineContentSchema),
+});
+export type StepBlock = z.infer<typeof StepBlockSchema>;
+
+export const CodeBlockSchema = z.object({
+  type: z.literal('code'),
+  language: z.string(),
+  code: z.string(),
+  caption: z.string().optional(),
+});
+export type CodeBlock = z.infer<typeof CodeBlockSchema>;
+
+export const TableBlockSchema = z.object({
+  type: z.literal('table'),
+  headers: z.array(z.array(InlineContentSchema)),
+  rows: z.array(z.array(z.array(InlineContentSchema))),
+});
+export type TableBlock = z.infer<typeof TableBlockSchema>;
+
+// Base non-recursive content block union
+export const BaseContentBlockSchema = z.discriminatedUnion('type', [
+  HeadingBlockSchema,
+  ParagraphBlockSchema,
+  DefinitionBlockSchema,
+  FormulaBlockSchema,
+  ListBlockSchema,
+  QuoteBlockSchema,
+  NoteBlockSchema,
+  StepBlockSchema,
+  CodeBlockSchema,
+  TableBlockSchema,
+]);
+export type BaseContentBlock = z.infer<typeof BaseContentBlockSchema>;
+
+export const ExampleBlockSchema = z.object({
+  type: z.literal('example'),
+  title: z.string().optional(),
+  content: z.array(BaseContentBlockSchema),
+});
+export type ExampleBlock = z.infer<typeof ExampleBlockSchema>;
+
+export const ContentBlockSchema = z.discriminatedUnion('type', [
+  HeadingBlockSchema,
+  ParagraphBlockSchema,
+  DefinitionBlockSchema,
+  FormulaBlockSchema,
+  ListBlockSchema,
+  ExampleBlockSchema,
+  QuoteBlockSchema,
+  NoteBlockSchema,
+  StepBlockSchema,
+  CodeBlockSchema,
+  TableBlockSchema,
+]);
+export type ContentBlock = z.infer<typeof ContentBlockSchema>;
+
+// 14.3 Visual Intent (Pedagogical Purpose)
+export const VisualIntentSchema = z.enum([
+  'EXPLANATION',
+  'DIAGRAM',
+  'PROCESS',
+  'SIMULATION',
+  'GRAPH',
+  'FORMULA',
+  'COMPARISON',
+  'TIMELINE',
+  'MAP',
+  'MEDIA',
+  'CODE',
+  '3D_OBJECT',
+]);
+export type VisualIntent = z.infer<typeof VisualIntentSchema>;
+
+// 14.4 Visual Template Identifiers
+export const VisualTemplateSchema = z.enum([
+  'template.explanation.editorial',
+  'template.diagram.relational',
+  'template.diagram.spatial',
+  'template.process.sequential',
+  'template.formula.derivation',
+  'template.graph.cartesian',
+  'template.comparison.matrix',
+  'template.code.walkthrough',
+  'template.timeline.historical',
+  'template.media.grounded',
+  'template.simulation.interactive',
+]);
+export type VisualTemplate = z.infer<typeof VisualTemplateSchema>;
+
+// 14.5 Subject Environments
+export const SubjectEnvironmentSchema = z.enum([
+  'NEUTRAL',
+  'MATHEMATICS',
+  'PHYSICS',
+  'CHEMISTRY',
+  'BIOLOGY',
+  'COMPUTER_SCIENCE',
+  'HISTORY',
+  'GEOGRAPHY',
+  'LITERATURE',
+  'ECONOMICS',
+]);
+export type SubjectEnvironment = z.infer<typeof SubjectEnvironmentSchema>;
+
+// 14.6 Universal Visual Primitives
+export const VisualPointSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+});
+export type VisualPoint = z.infer<typeof VisualPointSchema>;
+
+export const VisualNodeSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  sublabel: z.string().optional(),
+  category: z.enum(['primary', 'secondary', 'accent', 'neutral', 'muted']).optional(),
+  position: VisualPointSchema.optional(),
+  shape: z.enum(['box', 'circle', 'pill', 'diamond', 'card']).optional(),
+  iconRef: z.string().optional(),
+});
+export type VisualNode = z.infer<typeof VisualNodeSchema>;
+
+export const VisualConnectorSchema = z.object({
+  id: z.string(),
+  fromNodeId: z.string(),
+  toNodeId: z.string(),
+  label: z.string().optional(),
+  style: z.enum(['solid', 'dashed', 'dotted']).optional(),
+  directed: z.boolean().optional(),
+  bidirectional: z.boolean().optional(),
+});
+export type VisualConnector = z.infer<typeof VisualConnectorSchema>;
+
+export const VisualAnnotationSchema = z.object({
+  id: z.string(),
+  targetId: z.string().optional(),
+  position: VisualPointSchema.optional(),
+  text: z.string(),
+  calloutType: z.enum(['note', 'observation', 'rule', 'warning']),
+});
+export type VisualAnnotation = z.infer<typeof VisualAnnotationSchema>;
+
+export const VisualGraphAxisSchema = z.object({
+  label: z.string(),
+  unit: z.string().optional(),
+  min: z.number(),
+  max: z.number(),
+  ticks: z.array(z.number()).optional(),
+});
+export type VisualGraphAxis = z.infer<typeof VisualGraphAxisSchema>;
+
+export const VisualDataSeriesSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  points: z.array(z.tuple([z.number(), z.number()])),
+  curveType: z.enum(['linear', 'smooth', 'step']).optional(),
+  highlightPoint: z.tuple([z.number(), z.number()]).optional(),
+});
+export type VisualDataSeries = z.infer<typeof VisualDataSeriesSchema>;
+
+export const EquationLineSchema = z.object({
+  id: z.string(),
+  latex: z.string(),
+  explanation: z.string().optional(),
+  highlightTokens: z.array(z.string()).optional(),
+  isActiveStep: z.boolean().optional(),
+});
+export type EquationLine = z.infer<typeof EquationLineSchema>;
+
+// 14.7 Avatar Choreography Directives
+export const AvatarDirectiveSchema = z.object({
+  framing: z.enum(['close', 'medium', 'full']),
+  gesture: z.enum([
+    'neutral',
+    'point_to_visual',
+    'explain_two_handed',
+    'emphasize',
+    'thinking',
+    'welcoming',
+  ]),
+  gazeTarget: z.enum([
+    'student',
+    'board',
+    'thinking_aside',
+  ]),
+});
+export type AvatarDirective = z.infer<typeof AvatarDirectiveSchema>;
+
+// 14.8 Universal Teaching Beat
+export const UniversalTeachingBeatSchema = z.object({
+  beatIndex: z.number().int().min(0),
+  beatId: z.string(),
+
+  // Semantic Knowledge Source of Truth
+  content: z.object({
+    blocks: z.array(ContentBlockSchema),
+  }),
+
+  // Multichannel Speech & Captions
+  speechText: z.string().min(1),
+  displayText: z.string().min(1),
+  captionText: z.string().min(1),
+
+  // Visual Directives & Conforming Payload
+  visual: z.object({
+    intent: VisualIntentSchema,
+    templateId: VisualTemplateSchema,
+    environment: SubjectEnvironmentSchema.default('NEUTRAL'),
+
+    payload: z.object({
+      title: z.string().optional(),
+      subtitle: z.string().optional(),
+
+      nodes: z.array(VisualNodeSchema).optional(),
+      connectors: z.array(VisualConnectorSchema).optional(),
+      annotations: z.array(VisualAnnotationSchema).optional(),
+
+      axes: z.object({
+        x: VisualGraphAxisSchema,
+        y: VisualGraphAxisSchema,
+      }).optional(),
+
+      series: z.array(VisualDataSeriesSchema).optional(),
+
+      equations: z.array(EquationLineSchema).optional(),
+
+      comparison: z.object({
+        columns: z.array(
+          z.object({
+            id: z.string(),
+            header: z.string(),
+          })
+        ),
+        rows: z.array(
+          z.object({
+            label: z.string(),
+            values: z.record(z.string(), z.string()),
+          })
+        ),
+      }).optional(),
+
+      timeline: z.array(
+        z.object({
+          timestamp: z.string(),
+          title: z.string(),
+          description: z.string().optional(),
+          isMilestone: z.boolean().optional(),
+        })
+      ).optional(),
+
+      code: z.object({
+        language: z.string(),
+        codeString: z.string(),
+        highlightLines: z.array(z.number()).optional(),
+      }).optional(),
+
+      media: z.object({
+        assetId: z.string(),
+        url: z.string(),
+        caption: z.string().optional(),
+        sourceCredit: z.string().optional(),
+      }).optional(),
+    }),
+  }),
+
+  // Animation Directives
+  animation: z.object({
+    enterTransition: z.enum(['fade', 'draw', 'stagger_reveal', 'none']).default('fade'),
+    activeElements: z.array(z.string()).default([]),
+  }),
+
+  // Avatar Directives
+  avatar: AvatarDirectiveSchema,
+});
+export type UniversalTeachingBeat = z.infer<typeof UniversalTeachingBeatSchema>;
+
+// ==========================================
+// 14.9 Migration Adapters (Legacy <-> Universal)
+// ==========================================
+
+export function mapLegacyVisualTypeToUniversalIntent(legacyType: TutorVisualType): VisualIntent {
+  switch (legacyType) {
+    case 'NONE':
+    case 'TITLE':
+    case 'TEXT':
+    case 'HIGHLIGHT':
+    case 'RECAP':
+    case 'QUESTION_PROMPT':
+      return 'EXPLANATION';
+    case 'DIAGRAM':
+    case 'FLOWCHART':
+      return 'DIAGRAM';
+    case 'PROCESS':
+    case 'PROCESS_ANIMATION':
+      return 'PROCESS';
+    case 'FORMULA':
+      return 'FORMULA';
+    case 'EXAMPLE':
+    case 'WORKED_EXAMPLE':
+      return 'EXPLANATION';
+    case 'COMPARISON':
+      return 'COMPARISON';
+    case 'ILLUSTRATION':
+      return 'DIAGRAM';
+    case 'PDF_ASSET':
+    case 'IMAGE_ASSET':
+      return 'MEDIA';
+    default:
+      return 'EXPLANATION';
+  }
+}
+
+export function mapUniversalIntentToLegacyVisualType(intent: VisualIntent): TutorVisualType {
+  switch (intent) {
+    case 'EXPLANATION':
+      return 'TEXT';
+    case 'DIAGRAM':
+      return 'DIAGRAM';
+    case 'PROCESS':
+      return 'PROCESS_ANIMATION';
+    case 'SIMULATION':
+      return 'PROCESS_ANIMATION';
+    case 'GRAPH':
+      return 'DIAGRAM';
+    case 'FORMULA':
+      return 'FORMULA';
+    case 'COMPARISON':
+      return 'COMPARISON';
+    case 'TIMELINE':
+      return 'DIAGRAM';
+    case 'MAP':
+      return 'DIAGRAM';
+    case 'MEDIA':
+      return 'IMAGE_ASSET';
+    case 'CODE':
+      return 'TEXT';
+    case '3D_OBJECT':
+      return 'DIAGRAM';
+    default:
+      return 'TEXT';
+  }
+}
+
+export function adaptUniversalBeatToLegacyVisualState(
+  beat: UniversalTeachingBeat,
+  options?: { sessionId?: string; topic?: string; concept?: string; totalBeats?: number }
+): TutorVisualState {
+  const visualType = mapUniversalIntentToLegacyVisualType(beat.visual.intent);
+  const visualPayload = beat.visual.payload;
+
+  return {
+    sessionId: options?.sessionId || '',
+    topic: options?.topic || visualPayload.title || 'AI Tutor Classroom',
+    concept: options?.concept || visualPayload.subtitle || 'Lesson',
+    mode: 'TEACHING',
+    avatarState: 'SPEAKING',
+    visualType,
+    visualData: {
+      title: visualPayload.title,
+      subtitle: visualPayload.subtitle,
+      heading: visualPayload.title,
+      text: beat.displayText,
+      nodes: visualPayload.nodes?.map((n) => ({
+        id: n.id,
+        label: n.label,
+        subtext: n.sublabel,
+        type: (n.category === 'primary' ? 'highlight' : 'step') as 'highlight' | 'step',
+      })),
+      formula: visualPayload.equations?.[0]?.latex,
+      formulaExplanation: visualPayload.equations?.[0]?.explanation,
+      comparison:
+        visualPayload.comparison && visualPayload.comparison.columns.length >= 2
+          ? {
+              leftTitle: visualPayload.comparison.columns[0]?.header || '',
+              rightTitle: visualPayload.comparison.columns[1]?.header || '',
+              items: visualPayload.comparison.rows.map((row) => ({
+                feature: row.label,
+                leftValue: row.values[visualPayload.comparison!.columns[0]?.id] || '',
+                rightValue: row.values[visualPayload.comparison!.columns[1]?.id] || '',
+              })),
+            }
+          : undefined,
+      assetUrl: visualPayload.media?.url,
+      caption: visualPayload.media?.caption,
+    },
+    captionText: beat.captionText,
+    activeBeatIndex: beat.beatIndex,
+    activeCaptionIndex: 0,
+    totalBeats: options?.totalBeats || 1,
+    captionsEnabled: true,
+  };
+}
+

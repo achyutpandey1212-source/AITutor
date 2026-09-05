@@ -542,6 +542,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
           }}
           isFocusMode={isFocusMode}
           onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
+          onSendMessage={submitTypedMessage}
           dockSlot={
             isSessionActive ? (
               <TheaterDock

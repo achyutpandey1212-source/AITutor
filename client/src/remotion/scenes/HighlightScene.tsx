@@ -101,14 +101,14 @@ export const HighlightScene: React.FC<HighlightSceneProps> = ({
           marginBottom: '1.25rem',
           boxShadow: `0 0 40px rgba(245, 158, 11, ${glowPulse * 0.3})`,
           transform: `scale(${textScale})`,
-          maxWidth: '520px',
+          maxWidth: '800px',
           width: '100%',
         }}
       >
         <div
           style={{
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            fontSize: '2.2rem',
+            fontSize: '2.5rem',
             fontWeight: 800,
             color: '#fef08a',
             letterSpacing: '0.02em',
@@ -125,10 +125,10 @@ export const HighlightScene: React.FC<HighlightSceneProps> = ({
         <div
           style={{
             color: '#94a3b8',
-            fontSize: '1rem',
+            fontSize: '1.05rem',
             lineHeight: 1.5,
             textAlign: 'center',
-            maxWidth: '480px',
+            maxWidth: '720px',
             opacity: subtitleOpacity,
             borderLeft: '3px solid #f59e0b',
             paddingLeft: '0.75rem',

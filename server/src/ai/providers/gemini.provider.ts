@@ -230,6 +230,7 @@ export class GeminiProvider implements IAIProvider {
             systemInstruction: options?.systemInstruction || systemInstruction,
             temperature: options?.temperature ?? 0.3,
             maxOutputTokens: options?.maxTokens || 4000,
+            thinkingConfig: { includeThoughts: false },
           },
         });
 
@@ -281,6 +282,7 @@ export class GeminiProvider implements IAIProvider {
             responseMimeType: 'application/json',
             temperature: options?.temperature ?? 0.2,
             maxOutputTokens: options?.maxTokens || 4000,
+            thinkingConfig: { includeThoughts: false },
           },
         });
 
@@ -311,6 +313,7 @@ export class GeminiProvider implements IAIProvider {
             systemInstruction: options?.systemInstruction || systemInstruction,
             temperature: options?.temperature ?? 0.3,
             maxOutputTokens: options?.maxTokens || 4000,
+            thinkingConfig: { includeThoughts: false },
           },
         });
 

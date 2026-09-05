@@ -33,27 +33,27 @@ async function runAIProviderVerification() {
   // 1. LOCKED MODEL STACK & TASK MAPPING
   // ----------------------------------------------------
   console.log('--- 1. Locked Model Stack & Task Routing Configuration ---');
-  assert(AI_MODELS.GEMINI.PRIMARY_REASONING === 'gemini-3.7-flash', 'Primary reasoning is gemini-3.7-flash');
-  assert(AI_MODELS.GEMINI.FALLBACK_REASONING_1 === 'gemini-3.6-flash', 'Gemini fallback 1 is gemini-3.6-flash');
-  assert(AI_MODELS.GEMINI.FALLBACK_REASONING_2 === 'gemini-3.5-flash', 'Gemini fallback 2 is gemini-3.5-flash');
+  assert(AI_MODELS.GEMINI.PRIMARY_REASONING === 'gemini-3.5-flash-lite', 'Primary reasoning is gemini-3.5-flash-lite');
+  assert(AI_MODELS.GEMINI.FALLBACK_REASONING_1 === 'gemini-2.5-flash', 'Gemini fallback 1 is gemini-2.5-flash');
+  assert(AI_MODELS.GEMINI.FALLBACK_REASONING_2 === 'gemini-3.6-flash', 'Gemini fallback 2 is gemini-3.6-flash');
   assert(AI_MODELS.GEMINI.LIGHTWEIGHT === 'gemini-3.5-flash-lite', 'Lightweight is gemini-3.5-flash-lite');
   assert(AI_MODELS.GROQ.PRIMARY === 'qwen/qwen3.8-27b', 'Groq primary is qwen/qwen3.8-27b');
-  assert(AI_MODELS.GROQ.FALLBACK === 'qwen/qwen3.6-27b', 'Groq fallback is qwen/qwen3.6-27b');
+  assert(AI_MODELS.GROQ.FALLBACK === 'groq/compound-mini', 'Groq fallback is groq/compound-mini');
   assert(AI_MODELS.COHERE.EMBEDDING === 'embed-v4.0', 'Cohere embedding is embed-v4.0');
   assert(AI_MODELS.COHERE.EMBEDDING_DIMENSION === 1536, 'Cohere dimension is 1536');
   assert(AI_MODELS.COHERE.RERANK === 'rerank-v4.0-fast', 'Cohere rerank is rerank-v4.0-fast');
 
   assert(
-    TASK_MODEL_MAPPINGS.assessment_generation.modelChain[0] === 'gemini-3.7-flash',
-    'assessment_generation routes to gemini-3.7-flash'
+    TASK_MODEL_MAPPINGS.assessment_generation.modelChain[0] === 'gemini-3.5-flash-lite',
+    'assessment_generation routes to gemini-3.5-flash-lite'
   );
   assert(
-    TASK_MODEL_MAPPINGS.assessment_evaluation.modelChain[0] === 'gemini-3.7-flash',
-    'assessment_evaluation routes to gemini-3.7-flash'
+    TASK_MODEL_MAPPINGS.assessment_evaluation.modelChain[0] === 'gemini-3.5-flash-lite',
+    'assessment_evaluation routes to gemini-3.5-flash-lite'
   );
   assert(
-    TASK_MODEL_MAPPINGS.reasoning.modelChain[0] === 'gemini-3.7-flash',
-    'reasoning routes to gemini-3.7-flash'
+    TASK_MODEL_MAPPINGS.reasoning.modelChain[0] === 'gemini-3.5-flash-lite',
+    'reasoning routes to gemini-3.5-flash-lite'
   );
 
   // ----------------------------------------------------

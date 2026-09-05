@@ -103,6 +103,7 @@ export class AIService {
               ...resolvedOpts,
               model: options?.model && !options.model.startsWith('gemini') ? options.model : undefined,
               taskType: 'fallback_reasoning',
+              timeoutMs: TASK_TIMEOUTS.fallback_reasoning || 16000,
             };
             const fallbackResult = await this.fallbackProvider.generateText(prompt, fallbackOpts);
             return {
@@ -197,6 +198,7 @@ export class AIService {
               ...resolvedOpts,
               model: options?.model && !options.model.startsWith('gemini') ? options.model : undefined,
               taskType: 'fallback_reasoning',
+              timeoutMs: TASK_TIMEOUTS.fallback_reasoning || 16000,
             };
             const fallbackResult = await this.fallbackProvider.generateStructured<T>(
               prompt,

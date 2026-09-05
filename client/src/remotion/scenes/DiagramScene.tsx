@@ -55,22 +55,22 @@ export const DiagramScene: React.FC<DiagramSceneProps> = ({
           justifyContent: 'space-between',
           alignItems: 'center',
           width: '100%',
-          maxWidth: '560px',
-          marginBottom: '0.5rem',
+          maxWidth: '880px',
+          marginBottom: '0.75rem',
         }}
       >
         <span
           style={{
             color: '#38bdf8',
             fontWeight: 700,
-            fontSize: '0.85rem',
-            letterSpacing: '0.05em',
+            fontSize: '1.1rem',
+            letterSpacing: '0.04em',
             textTransform: 'uppercase',
           }}
         >
           {concept}
         </span>
-        <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{label}</span>
+        <span style={{ color: '#94a3b8', fontSize: '0.98rem' }}>{label}</span>
       </div>
 
       {/* SVG Diagram Canvas */}
@@ -78,12 +78,12 @@ export const DiagramScene: React.FC<DiagramSceneProps> = ({
         viewBox="0 0 520 310"
         style={{
           width: '100%',
-          maxWidth: '540px',
-          height: '240px',
+          maxWidth: '880px',
+          height: '400px',
           background: '#090d16',
-          borderRadius: '12px',
+          borderRadius: '16px',
           border: '1px solid rgba(148, 163, 184, 0.2)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
         }}
       >
         <defs>
@@ -203,16 +203,18 @@ export const DiagramScene: React.FC<DiagramSceneProps> = ({
       {/* Observation takeaway badge */}
       <div
         style={{
-          marginTop: '0.65rem',
-          padding: '0.4rem 1rem',
-          background: 'rgba(56, 189, 248, 0.1)',
-          border: '1px solid rgba(56, 189, 248, 0.25)',
-          borderRadius: '8px',
-          color: '#bae6fd',
-          fontSize: '0.85rem',
-          fontWeight: 600,
+          marginTop: '0.85rem',
+          padding: '0.65rem 1.4rem',
+          background: 'rgba(15, 23, 42, 0.75)',
+          border: '1px solid rgba(148, 163, 184, 0.25)',
+          borderRadius: '10px',
+          color: '#e2e8f0',
+          fontSize: '1rem',
+          fontWeight: 550,
           textAlign: 'center',
-          maxWidth: '540px',
+          maxWidth: '880px',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         💡 <strong>Observation:</strong> Light ray slows down in glass and bends <em>towards the normal</em> (θᵣ &lt; θᵢ).

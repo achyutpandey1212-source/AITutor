@@ -10,14 +10,14 @@ export type { TutorVisualState, TutorAvatarState, TutorVisualType, TutorVisualMo
 
 export const DEFAULT_VISUAL_STATE: TutorVisualState = {
   sessionId: '',
-  topic: 'Light Reflection & Refraction',
-  concept: 'Introduction to Light',
+  topic: 'AI Tutor Classroom',
+  concept: 'Introduction',
   mode: 'IDLE',
   avatarState: 'IDLE',
   visualType: 'TITLE',
   visualData: {
-    title: 'Light: Reflection & Refraction',
-    subtitle: 'Understanding the Behavior of Light Waves and Rays',
+    title: 'AI Tutor Classroom',
+    subtitle: 'Interactive AI Visual Classroom',
   },
   // Phase 2.6: beat and caption segmentation
   activeBeatIndex: 0,

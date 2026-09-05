@@ -65,8 +65,8 @@ export const ProcessAnimationScene: React.FC<ProcessAnimationSceneProps> = ({ da
       {/* Interactive Vector Canvas */}
       <div
         style={{
-          width: '420px',
-          height: '180px',
+          width: '640px',
+          height: '260px',
           background: 'rgba(15, 23, 42, 0.8)',
           border: '1px solid rgba(148, 163, 184, 0.3)',
           borderRadius: '12px',
@@ -79,7 +79,7 @@ export const ProcessAnimationScene: React.FC<ProcessAnimationSceneProps> = ({ da
         <div
           style={{
             position: 'absolute',
-            top: '90px',
+            top: '130px',
             left: '0',
             width: '100%',
             height: '2px',
@@ -91,18 +91,18 @@ export const ProcessAnimationScene: React.FC<ProcessAnimationSceneProps> = ({ da
           style={{
             position: 'absolute',
             top: '20px',
-            left: '210px',
+            left: '320px',
             width: '2px',
-            height: '140px',
+            height: '220px',
             borderLeft: '2px dashed rgba(148, 163, 184, 0.4)',
           }}
         />
 
         {/* Medium Labels */}
-        <div style={{ position: 'absolute', top: '24px', left: '20px', fontSize: '12px', color: '#94a3b8' }}>
+        <div style={{ position: 'absolute', top: '24px', left: '24px', fontSize: '13px', color: '#94a3b8' }}>
           Medium 1 (Rare, Speed v₁)
         </div>
-        <div style={{ position: 'absolute', bottom: '24px', left: '20px', fontSize: '12px', color: '#38bdf8' }}>
+        <div style={{ position: 'absolute', bottom: '24px', left: '24px', fontSize: '13px', color: '#38bdf8' }}>
           Medium 2 (Dense, Speed v₂ &lt; v₁)
         </div>
 
@@ -118,23 +118,23 @@ export const ProcessAnimationScene: React.FC<ProcessAnimationSceneProps> = ({ da
         >
           {/* Incident segment */}
           <line
-            x1="80"
-            y1="30"
-            x2={Math.min(210, 80 + rayProgress * 260)}
-            y2={Math.min(90, 30 + rayProgress * 120)}
+            x1="120"
+            y1="40"
+            x2={Math.min(320, 120 + rayProgress * 400)}
+            y2={Math.min(130, 40 + rayProgress * 180)}
             stroke="#f59e0b"
-            strokeWidth="3"
+            strokeWidth="3.5"
             strokeLinecap="round"
           />
-          {/* Refracted segment (activates once ray crosses normal boundary at x=210) */}
+          {/* Refracted segment (activates once ray crosses normal boundary at x=320) */}
           {rayProgress > 0.5 && (
             <line
-              x1="210"
-              y1="90"
-              x2={210 + (rayProgress - 0.5) * 180}
-              y2={90 + (rayProgress - 0.5) * 120}
+              x1="320"
+              y1="130"
+              x2={320 + (rayProgress - 0.5) * 260}
+              y2={130 + (rayProgress - 0.5) * 160}
               stroke="#10b981"
-              strokeWidth="3"
+              strokeWidth="3.5"
               strokeLinecap="round"
             />
           )}
@@ -147,7 +147,7 @@ export const ProcessAnimationScene: React.FC<ProcessAnimationSceneProps> = ({ da
           display: 'flex',
           gap: '12px',
           width: '100%',
-          maxWidth: '520px',
+          maxWidth: '640px',
           justifyContent: 'center',
         }}
       >

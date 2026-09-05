@@ -49,15 +49,17 @@ export const TASK_CAPABILITY_REQUIREMENTS: Record<AITaskType, AICapability> = {
  */
 export const AI_MODELS = {
   GEMINI: {
-    PRIMARY_REASONING: 'gemini-3.7-flash',
-    FALLBACK_REASONING_1: 'gemini-3.6-flash',
-    FALLBACK_REASONING_2: 'gemini-3.5-flash',
+    PRIMARY_REASONING: 'gemini-3.5-flash-lite', // Fast, light, ultra-responsive model for live interaction
+    FALLBACK_REASONING_1: 'gemini-2.5-flash', // Fast flash backup
+    FALLBACK_REASONING_2: 'gemini-3.6-flash', // Modern flash fallback
+    DEEP_REASONING: 'gemini-3.7-flash', // Deep thinking reasoning
     LIGHTWEIGHT: 'gemini-3.5-flash-lite',
-    GENERAL_SECONDARY: 'gemini-3.5-flash',
+    GENERAL_SECONDARY: 'gemini-2.5-flash',
   },
   GROQ: {
     PRIMARY: 'qwen/qwen3.8-27b',
-    FALLBACK: 'qwen/qwen3.6-27b',
+    FALLBACK: 'groq/compound-mini',
+    FALLBACK_2: 'qwen/qwen3.6-27b',
   },
   COHERE: {
     EMBEDDING: 'embed-v4.0',
@@ -71,29 +73,30 @@ export const AI_MODELS = {
  */
 export const GEMINI_REASONING_MODEL_CHAIN: readonly string[] = [
   AI_MODELS.GEMINI.PRIMARY_REASONING,
-  AI_MODELS.GEMINI.FALLBACK_REASONING_2,
   AI_MODELS.GEMINI.FALLBACK_REASONING_1,
+  AI_MODELS.GEMINI.FALLBACK_REASONING_2,
 ];
 
 export const GROQ_MODEL_CHAIN: readonly string[] = [
   AI_MODELS.GROQ.PRIMARY,
   AI_MODELS.GROQ.FALLBACK,
+  AI_MODELS.GROQ.FALLBACK_2,
 ];
 
 /**
  * Task-specific bounded timeouts (ms)
  */
 export const TASK_TIMEOUTS: Record<AITaskType, number> = {
-  lightweight: 3500,
-  general_secondary: 5000,
-  reasoning: 7000,
-  fallback_reasoning: 7000,
-  structured_reasoning: 7000,
-  assessment_generation: 8000,
-  assessment_evaluation: 9000,
-  document_understanding: 15000,
-  vision: 15000,
-  multimodal_assessment_evaluation: 18000, // 18 seconds: ample time for multimodal vision & handwriting OCR
+  lightweight: 8000,
+  general_secondary: 10000,
+  reasoning: 16000,
+  fallback_reasoning: 16000,
+  structured_reasoning: 16000,
+  assessment_generation: 16000,
+  assessment_evaluation: 16000,
+  document_understanding: 20000,
+  vision: 20000,
+  multimodal_assessment_evaluation: 22000,
 };
 
 /**
@@ -184,10 +187,10 @@ export const TASK_MODEL_MAPPINGS: Record<AITaskType, TaskModelConfig> = {
  * Operational limits & timeouts
  */
 export const AI_CONFIG = {
-  DEFAULT_TIMEOUT_MS: 7000, // 7s standard timeout
-  REQUEST_TIMEOUT_MS: 7000, // Backwards compatible alias
-  MAX_KEY_ATTEMPTS_PER_PROVIDER: 2, // Hard bounded limit: max 2 key/model attempts per request
-  DEFAULT_KEY_COOLDOWN_MS: 60000, // 60s cooldown for rate-limited/exhausted keys
+  DEFAULT_TIMEOUT_MS: 16000, // 16s standard timeout
+  REQUEST_TIMEOUT_MS: 16000, // Backwards compatible alias
+  MAX_KEY_ATTEMPTS_PER_PROVIDER: 4, // Max 4 key/model rotation attempts per request
+  DEFAULT_KEY_COOLDOWN_MS: 20000, // 20s cooldown for throttled keys
 
   MAX_STRUCTURED_REPAIR_ATTEMPTS: 2,
   QDRANT: {

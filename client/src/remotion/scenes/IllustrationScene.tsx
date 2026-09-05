@@ -92,15 +92,15 @@ export const IllustrationScene: React.FC<IllustrationSceneProps> = ({
           marginBottom: '1.25rem',
           boxShadow: '0 12px 40px rgba(16, 185, 129, 0.12)',
           transform: `scale(${cardScale})`,
-          maxWidth: '540px',
+          maxWidth: '840px',
           width: '100%',
         }}
       >
         {/* Large hook emoji */}
         <div
           style={{
-            fontSize: '3.5rem',
-            marginBottom: '0.75rem',
+            fontSize: '4rem',
+            marginBottom: '0.85rem',
             lineHeight: 1,
           }}
         >
@@ -111,7 +111,7 @@ export const IllustrationScene: React.FC<IllustrationSceneProps> = ({
         <div
           style={{
             color: '#f1f5f9',
-            fontSize: '1.25rem',
+            fontSize: '1.4rem',
             fontWeight: 600,
             lineHeight: 1.4,
             letterSpacing: '0.01em',
@@ -126,10 +126,10 @@ export const IllustrationScene: React.FC<IllustrationSceneProps> = ({
         <div
           style={{
             color: '#64748b',
-            fontSize: '0.9rem',
+            fontSize: '1rem',
             lineHeight: 1.5,
             textAlign: 'center',
-            maxWidth: '460px',
+            maxWidth: '740px',
             opacity: subtitleOpacity,
             display: 'flex',
             alignItems: 'center',
