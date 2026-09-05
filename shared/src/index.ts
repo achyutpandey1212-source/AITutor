@@ -2442,3 +2442,241 @@ export function adaptUniversalBeatToLegacyVisualState(
   };
 }
 
+// ==========================================
+// 14.10 Universal 2D Primitives Geometry & Layout Utilities
+// ==========================================
+
+export interface NodeDimensions {
+  width: number;
+  height: number;
+  radius?: number;
+}
+
+export const DEFAULT_NODE_DIMENSIONS: Record<string, NodeDimensions> = {
+  box: { width: 140, height: 50 },
+  circle: { width: 70, height: 70, radius: 35 },
+  pill: { width: 130, height: 42 },
+  diamond: { width: 80, height: 80 },
+  card: { width: 160, height: 70 },
+};
+
+export function getNodeDimensions(node: VisualNode): NodeDimensions {
+  const shape = node.shape || 'box';
+  return DEFAULT_NODE_DIMENSIONS[shape] || DEFAULT_NODE_DIMENSIONS.box;
+}
+
+export function getPerimeterIntersection(
+  center: VisualPoint,
+  target: VisualPoint,
+  shape: string = 'box',
+  padding: number = 2
+): VisualPoint {
+  const dx = target.x - center.x;
+  const dy = target.y - center.y;
+  const dist = Math.hypot(dx, dy);
+
+  if (dist < 1e-4) {
+    return { x: center.x, y: center.y };
+  }
+
+  const ux = dx / dist;
+  const uy = dy / dist;
+  const dims = DEFAULT_NODE_DIMENSIONS[shape] || DEFAULT_NODE_DIMENSIONS.box;
+  const halfW = dims.width / 2 + padding;
+  const halfH = dims.height / 2 + padding;
+
+  if (shape === 'circle') {
+    const r = (dims.radius || halfW) + padding;
+    return {
+      x: center.x + ux * r,
+      y: center.y + uy * r,
+    };
+  }
+
+  if (shape === 'diamond') {
+    const t = 1 / (Math.abs(ux) / halfW + Math.abs(uy) / halfH);
+    return {
+      x: center.x + ux * t,
+      y: center.y + uy * t,
+    };
+  }
+
+  const tx = halfW / Math.abs(ux || 1e-6);
+  const ty = halfH / Math.abs(uy || 1e-6);
+  const t = Math.min(tx, ty);
+
+  return {
+    x: center.x + ux * t,
+    y: center.y + uy * t,
+  };
+}
+
+export function autoLayoutNodes(
+  nodes: VisualNode[],
+  canvasWidth: number = 880,
+  canvasHeight: number = 420
+): Map<string, VisualPoint> {
+  const positionMap = new Map<string, VisualPoint>();
+
+  if (nodes.length === 0) {
+    return positionMap;
+  }
+
+  const missingPositions = nodes.filter((n) => !n.position);
+  if (missingPositions.length === 0) {
+    for (const node of nodes) {
+      positionMap.set(node.id, node.position!);
+    }
+    return positionMap;
+  }
+
+  const count = nodes.length;
+
+  if (count <= 4) {
+    const spacing = canvasWidth / (count + 1);
+    const centerY = canvasHeight / 2;
+
+    nodes.forEach((node, index) => {
+      if (node.position) {
+        positionMap.set(node.id, node.position);
+      } else {
+        positionMap.set(node.id, {
+          x: Math.round(spacing * (index + 1)),
+          y: Math.round(centerY),
+        });
+      }
+    });
+    return positionMap;
+  }
+
+  const cols = Math.min(count, Math.ceil(Math.sqrt(count * 1.5)));
+  const rows = Math.ceil(count / cols);
+  const rowSpacing = canvasHeight / (rows + 1);
+
+  nodes.forEach((node, index) => {
+    if (node.position) {
+      positionMap.set(node.id, node.position);
+    } else {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      const itemsOnThisRow = row === rows - 1 ? count - row * cols : cols;
+      const rowColSpacing = canvasWidth / (itemsOnThisRow + 1);
+
+      positionMap.set(node.id, {
+        x: Math.round(rowColSpacing * (col + 1)),
+        y: Math.round(rowSpacing * (row + 1)),
+      });
+    }
+  });
+
+  return positionMap;
+}
+
+export interface PlotViewport {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export function createCoordinateScaler(
+  viewport: PlotViewport,
+  xAxis: VisualGraphAxis,
+  yAxis: VisualGraphAxis
+) {
+  const xSpan = xAxis.max - xAxis.min || 1;
+  const ySpan = yAxis.max - yAxis.min || 1;
+
+  return {
+    toPixelX: (dataX: number) => {
+      const normalized = (dataX - xAxis.min) / xSpan;
+      return viewport.x + normalized * viewport.width;
+    },
+    toPixelY: (dataY: number) => {
+      const normalized = (dataY - yAxis.min) / ySpan;
+      return viewport.y + viewport.height - normalized * viewport.height;
+    },
+    toPixelPoint: (point: [number, number]): [number, number] => {
+      const normalizedX = (point[0] - xAxis.min) / xSpan;
+      const normalizedY = (point[1] - yAxis.min) / ySpan;
+      return [
+        viewport.x + normalizedX * viewport.width,
+        viewport.y + viewport.height - normalizedY * viewport.height,
+      ];
+    },
+  };
+}
+
+export function pointsToSmoothPath(points: [number, number][]): string {
+  if (points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0][0]} ${points[0][1]}`;
+  if (points.length === 2) {
+    return `M ${points[0][0]} ${points[0][1]} L ${points[1][0]} ${points[1][1]}`;
+  }
+
+  let d = `M ${points[0][0]} ${points[0][1]}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(points.length - 1, i + 2)];
+
+    const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+
+    const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+
+    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}`;
+  }
+
+  return d;
+}
+
+export function pointsToStepPath(points: [number, number][]): string {
+  if (points.length === 0) return '';
+  let d = `M ${points[0][0]} ${points[0][1]}`;
+
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    d += ` L ${curr[0]} ${prev[1]} L ${curr[0]} ${curr[1]}`;
+  }
+
+  return d;
+}
+
+export function formatLatexFallback(latex: string): string {
+  return latex
+    .replace(/\\nu/g, 'ν')
+    .replace(/\\lambda/g, 'λ')
+    .replace(/\\alpha/g, 'α')
+    .replace(/\\beta/g, 'β')
+    .replace(/\\theta/g, 'θ')
+    .replace(/\\pi/g, 'π')
+    .replace(/\\sigma/g, 'σ')
+    .replace(/\\omega/g, 'ω')
+    .replace(/\\Delta/g, 'Δ')
+    .replace(/\\sum/g, '∑')
+    .replace(/\\int/g, '∫')
+    .replace(/\\infty/g, '∞')
+    .replace(/\\times/g, '×')
+    .replace(/\\cdot/g, '·')
+    .replace(/\\approx/g, '≈')
+    .replace(/\\le/g, '≤')
+    .replace(/\\ge/g, '≥')
+    .replace(/\\neq/g, '≠')
+    .replace(/\\pm/g, '±')
+    .replace(/\\mathbf\{([^}]+)\}/g, '$1')
+    .replace(/\\text\{([^}]+)\}/g, '$1')
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)')
+    .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')
+    .replace(/_\{([^}]+)\}/g, '_{$1}')
+    .replace(/\^\{([^}]+)\}/g, '^($1)')
+    .replace(/\\,/g, ' ')
+    .replace(/\\quad/g, '   ')
+    .replace(/\\\\/g, '\n')
+    .trim();
+}
+
