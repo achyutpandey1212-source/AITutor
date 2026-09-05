@@ -317,6 +317,38 @@ export const IconChevronRight: React.FC<IconProps> = ({ size = 14, style }) => (
   </svg>
 );
 
+export const IconChevronUp: React.FC<IconProps> = ({ size = 14, style }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+  >
+    <polyline points="18 15 12 9 6 15" />
+  </svg>
+);
+
+export const IconChevronDown: React.FC<IconProps> = ({ size = 14, style }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
 export const IconMaximize: React.FC<IconProps> = ({ size = 16, style }) => (
   <svg
     width={size}

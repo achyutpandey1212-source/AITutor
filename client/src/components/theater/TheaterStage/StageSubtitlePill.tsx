@@ -5,6 +5,7 @@ export interface StageSubtitlePillProps {
   interimTranscript?: string;
   isInterrupting?: boolean;
   isVisible: boolean;
+  bottom?: string;
 }
 
 export const StageSubtitlePill: React.FC<StageSubtitlePillProps> = ({
@@ -12,6 +13,7 @@ export const StageSubtitlePill: React.FC<StageSubtitlePillProps> = ({
   interimTranscript,
   isInterrupting = false,
   isVisible,
+  bottom = '1.25rem',
 }) => {
   // Immediate clearance upon interruption (zero ghost text or lagging snippets)
   if (isInterrupting) return null;
@@ -28,7 +30,7 @@ export const StageSubtitlePill: React.FC<StageSubtitlePillProps> = ({
       className="stage-subtitle-overlay"
       style={{
         position: 'absolute',
-        bottom: '1.25rem',
+        bottom: bottom,
         left: '50%',
         transform: 'translateX(-50%)',
         maxWidth: '82%',

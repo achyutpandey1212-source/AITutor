@@ -507,7 +507,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: isFocusMode ? '0.25rem 1rem 4.5rem 1rem' : '0.5rem 1.25rem 5.5rem 1.25rem',
+          padding: isFocusMode ? '0.25rem 0.5rem' : '0.5rem 1.25rem 1.5rem 1.25rem',
           position: 'relative',
           width: '100%',
           boxSizing: 'border-box',
@@ -542,35 +542,35 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
           }}
           isFocusMode={isFocusMode}
           onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
+          dockSlot={
+            isSessionActive ? (
+              <TheaterDock
+                micEnabled={micEnabled}
+                interactionState={interactionState}
+                isSpeaking={isSpeaking}
+                isListening={isListening}
+                isThinking={isLoading}
+                isInterrupting={isInterrupting}
+                isAssessmentActive={Boolean(activeAssessmentQuestion)}
+                isReplaying={isReplaying}
+                onToggleMic={toggleMic}
+                onInterrupt={interruptTutor}
+                onExplainAgain={handleExplainAgain}
+                onExplainDifferently={handleExplainDifferently}
+                onRequestHint={requestAssessmentHint}
+                onGiveUpAssessment={giveUpAssessment}
+                onResumeLive={() => setIsReplaying(false)}
+                onOpenDoubtSolver={() => setActiveSurface((prev) => (prev === 'ask_lumo' ? 'none' : 'ask_lumo'))}
+                onSendMessage={submitTypedMessage}
+                isLoading={isLoading}
+                isSttSupported={isSttSupported}
+                isFocusMode={isFocusMode}
+                onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
+              />
+            ) : null
+          }
         />
       </main>
-
-      {/* 6. Subtle Elevated Command Dock */}
-      {isSessionActive && (
-        <TheaterDock
-          micEnabled={micEnabled}
-          interactionState={interactionState}
-          isSpeaking={isSpeaking}
-          isListening={isListening}
-          isThinking={isLoading}
-          isInterrupting={isInterrupting}
-          isAssessmentActive={Boolean(activeAssessmentQuestion)}
-          isReplaying={isReplaying}
-          onToggleMic={toggleMic}
-          onInterrupt={interruptTutor}
-          onExplainAgain={handleExplainAgain}
-          onExplainDifferently={handleExplainDifferently}
-          onRequestHint={requestAssessmentHint}
-          onGiveUpAssessment={giveUpAssessment}
-          onResumeLive={() => setIsReplaying(false)}
-          onOpenDoubtSolver={() => setActiveSurface((prev) => (prev === 'ask_lumo' ? 'none' : 'ask_lumo'))}
-          onSendMessage={submitTypedMessage}
-          isLoading={isLoading}
-          isSttSupported={isSttSupported}
-          isFocusMode={isFocusMode}
-          onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
-        />
-      )}
 
       {/* 7. Session Timeline & Replay Navigation Workspace */}
       <MilestonesDrawer

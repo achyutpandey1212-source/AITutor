@@ -12,7 +12,7 @@ const CAMERA_PRESETS: Record<CameraFramingState, { position: [number, number, nu
     target: [0, 1.34, 0],
   },
   medium: {
-    position: [0, 1.18, 1.55],
+    position: [0, 1.18, 1.68],
     target: [0, 1.10, 0],
   },
   full: {
@@ -75,8 +75,16 @@ export const ProductionAvatarViewport: React.FC<ProductionAvatarViewportProps> =
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    // Perspective camera — 32 FOV for faithful human portrait proportions
-    const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 20.0);
+    // Perspective camera with dynamic aspect-based FOV calculation
+    const aspect = width / height;
+    const baseFov = 32;
+    let initialFov = baseFov;
+    if (aspect < 1.0) {
+      // In portrait / vertical companion framing, widen vertical FOV to maintain horizontal gesture envelope
+      const targetHFovRad = 2 * Math.atan(Math.tan((baseFov * Math.PI) / 360) * 1.0);
+      initialFov = (2 * Math.atan(Math.tan(targetHFovRad / 2) / aspect) * 180) / Math.PI;
+    }
+    const camera = new THREE.PerspectiveCamera(initialFov, aspect, 0.1, 20.0);
     const initialPreset = CAMERA_PRESETS[framing] || CAMERA_PRESETS.medium;
     camera.position.set(...initialPreset.position);
     camera.lookAt(...initialPreset.target);
@@ -143,7 +151,15 @@ export const ProductionAvatarViewport: React.FC<ProductionAvatarViewportProps> =
       for (const entry of entries) {
         const { width: w, height: h } = entry.contentRect;
         if (w > 0 && h > 0 && cameraRef.current && rendererRef.current) {
-          cameraRef.current.aspect = w / h;
+          const newAspect = w / h;
+          cameraRef.current.aspect = newAspect;
+          const baseFovVal = 32;
+          if (newAspect < 1.0) {
+            const targetHFov = 2 * Math.atan(Math.tan((baseFovVal * Math.PI) / 360) * 1.0);
+            cameraRef.current.fov = (2 * Math.atan(Math.tan(targetHFov / 2) / newAspect) * 180) / Math.PI;
+          } else {
+            cameraRef.current.fov = baseFovVal;
+          }
           cameraRef.current.updateProjectionMatrix();
           rendererRef.current.setSize(w, h);
         }
@@ -351,7 +367,7 @@ export const ProductionAvatarViewport: React.FC<ProductionAvatarViewportProps> =
         position: 'relative',
         width: '100%',
         height: '100%',
-        overflow: 'hidden',
+        overflow: 'visible', // Must not clip Miko's gestures or head
         pointerEvents: 'none', // Strictly non-interactive: students cannot drag/orbit the camera
         ...style,
       }}

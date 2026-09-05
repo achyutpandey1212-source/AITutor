@@ -81,21 +81,22 @@ export const TutorPresence: React.FC<TutorPresenceProps> = ({
         position: 'relative',
         userSelect: 'none',
         boxSizing: 'border-box',
-        overflow: 'hidden',
+        overflow: 'visible', // Must not clip Miko's transparent stage presence
+        pointerEvents: 'none',
       }}
     >
-      {/* 3D Avatar Mount — Seamlessly occupies companion space without card frames */}
+      {/* 3D Avatar Mount — Seamlessly occupies stage presence without card frames */}
       <div
         id="lumo-avatar-mount"
         style={{
           width: '100%',
-          flex: 1,
-          minHeight: '260px',
+          height: '100%',
           position: 'relative',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          overflow: 'hidden',
+          overflow: 'visible', // No clipping of arms or gestures
+          pointerEvents: 'none',
         }}
       >
         <ProductionAvatarViewport
@@ -107,17 +108,19 @@ export const TutorPresence: React.FC<TutorPresenceProps> = ({
       {/* Understated Typographic Status Pill */}
       <div
         style={{
+          position: 'absolute',
+          bottom: '0.75rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.35rem',
           padding: '0.2rem 0.55rem',
           borderRadius: 'var(--theater-radius-pill, 9999px)',
-          background: 'rgba(20, 21, 24, 0.55)',
+          background: 'rgba(20, 21, 24, 0.65)',
           border: '1px solid var(--theater-border-subtle, rgba(255, 255, 255, 0.07))',
           backdropFilter: 'blur(8px)',
-          marginTop: '0.35rem',
-          marginBottom: '0.25rem',
+          pointerEvents: 'auto', // Allow tooltip/hover
           flexShrink: 0,
+          zIndex: 15,
         }}
       >
         <span

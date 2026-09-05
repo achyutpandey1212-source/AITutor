@@ -33,6 +33,7 @@ export interface TheaterStageProps {
   onSelectConceptStep?: (stepId: string) => void;
   isFocusMode?: boolean;
   onToggleFocusMode?: () => void;
+  dockSlot?: React.ReactNode;
 }
 
 export const TheaterStage: React.FC<TheaterStageProps> = ({
@@ -60,6 +61,7 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
   onSelectConceptStep,
   isFocusMode = false,
   onToggleFocusMode,
+  dockSlot,
 }) => {
   return (
     <div
@@ -69,7 +71,7 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         width: '100%',
-        maxWidth: isFocusMode ? '1600px' : '1240px',
+        maxWidth: isFocusMode ? '100%' : '1400px',
         margin: '0 auto',
         position: 'relative',
         transition: 'max-width var(--theater-transition-stage)',
@@ -126,121 +128,101 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
         </div>
       )}
 
-      {/* The Central Teaching Environment Canvas Area */}
+      {/* The Central Teaching Environment Stage Area — Unified Presentation */}
       <div
+        id="lumo-teaching-stage"
         style={{
           width: '100%',
-          height: isFocusMode ? 'calc(100vh - 120px)' : 'clamp(380px, 58vh, 660px)',
+          height: isFocusMode ? 'calc(100vh - 84px)' : 'clamp(440px, 66vh, 740px)',
+          background: 'var(--theater-surface)',
+          border: '1px solid var(--theater-border-subtle)',
+          borderRadius: isFocusMode ? 'var(--theater-radius-sm)' : 'var(--theater-radius-xl)',
+          boxShadow: 'var(--theater-shadow-canvas)',
+          position: 'relative',
+          overflow: 'visible',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          position: 'relative',
-          gap: '1.25rem',
-          transition: 'height var(--theater-transition-stage)',
+          transition: 'height var(--theater-transition-stage), border-radius var(--theater-transition-stage)',
         }}
       >
-        {/* Visual Blackboard Content — The Unquestioned Hero */}
+        {/* Layer 1 (z-1): Visual Blackboard Content — Dominant Stage Canvas */}
         <div
           style={{
-            flex: 1,
-            height: '100%',
-            maxWidth: activeAssessmentQuestion ? '68%' : '100%',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: activeAssessmentQuestion ? 'min(420px, 34vw)' : 0,
+            bottom: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            position: 'relative',
             overflow: 'hidden',
+            borderRadius: 'inherit',
+            zIndex: 1,
+            transition: 'right var(--theater-transition-stage)',
           }}
         >
           <VisualCanvas
             visualState={visualState}
             captionsEnabled={false}
           />
-
-          {/* Floating Subtitle Caption Pill */}
-          <StageSubtitlePill
-            captionText={visualState.captionText}
-            interimTranscript={interimTranscript}
-            isInterrupting={isInterrupting}
-            isVisible={captionsEnabled || Boolean(interimTranscript) || isInterrupting}
-          />
-
-          {/* Quick Focus Mode Expand Toggle on Canvas Corner */}
-          {onToggleFocusMode && (
-            <button
-              onClick={onToggleFocusMode}
-              style={{
-                position: 'absolute',
-                top: '0.75rem',
-                right: '0.75rem',
-                background: 'var(--theater-surface-elevated)',
-                border: '1px solid var(--theater-border-subtle)',
-                borderRadius: 'var(--theater-radius-xs)',
-                color: 'var(--theater-text-muted)',
-                width: '28px',
-                height: '28px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                opacity: 0.75,
-                transition: 'opacity var(--theater-transition-fast), color var(--theater-transition-fast)',
-                zIndex: 25,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '1';
-                e.currentTarget.style.color = 'var(--theater-text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '0.75';
-                e.currentTarget.style.color = 'var(--theater-text-muted)';
-              }}
-              title={isFocusMode ? 'Exit Focus Mode' : 'Enter Focus Mode'}
-              aria-label={isFocusMode ? 'Exit Focus Mode' : 'Enter Focus Mode'}
-            >
-              {isFocusMode ? <IconMinimize size={13} /> : <IconMaximize size={13} />}
-            </button>
-          )}
         </div>
 
-        {/* Companion Area: Tutor Presence OR Assessment Stage */}
-        {!activeAssessmentQuestion ? (
-          /* Subtle Lumo Companion Presence (Miko 3D Avatar) */
+        {/* Layer 2 (z-10): Transparent Stage Presence — Miko 3D Avatar */}
+        <div
+          id="theater-miko-presence"
+          style={{
+            position: 'absolute',
+            right: activeAssessmentQuestion ? 'min(430px, 35vw)' : (isFocusMode ? '1.5rem' : '0.75rem'),
+            bottom: 0,
+            top: 0,
+            width: isFocusMode ? 'clamp(280px, 24vw, 400px)' : 'clamp(320px, 27vw, 460px)',
+            zIndex: 10,
+            pointerEvents: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            overflow: 'visible',
+            transition: 'right var(--theater-transition-stage), width var(--theater-transition-stage)',
+          }}
+        >
+          <TutorPresence
+            interactionState={interactionState}
+            avatarState={avatarState}
+            isSpeaking={isSpeaking}
+            isInterrupting={isInterrupting}
+            isListening={isListening}
+            isThinking={isThinking}
+            framing={framing}
+          />
+        </div>
+
+        {/* Layer 3 (z-20): Floating Subtitle Caption Pill */}
+        <StageSubtitlePill
+          captionText={visualState.captionText}
+          interimTranscript={interimTranscript}
+          isInterrupting={isInterrupting}
+          isVisible={captionsEnabled || Boolean(interimTranscript) || isInterrupting}
+          bottom={dockSlot ? '5rem' : '1.5rem'}
+        />
+
+        {/* Layer 4 (z-25): Active Assessment Stage (when interactive quiz is triggered) */}
+        {activeAssessmentQuestion && (
           <div
-            id="theater-companion-slot"
             style={{
-              display: isFocusMode ? 'none' : 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 'clamp(260px, 22vw, 320px)',
-              height: '100%',
-              flexShrink: 0,
-              position: 'relative',
-              opacity: isFocusMode ? 0 : 1,
-              transition: 'opacity var(--theater-transition-fast), width var(--theater-transition-stage)',
-            }}
-          >
-            <TutorPresence
-              interactionState={interactionState}
-              avatarState={avatarState}
-              isSpeaking={isSpeaking}
-              isInterrupting={isInterrupting}
-              isListening={isListening}
-              isThinking={isThinking}
-              framing={framing}
-            />
-          </div>
-        ) : (
-          /* Active Assessment Stage */
-          <div
-            style={{
-              width: 'min(400px, 32vw)',
-              height: '100%',
+              position: 'absolute',
+              right: '1rem',
+              top: '1rem',
+              bottom: '1rem',
+              width: 'min(420px, 34vw)',
               display: 'flex',
               alignItems: 'stretch',
-              flexShrink: 0,
-              zIndex: 20,
+              zIndex: 25,
+              boxShadow: 'var(--theater-shadow-drawer)',
+              borderRadius: 'var(--theater-radius-lg)',
+              overflow: 'hidden',
             }}
           >
             <AssessmentStage
@@ -252,6 +234,63 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
               onGiveUp={onGiveUpAssessment}
               isLoading={isLoadingAssessment}
             />
+          </div>
+        )}
+
+        {/* Layer 5 (z-26): Quick Focus Mode Expand / Minimize Toggle */}
+        {onToggleFocusMode && (
+          <button
+            onClick={onToggleFocusMode}
+            style={{
+              position: 'absolute',
+              top: '0.85rem',
+              right: '0.85rem',
+              background: 'var(--theater-surface-elevated)',
+              border: '1px solid var(--theater-border-subtle)',
+              borderRadius: 'var(--theater-radius-xs)',
+              color: 'var(--theater-text-muted)',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              opacity: 0.85,
+              transition: 'opacity var(--theater-transition-fast), color var(--theater-transition-fast), background var(--theater-transition-fast)',
+              zIndex: 26,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.color = 'var(--theater-text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '0.85';
+              e.currentTarget.style.color = 'var(--theater-text-muted)';
+            }}
+            title={isFocusMode ? 'Exit Full Stage' : 'Expand Full Stage'}
+            aria-label={isFocusMode ? 'Exit Full Stage' : 'Expand Full Stage'}
+          >
+            {isFocusMode ? <IconMinimize size={14} /> : <IconMaximize size={14} />}
+          </button>
+        )}
+
+        {/* Layer 6 (z-30): Floating Control Surface — Collapsible Dock */}
+        {dockSlot && (
+          <div
+            id="lumo-dock-slot"
+            style={{
+              position: 'absolute',
+              bottom: '1.25rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 30,
+              pointerEvents: 'auto',
+              maxWidth: '94%',
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            {dockSlot}
           </div>
         )}
       </div>
