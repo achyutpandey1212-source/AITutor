@@ -1,5 +1,7 @@
 import React from 'react';
 import type { TutorAvatarState } from '@ai-tutor/shared';
+import { ProductionAvatarViewport } from '../Avatar/ProductionAvatarViewport';
+import type { CameraFramingState } from '../Avatar/types';
 
 export type InteractionState =
   | 'READY'
@@ -17,6 +19,7 @@ export interface TutorPresenceProps {
   isInterrupting?: boolean;
   isListening?: boolean;
   isThinking?: boolean;
+  framing?: CameraFramingState;
 }
 
 export const TutorPresence: React.FC<TutorPresenceProps> = ({
@@ -26,6 +29,7 @@ export const TutorPresence: React.FC<TutorPresenceProps> = ({
   isInterrupting = false,
   isListening = false,
   isThinking = false,
+  framing = 'medium',
 }) => {
   // Derive active status with single-source priority
   const currentState: InteractionState =
@@ -61,7 +65,6 @@ export const TutorPresence: React.FC<TutorPresenceProps> = ({
   };
 
   const isAudioActive = currentState === 'SPEAKING' || currentState === 'LISTENING';
-  const isThinkingState = currentState === 'THINKING';
 
   return (
     <div
@@ -73,95 +76,68 @@ export const TutorPresence: React.FC<TutorPresenceProps> = ({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        width: '110px',
-        padding: '0.4rem',
-        borderRadius: 'var(--theater-radius-md)',
-        background: 'transparent',
+        width: '100%',
+        height: '100%',
+        position: 'relative',
         userSelect: 'none',
         boxSizing: 'border-box',
-        transition: 'opacity var(--theater-transition-fast)',
+        overflow: 'hidden',
       }}
     >
-      {/* Architectural Mount Slot for Phase 5 3D Avatar */}
+      {/* 3D Avatar Mount — Seamlessly occupies companion space without card frames */}
       <div
         id="lumo-avatar-mount"
         style={{
-          width: '52px',
-          height: '52px',
-          borderRadius: '50%',
-          background: 'var(--theater-surface-elevated)',
-          border: '1px solid var(--theater-border-subtle)',
+          width: '100%',
+          flex: 1,
+          minHeight: '260px',
+          position: 'relative',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          position: 'relative',
-          marginBottom: '0.45rem',
-          opacity: isThinkingState ? 0.75 : 1,
-          transition: 'opacity 0.3s ease, border-color var(--theater-transition-fast)',
+          overflow: 'hidden',
         }}
       >
-        {/* Restrained Micro Acoustic Visualization (Quiet, strictly monochrome) */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '2px',
-            height: '14px',
-          }}
-        >
-          {[4, 9, 14, 8, 12, 6].map((baseHeight, i) => {
-            const h =
-              currentState === 'SPEAKING'
-                ? baseHeight
-                : currentState === 'LISTENING'
-                ? Math.max(3, Math.round(baseHeight * 0.55))
-                : currentState === 'THINKING'
-                ? 3
-                : 2;
-            return (
-              <span
-                key={i}
-                style={{
-                  width: '2px',
-                  height: `${h}px`,
-                  borderRadius: '1px',
-                  background: 'var(--theater-text-primary)',
-                  opacity:
-                    currentState === 'SPEAKING'
-                      ? 0.9
-                      : currentState === 'LISTENING'
-                      ? 0.6
-                      : currentState === 'THINKING'
-                      ? 0.4
-                      : 0.2,
-                  transition: 'height 0.14s ease, opacity 0.2s ease',
-                }}
-              />
-            );
-          })}
-        </div>
+        <ProductionAvatarViewport
+          interactionState={currentState}
+          framing={framing}
+        />
       </div>
 
-      {/* Understated Typographic Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+      {/* Understated Typographic Status Pill */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+          padding: '0.2rem 0.55rem',
+          borderRadius: 'var(--theater-radius-pill, 9999px)',
+          background: 'rgba(20, 21, 24, 0.55)',
+          border: '1px solid var(--theater-border-subtle, rgba(255, 255, 255, 0.07))',
+          backdropFilter: 'blur(8px)',
+          marginTop: '0.35rem',
+          marginBottom: '0.25rem',
+          flexShrink: 0,
+        }}
+      >
         <span
           style={{
             width: '4px',
             height: '4px',
             borderRadius: '50%',
             background: isAudioActive
-              ? 'var(--theater-text-primary)'
-              : 'var(--theater-text-muted)',
-            opacity: isAudioActive ? 0.9 : 0.4,
-            transition: 'opacity var(--theater-transition-fast)',
+              ? 'var(--theater-text-primary, #F5F5F5)'
+              : 'var(--theater-text-muted, #66666A)',
+            opacity: isAudioActive ? 0.95 : 0.4,
+            transition: 'opacity var(--theater-transition-fast, 120ms ease)',
           }}
         />
         <span
           style={{
-            fontSize: '0.72rem',
+            fontSize: '0.70rem',
             fontWeight: 500,
-            color: 'var(--theater-text-secondary)',
-            fontFamily: 'var(--theater-font-sans)',
+            color: 'var(--theater-text-secondary, #A1A1A5)',
+            fontFamily: 'var(--theater-font-sans, system-ui, sans-serif)',
             letterSpacing: '-0.01em',
           }}
         >

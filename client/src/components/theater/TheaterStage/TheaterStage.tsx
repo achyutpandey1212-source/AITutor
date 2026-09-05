@@ -3,6 +3,7 @@ import type { TutorVisualState, ClientAssessmentQuestion, AssessmentSubmission, 
 import { VisualCanvas } from './VisualCanvas';
 import { AssessmentStage } from './AssessmentStage';
 import { TutorPresence } from './TutorPresence';
+import type { CameraFramingState } from '../Avatar/types';
 import { StageSubtitlePill } from './StageSubtitlePill';
 import { LessonProgress, type ConceptStep } from '../TheaterProgress/LessonProgress';
 import { IconRefresh, IconPlay, IconMaximize, IconMinimize } from '../TheaterIcons';
@@ -18,6 +19,7 @@ export interface TheaterStageProps {
   isInterrupting?: boolean;
   isListening?: boolean;
   isThinking?: boolean;
+  framing?: CameraFramingState;
   captionsEnabled?: boolean;
   interimTranscript?: string;
   onAssessmentSubmitted: (submission: AssessmentSubmission) => void;
@@ -44,6 +46,7 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
   isInterrupting = false,
   isListening = false,
   isThinking = false,
+  framing = 'medium',
   captionsEnabled = false,
   interimTranscript,
   onAssessmentSubmitted,
@@ -202,15 +205,20 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
 
         {/* Companion Area: Tutor Presence OR Assessment Stage */}
         {!activeAssessmentQuestion ? (
-          /* Subtle Lumo Companion Presence */
+          /* Subtle Lumo Companion Presence (Miko 3D Avatar) */
           <div
+            id="theater-companion-slot"
             style={{
               display: isFocusMode ? 'none' : 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
+              width: 'clamp(260px, 22vw, 320px)',
+              height: '100%',
               flexShrink: 0,
+              position: 'relative',
               opacity: isFocusMode ? 0 : 1,
-              transition: 'opacity var(--theater-transition-fast)',
+              transition: 'opacity var(--theater-transition-fast), width var(--theater-transition-stage)',
             }}
           >
             <TutorPresence
@@ -220,6 +228,7 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
               isInterrupting={isInterrupting}
               isListening={isListening}
               isThinking={isThinking}
+              framing={framing}
             />
           </div>
         ) : (

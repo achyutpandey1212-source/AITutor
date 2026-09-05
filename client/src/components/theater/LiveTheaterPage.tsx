@@ -13,6 +13,7 @@ import { LaunchpadModal } from './Modals/LaunchpadModal';
 import { SessionSummaryStage } from './Modals/SessionSummaryStage';
 import type { ConceptStep } from './TheaterProgress/LessonProgress';
 import { IconPause, IconPlay } from './TheaterIcons';
+import type { CameraFramingState } from './Avatar/types';
 
 export type InteractionState =
   | 'READY'
@@ -59,6 +60,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
   const [isReplaying, setIsReplaying] = useState(false);
   const [replayConceptName, setReplayConceptName] = useState<string | undefined>(undefined);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [cameraFraming] = useState<CameraFramingState>('medium');
 
   // Load User Documents
   useEffect(() => {
@@ -523,6 +525,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
           isInterrupting={isInterrupting}
           isListening={isListening}
           isThinking={isLoading}
+          framing={cameraFraming}
           captionsEnabled={captionsEnabled}
           interimTranscript={interimTranscript}
           onAssessmentSubmitted={handleAssessmentSubmitted}
