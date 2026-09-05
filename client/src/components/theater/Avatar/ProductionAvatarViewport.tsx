@@ -26,6 +26,7 @@ const MIKO_ASSET_URL = '/avatars/miko/miko.vrm';
 export const ProductionAvatarViewport: React.FC<ProductionAvatarViewportProps> = ({
   interactionState = 'READY',
   framing = 'medium',
+  zoom = 1.0,
   className,
   style,
   onLoaded,
@@ -331,13 +332,21 @@ export const ProductionAvatarViewport: React.FC<ProductionAvatarViewportProps> =
   }, []); // Run once on mount
 
   // ---------------------------------------------------------------------------
-  // 3. Programmatic Camera Framing Updates (Internal only)
+  // 3. Programmatic Camera Framing Updates & Zoom
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const targetConfig = CAMERA_PRESETS[framing] || CAMERA_PRESETS.medium;
-    targetCamPosRef.current.set(...targetConfig.position);
-    targetCamLookRef.current.set(...targetConfig.target);
-  }, [framing]);
+    // Zoom factor scales distance relative to target: zoom > 1 moves closer, zoom < 1 moves further
+    const clampedZoom = Math.max(0.65, Math.min(1.5, zoom));
+    const targetVec = new THREE.Vector3(...targetConfig.target);
+    const posVec = new THREE.Vector3(...targetConfig.position);
+
+    const offset = posVec.clone().sub(targetVec).multiplyScalar(1 / clampedZoom);
+    const finalPos = targetVec.clone().add(offset);
+
+    targetCamPosRef.current.copy(finalPos);
+    targetCamLookRef.current.copy(targetVec);
+  }, [framing, zoom]);
 
   // ---------------------------------------------------------------------------
   // 4. Live Tutor State Lifecycle & Speech Synchronization

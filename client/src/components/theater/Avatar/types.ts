@@ -12,6 +12,7 @@ export type ProductionInteractionState =
 export interface ProductionAvatarViewportProps {
   interactionState?: ProductionInteractionState;
   framing?: CameraFramingState;
+  zoom?: number;
   className?: string;
   style?: React.CSSProperties;
   onLoaded?: () => void;

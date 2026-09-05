@@ -166,17 +166,21 @@ export const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
     <div
       style={{
         position: 'relative',
-        padding: 'var(--space-8) 0 var(--space-10) 0',
-        borderTop: '1px solid var(--color-border-subtle)',
-        borderBottom: '1px solid var(--color-border-subtle)',
+        padding: 'var(--space-8) var(--space-8)',
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-xl)',
+        boxShadow: 'var(--shadow-sm)',
+        transition: 'border-color var(--motion-standard) var(--ease-standard), box-shadow var(--motion-standard) var(--ease-standard)',
       }}
+      className="lumo-hairline-card"
     >
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr) auto',
           gap: 'var(--space-8)',
-          alignItems: 'end',
+          alignItems: 'center',
         }}
         className="lumo-continue-grid"
       >
@@ -188,14 +192,22 @@ export const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: 'var(--space-3)',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: 600,
-              letterSpacing: '0.04em',
+              letterSpacing: '0.06em',
               textTransform: 'uppercase',
               color: 'var(--color-text-muted)',
             }}
           >
-            <span style={{ color: 'var(--color-orange)' }}>
+            <span
+              style={{
+                color: 'var(--color-orange)',
+                background: 'var(--color-orange-soft)',
+                padding: '2px 8px',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 700,
+              }}
+            >
               {activeSession.subject || 'General'}
             </span>
             <span>·</span>
@@ -205,16 +217,17 @@ export const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
                 <span>·</span>
                 <span
                   style={{
-                    maxWidth: '260px',
+                    maxWidth: '240px',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                     textTransform: 'none',
                     fontWeight: 500,
+                    color: 'var(--color-text-secondary)',
                   }}
                   title={activeSession.documentTitle}
                 >
-                  📚 {activeSession.documentTitle}
+                  📄 {activeSession.documentTitle}
                 </span>
               </>
             )}
@@ -223,13 +236,14 @@ export const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
           {/* Large Editorial Topic Title */}
           <h2
             style={{
-              fontSize: 'clamp(28px, 3.4vw, 42px)',
+              fontSize: 'clamp(26px, 3vw, 36px)',
               fontWeight: 700,
               color: 'var(--color-text-primary)',
               letterSpacing: '-0.03em',
               lineHeight: 1.15,
               margin: 0,
             }}
+            className="lumo-editorial-title"
           >
             {activeSession.topic}
           </h2>
@@ -240,10 +254,10 @@ export const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
               fontSize: 'var(--text-body)',
               color: 'var(--color-text-secondary)',
               margin: 0,
-              marginTop: '2px',
+              lineHeight: 1.5,
             }}
           >
-            Continue from <strong style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{currentConcept}</strong>
+            Current target: <strong style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{currentConcept}</strong>
           </p>
 
           {/* Concept tags if available */}
@@ -252,23 +266,21 @@ export const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 'var(--space-2)',
+                gap: '6px',
                 flexWrap: 'wrap',
-                marginTop: 'var(--space-2)',
-                fontSize: 'var(--text-caption)',
-                color: 'var(--color-text-muted)',
+                marginTop: 'var(--space-1)',
               }}
             >
-              <span style={{ fontWeight: 600 }}>Concepts:</span>
               {conceptsList.slice(0, 4).map((c, i) => (
                 <span
                   key={i}
                   style={{
-                    padding: '2px 8px',
+                    padding: '3px 8px',
                     borderRadius: 'var(--radius-sm)',
                     background: 'var(--color-surface-soft)',
                     color: 'var(--color-text-secondary)',
-                    fontSize: '12px',
+                    fontSize: '11px',
+                    fontWeight: 500,
                     border: '1px solid var(--color-border-subtle)',
                   }}
                 >
@@ -279,19 +291,21 @@ export const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
           )}
 
           {/* Ultra-refined progress line */}
-          <div style={{ maxWidth: '480px', marginTop: 'var(--space-4)' }}>
+          <div style={{ maxWidth: '440px', marginTop: 'var(--space-3)' }}>
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                fontSize: '12px',
+                fontSize: '11px',
                 color: 'var(--color-text-muted)',
                 marginBottom: '6px',
-                fontWeight: 500,
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
               }}
             >
-              <span>Lesson progress</span>
-              <span style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{progressPercent}%</span>
+              <span>Session Mastery</span>
+              <span style={{ color: 'var(--color-text-primary)', fontWeight: 700 }}>{progressPercent}%</span>
             </div>
             <Progress value={progressPercent} variant="brand" height={3} />
           </div>
@@ -314,12 +328,14 @@ export const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
             onClick={() => onContinue(activeSession)}
             style={{
               padding: '0 var(--space-8)',
-              height: '50px',
-              fontSize: '15px',
-              boxShadow: 'var(--shadow-sm)',
+              height: '46px',
+              fontSize: '14px',
+              fontWeight: 600,
+              borderRadius: 'var(--radius-md)',
+              boxShadow: '0 2px 8px rgba(232, 89, 46, 0.25)',
             }}
           >
-            Continue learning &rarr;
+            Resume Theater &rarr;
           </Button>
 
           {/* Earlier sessions switcher */}
@@ -328,8 +344,8 @@ export const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 'var(--space-2)',
-                fontSize: 'var(--text-caption)',
+                gap: '8px',
+                fontSize: '11px',
                 color: 'var(--color-text-muted)',
                 marginTop: 'var(--space-1)',
               }}
@@ -347,11 +363,11 @@ export const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
                     textDecoration: 'underline',
                     textUnderlineOffset: '3px',
                     cursor: 'pointer',
-                    fontSize: 'var(--text-caption)',
+                    fontSize: '11px',
                   }}
                   title={s.topic}
                 >
-                  {s.topic.length > 18 ? `${s.topic.slice(0, 18)}…` : s.topic}
+                  {s.topic.length > 16 ? `${s.topic.slice(0, 16)}…` : s.topic}
                 </button>
               ))}
             </div>

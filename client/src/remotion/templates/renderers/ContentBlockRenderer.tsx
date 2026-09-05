@@ -18,35 +18,42 @@ export const InlineContentRenderer: React.FC<{ items: InlineContent[] }> = ({ it
         let style: React.CSSProperties = {};
 
         if (marks.includes('bold')) {
-          style.fontWeight = 650;
-          style.color = '#f8fafc';
+          style.fontWeight = 700;
+          style.color = '#ffffff';
         }
         if (marks.includes('italic')) {
           style.fontStyle = 'italic';
         }
         if (marks.includes('highlight')) {
-          style.backgroundColor = 'rgba(56, 189, 248, 0.14)';
-          style.color = '#f8fafc';
-          style.padding = '1px 5px';
-          style.borderRadius = '3px';
+          style.backgroundColor = 'rgba(245, 158, 11, 0.22)';
+          style.color = '#fef3c7';
+          style.padding = '2px 7px';
+          style.borderRadius = '4px';
+          style.border = '1px solid rgba(245, 158, 11, 0.4)';
+          style.fontWeight = 600;
         }
         if (marks.includes('term')) {
           style.color = '#38bdf8';
-          style.borderBottom = '1px dotted rgba(56, 189, 248, 0.5)';
+          style.borderBottom = '1.5px solid rgba(56, 189, 248, 0.6)';
+          style.fontWeight = 600;
         }
         if (marks.includes('variable')) {
           style.fontFamily = "'Fira Code', 'Courier New', monospace";
-          style.color = '#f59e0b';
+          style.color = '#fbbf24';
           style.fontStyle = 'italic';
           style.fontSize = '0.95em';
+          style.backgroundColor = 'rgba(251, 191, 36, 0.1)';
+          style.padding = '1px 4px';
+          style.borderRadius = '3px';
         }
         if (marks.includes('emphasis')) {
-          style.color = '#f1f5f9';
+          style.color = '#f8fafc';
           style.fontWeight = 600;
+          style.letterSpacing = '0.01em';
         }
         if (marks.includes('definition')) {
-          style.fontWeight = 600;
-          style.color = '#e2e8f0';
+          style.fontWeight = 650;
+          style.color = '#38bdf8';
         }
 
         return (
@@ -99,9 +106,9 @@ export const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ bloc
       return (
         <p
           style={{
-            margin: '0 0 12px 0',
-            fontSize: '13.5px',
-            lineHeight: 1.65,
+            margin: '0 0 14px 0',
+            fontSize: '16.5px',
+            lineHeight: 1.7,
             color: '#cbd5e1',
             fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
           }}
@@ -114,30 +121,54 @@ export const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ bloc
       return (
         <div
           style={{
-            margin: '14px 0',
-            padding: '10px 16px',
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
-            borderLeft: '3px solid #38bdf8',
-            borderRadius: '0 6px 6px 0',
+            margin: '20px 0',
+            padding: '24px 28px',
+            backgroundColor: 'rgba(15, 23, 42, 0.85)',
+            borderLeft: '5px solid #38bdf8',
+            borderRadius: '0 10px 10px 0',
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.45)',
+            border: '1px solid rgba(56, 189, 248, 0.25)',
+            borderLeftWidth: '5px',
           }}
         >
           <div
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
               fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              letterSpacing: '0.12em',
               color: '#38bdf8',
-              marginBottom: '4px',
+              backgroundColor: 'rgba(56, 189, 248, 0.12)',
+              padding: '3px 10px',
+              borderRadius: '4px',
+              marginBottom: '12px',
             }}
           >
-            DEFINITION · {block.term}
+            DEFINITION
           </div>
           <div
             style={{
-              fontSize: '13.5px',
-              lineHeight: 1.6,
-              color: '#e2e8f0',
+              fontSize: '28px',
+              fontWeight: 800,
+              letterSpacing: '-0.025em',
+              color: '#f8fafc',
+              lineHeight: 1.25,
+              marginBottom: '14px',
+              fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+            }}
+          >
+            {block.term}
+          </div>
+          <div
+            style={{
+              fontSize: '18px',
+              lineHeight: 1.65,
+              color: '#cbd5e1',
+              fontWeight: 400,
+              fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
             }}
           >
             <InlineContentRenderer items={block.definition} />
@@ -286,26 +317,26 @@ export const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ bloc
     case 'list': {
       const isOrdered = Boolean(block.ordered);
       return (
-        <div style={{ margin: '10px 0 12px 0' }}>
+        <div style={{ margin: '12px 0 16px 0' }}>
           {block.items.map((item, iIdx) => (
             <div
               key={iIdx}
               style={{
                 display: 'flex',
                 alignItems: 'baseline',
-                gap: '8px',
-                marginBottom: '6px',
-                fontSize: '13px',
-                lineHeight: 1.55,
-                color: '#cbd5e1',
+                gap: '10px',
+                marginBottom: '8px',
+                fontSize: '16px',
+                lineHeight: 1.65,
+                color: '#e2e8f0',
               }}
             >
               <span
                 style={{
-                  color: '#64748b',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  minWidth: isOrdered ? '18px' : '8px',
+                  color: '#38bdf8',
+                  fontSize: isOrdered ? '14px' : '14px',
+                  fontWeight: 700,
+                  minWidth: isOrdered ? '22px' : '10px',
                 }}
               >
                 {isOrdered ? `${iIdx + 1}.` : '•'}

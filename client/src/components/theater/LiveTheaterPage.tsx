@@ -43,7 +43,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
 }) => {
   // Session parameters
   const [topicInput, setTopicInput] = useState<string>(initialTopic || '');
-  const [selectedSubject, setSelectedSubject] = useState<string>(initialSubject || 'Physics');
+  const [selectedSubject, setSelectedSubject] = useState<string>(initialSubject || 'General');
   const [selectedDocumentId, setSelectedDocumentId] = useState<string>(initialDocumentId || 'none');
   const [selectedLanguage, setSelectedLanguage] = useState<'english' | 'hindi' | 'hinglish'>('english');
 

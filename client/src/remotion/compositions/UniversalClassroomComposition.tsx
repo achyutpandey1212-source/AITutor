@@ -56,17 +56,17 @@ export const DEFAULT_UNIVERSAL_BEAT: UniversalTeachingBeat = {
 
 export interface UniversalClassroomCompositionProps {
   beat?: UniversalTeachingBeat;
+  captionsEnabled?: boolean;
   width?: number;
   height?: number;
 }
 
 export const UniversalClassroomComposition: React.FC<UniversalClassroomCompositionProps> = ({
   beat = DEFAULT_UNIVERSAL_BEAT,
+  captionsEnabled = false,
   width = 1280,
   height = 720,
 }) => {
-  const environment = beat.visual?.environment || 'NEUTRAL';
-
   return (
     <div
       style={{
@@ -82,55 +82,7 @@ export const UniversalClassroomComposition: React.FC<UniversalClassroomCompositi
       }}
       className="universal-classroom-composition"
     >
-      {/* Top Academic Context Header */}
-      <div
-        style={{
-          height: '52px',
-          padding: '0 32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(51, 65, 85, 0.35)',
-          backgroundColor: 'rgba(11, 15, 23, 0.8)',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: '#38bdf8',
-            }}
-          />
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: '#94a3b8',
-            }}
-          >
-            LUMO TEACHING ENGINE · {environment}
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span
-            style={{
-              fontSize: '11px',
-              color: '#64748b',
-              fontWeight: 500,
-            }}
-          >
-            Beat #{beat.beatIndex + 1} ({beat.visual?.intent})
-          </span>
-        </div>
-      </div>
-
-      {/* Main Visual Stage Area */}
+      {/* Main Visual Stage Area — full height, all space given to the template */}
       <div
         style={{
           flex: 1,
@@ -145,38 +97,40 @@ export const UniversalClassroomComposition: React.FC<UniversalClassroomCompositi
         <UniversalTemplateEngine
           beat={beat}
           width={width}
-          height={height - 104} // 52px header + 52px caption bar
+          height={captionsEnabled ? height - 52 : height}
         />
       </div>
 
-      {/* Bottom Subtitle / Narration Bar */}
-      <div
-        style={{
-          height: '52px',
-          padding: '0 32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderTop: '1px solid rgba(51, 65, 85, 0.25)',
-          backgroundColor: 'rgba(11, 15, 23, 0.9)',
-          flexShrink: 0,
-        }}
-      >
-        <p
+      {/* Bottom Subtitle / Narration Bar — only when captions are on */}
+      {captionsEnabled && (
+        <div
           style={{
-            margin: 0,
-            fontSize: '13px',
-            color: '#e2e8f0',
-            textAlign: 'center',
-            maxWidth: '960px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            height: '52px',
+            padding: '0 32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderTop: '1px solid rgba(51, 65, 85, 0.25)',
+            backgroundColor: 'rgba(11, 15, 23, 0.9)',
+            flexShrink: 0,
           }}
         >
-          {beat.captionText || beat.displayText}
-        </p>
-      </div>
+          <p
+            style={{
+              margin: 0,
+              fontSize: '13px',
+              color: '#e2e8f0',
+              textAlign: 'center',
+              maxWidth: '960px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {beat.captionText || beat.displayText}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

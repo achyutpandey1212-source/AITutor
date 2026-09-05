@@ -42,7 +42,7 @@ export const EditorialExplanationTemplate: UniversalTemplateRenderer = {
               <h2
                 style={{
                   margin: 0,
-                  fontSize: '22px',
+                  fontSize: '25px',
                   fontWeight: 700,
                   letterSpacing: '-0.02em',
                   color: '#f8fafc',
@@ -54,8 +54,8 @@ export const EditorialExplanationTemplate: UniversalTemplateRenderer = {
             {subtitle && (
               <p
                 style={{
-                  margin: '4px 0 0 0',
-                  fontSize: '12.5px',
+                  margin: '6px 0 0 0',
+                  fontSize: '14px',
                   color: '#94a3b8',
                   fontWeight: 500,
                 }}
@@ -81,7 +81,7 @@ export const EditorialExplanationTemplate: UniversalTemplateRenderer = {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '15px',
+              fontSize: '18px',
               lineHeight: 1.7,
               color: '#cbd5e1',
               textAlign: 'center',

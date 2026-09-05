@@ -191,13 +191,27 @@ export const RecommendedLearningSection: React.FC<RecommendedLearningSectionProp
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 'var(--space-2)',
+                gap: '8px',
                 cursor: 'pointer',
-                padding: 'var(--space-2) 0',
-                transition: 'transform var(--motion-fast) var(--ease-standard)',
+                padding: '16px 18px',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                boxShadow: 'var(--shadow-xs)',
+                transition: 'all var(--motion-fast) var(--ease-standard)',
               }}
               role="button"
               tabIndex={0}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-border-strong)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-border)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-xs)';
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   onSelectRecommendation(rec.topic, rec.subject);
@@ -208,26 +222,34 @@ export const RecommendedLearningSection: React.FC<RecommendedLearningSectionProp
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 'var(--space-2)',
+                  justifyContent: 'space-between',
                   fontSize: '11px',
                   fontWeight: 600,
-                  letterSpacing: '0.04em',
+                  letterSpacing: '0.06em',
                   textTransform: 'uppercase',
                   color: 'var(--color-text-muted)',
                 }}
               >
-                <span style={{ color: 'var(--color-orange)' }}>{rec.subject}</span>
-                <span>·</span>
+                <span
+                  style={{
+                    color: 'var(--color-orange)',
+                    background: 'var(--color-orange-soft)',
+                    padding: '2px 6px',
+                    borderRadius: 'var(--radius-sm)',
+                  }}
+                >
+                  {rec.subject}
+                </span>
                 <span>~{rec.estimatedMinutes} min</span>
               </div>
 
               <h4
                 style={{
-                  fontSize: 'var(--text-body)',
+                  fontSize: '15px',
                   fontWeight: 600,
                   color: 'var(--color-text-primary)',
                   margin: 0,
-                  lineHeight: 1.35,
+                  lineHeight: 1.3,
                 }}
               >
                 {rec.topic}
@@ -235,28 +257,14 @@ export const RecommendedLearningSection: React.FC<RecommendedLearningSectionProp
 
               <p
                 style={{
-                  fontSize: 'var(--text-body-sm)',
+                  fontSize: '13px',
                   color: 'var(--color-text-secondary)',
-                  lineHeight: 1.5,
                   margin: 0,
+                  lineHeight: 1.45,
                 }}
               >
                 {rec.reason}
               </p>
-
-              <span
-                style={{
-                  fontSize: 'var(--text-caption)',
-                  fontWeight: 600,
-                  color: 'var(--color-orange)',
-                  marginTop: 'var(--space-1)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                Explore topic &rarr;
-              </span>
             </div>
           ))}
         </div>

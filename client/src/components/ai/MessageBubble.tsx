@@ -31,19 +31,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         style={{
           display: 'flex',
           justifyContent: 'flex-end',
-          margin: '16px 0',
+          margin: '14px 0',
         }}
       >
         <div
           style={{
-            maxWidth: '82%',
-            padding: '12px 18px',
-            borderRadius: '18px 18px 4px 18px',
-            background: 'var(--color-surface-hover)',
+            maxWidth: '78%',
+            padding: '10px 16px',
+            borderRadius: 'var(--radius-lg)',
+            background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
             color: 'var(--color-text-primary)',
-            fontSize: 'var(--text-body)',
-            lineHeight: 1.55,
+            fontSize: '14px',
+            lineHeight: 1.5,
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
             boxShadow: 'var(--shadow-xs)',
@@ -63,15 +63,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       style={{
         display: 'flex',
         alignItems: 'flex-start',
-        gap: '14px',
+        gap: '12px',
         margin: '20px 0',
       }}
     >
       {/* Lumo Avatar */}
       <div
         style={{
-          width: '32px',
-          height: '32px',
+          width: '28px',
+          height: '28px',
           borderRadius: 'var(--radius-md)',
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
@@ -86,7 +86,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         <img
           src="/logo/Lumo_Logo.png"
           alt="Lumo"
-          style={{ width: '18px', height: '18px', objectFit: 'contain' }}
+          style={{ width: '16px', height: '16px', objectFit: 'contain' }}
         />
       </div>
 
@@ -104,7 +104,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         >
           <span
             style={{
-              fontSize: 'var(--text-body-sm)',
+              fontSize: '13px',
               fontWeight: 700,
               color: 'var(--color-text-primary)',
             }}
@@ -115,13 +115,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           {tierConfig && (
             <span
               style={{
-                fontSize: '11px',
+                fontSize: '10px',
                 fontWeight: 600,
-                padding: '2px 8px',
+                padding: '1px 6px',
                 borderRadius: 'var(--radius-pill)',
-                background: 'var(--color-surface-hover)',
-                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface-soft)',
+                border: '1px solid var(--color-border-subtle)',
                 color: 'var(--color-text-secondary)',
+                letterSpacing: '0.02em',
               }}
             >
               {tierConfig.badge} {tierConfig.name}
@@ -131,16 +132,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           {message.hasDocumentContext && (
             <span
               style={{
-                fontSize: '11px',
-                padding: '2px 8px',
+                fontSize: '10px',
+                padding: '1px 6px',
                 borderRadius: 'var(--radius-pill)',
-                background: 'var(--color-surface-hover)',
-                border: '1px solid var(--color-border)',
+                background: 'var(--color-orange-soft)',
+                border: '1px solid var(--color-border-subtle)',
                 color: 'var(--color-orange)',
-                fontWeight: 500,
+                fontWeight: 600,
               }}
             >
-              📄 Document grounded
+              📄 Grounded
             </span>
           )}
         </div>

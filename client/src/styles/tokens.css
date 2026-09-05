@@ -8,127 +8,133 @@
 /* ---- LIGHT THEME (default) ---- */
 :root,
 [data-theme="light"] {
-  /* --- Backgrounds & Surfaces --- */
-  --color-background:        #FAF9F5;  /* Warm ivory foundation */
-  --color-surface:           #FFFFFF;  /* Primary elevated surface */
-  --color-surface-soft:      #F5F3EE;  /* Secondary/subtle surfaces */
-  --color-surface-hover:     #F0EDE6;  /* Hover state on surfaces */
+  /* --- Backgrounds & Surfaces (Notion-grade warm editorial paper) --- */
+  --color-background:        #FAF9F6;  /* Calm archival paper substrate */
+  --color-surface:           #FFFFFF;  /* Primary elevated surface / cards */
+  --color-surface-soft:      #F4F2EC;  /* Subtle secondary well */
+  --color-surface-hover:     #ECEAE2;  /* Responsive tactile hover */
+  --color-surface-elevated:  #FFFFFF;
 
-  /* --- Text --- */
-  --color-text-primary:      #172033;  /* Headings, primary content */
-  --color-text-secondary:    #5E6675;  /* Supporting text, metadata */
-  --color-text-muted:        #89909D;  /* Placeholders, tertiary info */
-  --color-text-inverse:      #FFFFFF;  /* Text on dark/colored surfaces */
+  /* --- Text (High-contrast editorial typography) --- */
+  --color-text-primary:      #121316;  /* Deep charcoal ink */
+  --color-text-secondary:    #555861;  /* Balanced body & description */
+  --color-text-muted:        #848892;  /* Architectural metadata */
+  --color-text-faint:        #B0B4BC;  /* Micro hints */
+  --color-text-inverse:      #FFFFFF;  /* Text on dark surfaces */
 
-  /* --- Borders --- */
-  --color-border:            #E7E4DC;  /* Primary border */
-  --color-border-subtle:     #EEECE6;  /* Light separator */
-  --color-border-focus:      #FF5A36;  /* Focus ring — Lumo Orange */
+  /* --- Borders (Precision hairline separators) --- */
+  --color-border:            #E4E1D8;  /* Primary border */
+  --color-border-subtle:     #EFECE4;  /* Ultra-light hairline */
+  --color-border-strong:     #C9C6BD;  /* Emphasized boundary */
+  --color-border-focus:      #E8592E;  /* Precision focus ring */
 
-  /* --- Brand Colors --- */
-  --color-orange:            #FF5A36;  /* Primary brand — CTAs, key actions */
-  --color-orange-hover:      #E84D2B;  /* Orange hover */
-  --color-orange-soft:       #FFF0ED;  /* Orange tint background */
-  --color-coral:             #FF765C;  /* Soft companion, gradients */
-  --color-peach:             #FFB39F;  /* Subtle decorative */
-  --color-yellow:            #F5B942;  /* Highlights, achievements */
-  --color-yellow-soft:       #FFFAED;
-  --color-mint:              #55C98A;  /* Success, progress, mastery */
-  --color-mint-soft:         #EEFBF4;
-  --color-sky:               #55A9E8;  /* Information, science visuals */
-  --color-sky-soft:          #EDF6FD;
-  --color-pink:              #F39AB5;  /* Occasional accent */
+  /* --- Brand & Accent Colors (Restrained warm signal) --- */
+  --color-orange:            #E8592E;  /* Confident warm cinnabar/orange */
+  --color-orange-hover:      #D44A20;  /* Pressed state */
+  --color-orange-soft:       #FDF2ED;  /* Gentle tint badge background */
+  --color-coral:             #F06E48;
+  --color-peach:             #F9BEAF;
+  --color-yellow:            #E5A220;
+  --color-yellow-soft:       #FEF9EC;
+  --color-mint:              #38A569;
+  --color-mint-soft:         #EDF8F1;
+  --color-sky:               #3B8BC7;
+  --color-sky-soft:          #EDF5FC;
+  --color-pink:              #DE6C8D;
 
   /* --- Semantic Colors --- */
-  --color-success:           #39A96B;
-  --color-success-soft:      #EDFBF3;
-  --color-warning:           #D99527;
-  --color-warning-soft:      #FFFAEB;
-  --color-error:             #DE6B68;
-  --color-error-soft:        #FEF2F2;
-  --color-info:              #428FD1;
-  --color-info-soft:         #EDF4FD;
+  --color-success:           #2E965A;
+  --color-success-soft:      #EBF7F0;
+  --color-warning:           #C9811C;
+  --color-warning-soft:      #FCF6E9;
+  --color-error:             #D94A46;
+  --color-error-soft:        #FDF0F0;
+  --color-info:              #337AB7;
+  --color-info-soft:         #EBF3FA;
 
-  /* --- Navigation --- */
-  --color-nav-bg:            #FFFFFF;
-  --color-nav-border:        #E7E4DC;
-  --color-nav-text:          #5E6675;
-  --color-nav-text-active:   #172033;
+  /* --- Navigation Chrome --- */
+  --color-nav-bg:            rgba(250, 249, 246, 0.85);
+  --color-nav-border:        #E4E1D8;
+  --color-nav-text:          #555861;
+  --color-nav-text-active:   #121316;
 
-  /* --- Shadows (Light) --- */
-  --shadow-sm:   0 1px 3px rgba(23, 32, 51, 0.06);
-  --shadow-md:   0 4px 12px rgba(23, 32, 51, 0.08);
-  --shadow-lg:   0 16px 40px rgba(23, 32, 51, 0.10);
-  --shadow-xl:   0 24px 60px rgba(23, 32, 51, 0.12);
+  /* --- Shadows (Soft, physically plausible ambient occlusion) --- */
+  --shadow-xs:   0 1px 2px rgba(18, 19, 22, 0.04);
+  --shadow-sm:   0 2px 5px rgba(18, 19, 22, 0.05);
+  --shadow-md:   0 6px 18px rgba(18, 19, 22, 0.07);
+  --shadow-lg:   0 16px 36px rgba(18, 19, 22, 0.09);
+  --shadow-xl:   0 28px 64px rgba(18, 19, 22, 0.11);
 
   /* --- Interactive overlay --- */
-  --color-overlay:           rgba(23, 32, 51, 0.48);
+  --color-overlay:           rgba(18, 19, 22, 0.45);
 
-  /* --- Logo filter (none needed for light theme — logo is dark) --- */
   --logo-filter: none;
   --logo-opacity: 1;
 }
 
-/* ---- DARK THEME ---- */
+/* ---- DARK THEME (Linear-grade technical luxury) ---- */
 [data-theme="dark"] {
-  /* --- Backgrounds & Surfaces --- */
-  --color-background:        #0D0F12;  /* Deep cinematic background */
-  --color-surface:           #15181D;  /* Primary elevated surface */
-  --color-surface-soft:      #1B1F25;  /* Cards, dialogs, elevated */
-  --color-surface-hover:     #21262E;  /* Hover on dark surfaces */
+  /* --- Backgrounds & Surfaces (Multi-layer charcoal luminance stack) --- */
+  --color-background:        #090A0C;  /* bg-0: Deepest substrate */
+  --color-surface:           #0E1013;  /* bg-1: Section / container surface */
+  --color-surface-soft:      #13161A;  /* bg-2: Elevated card well */
+  --color-surface-hover:     #1A1D23;  /* bg-3: Active hover state */
+  --color-surface-elevated:  #16191F;  /* Floating modals / command surfaces */
 
-  /* --- Text --- */
-  --color-text-primary:      #F7F5EF;  /* Warm white text */
-  --color-text-secondary:    #B6BAC2;  /* Secondary text */
-  --color-text-muted:        #7E848F;  /* Muted text */
-  --color-text-inverse:      #172033;  /* Text on light surfaces */
+  /* --- Text (Luminance hierarchy for spatial readability) --- */
+  --color-text-primary:      #F4F4F6;  /* Crisp off-white */
+  --color-text-secondary:    #A3A7B0;  /* Cool secondary */
+  --color-text-muted:        #696E79;  /* Metadata and labels */
+  --color-text-faint:        #454952;  /* De-emphasized lines */
+  --color-text-inverse:      #090A0C;  /* Dark text on bright elements */
 
-  /* --- Borders --- */
-  --color-border:            #292D34;  /* Primary dark border */
-  --color-border-subtle:     #20242A;  /* Subtle separator */
-  --color-border-focus:      #FF765C;  /* Focus ring — Lumo Coral (lighter on dark) */
+  /* --- Borders (Ultra-thin luminous hairlines) --- */
+  --color-border:            rgba(255, 255, 255, 0.08); /* Primary border */
+  --color-border-subtle:     rgba(255, 255, 255, 0.045);/* Micro divider */
+  --color-border-strong:     rgba(255, 255, 255, 0.16); /* Focused border */
+  --color-border-focus:      #FF6940;                   /* Focus ring */
 
-  /* --- Brand Colors (same hues, calibrated for dark) --- */
-  --color-orange:            #FF6B4A;  /* Slightly lifted for dark contrast */
-  --color-orange-hover:      #FF7B5C;
-  --color-orange-soft:       #2A1814;  /* Dark tint */
-  --color-coral:             #FF8F78;
-  --color-peach:             #FFB39F;
-  --color-yellow:            #F5C542;
-  --color-yellow-soft:       #1E1A0D;
-  --color-mint:              #62D394;
-  --color-mint-soft:         #0C2018;
-  --color-sky:               #6CB8F2;
-  --color-sky-soft:          #0A1929;
-  --color-pink:              #F4A8C0;
+  /* --- Brand Colors (Calibrated for dark luminance) --- */
+  --color-orange:            #FF6339;  /* Confident signal accent */
+  --color-orange-hover:      #FF7750;
+  --color-orange-soft:       rgba(255, 99, 57, 0.12);
+  --color-coral:             #FF8566;
+  --color-peach:             #FFAE99;
+  --color-yellow:            #E8B338;
+  --color-yellow-soft:       rgba(232, 179, 56, 0.12);
+  --color-mint:              #4CC585;
+  --color-mint-soft:         rgba(76, 197, 133, 0.12);
+  --color-sky:               #4DA8EC;
+  --color-sky-soft:          rgba(77, 168, 236, 0.12);
+  --color-pink:              #E8789C;
 
   /* --- Semantic Colors --- */
-  --color-success:           #62D394;
-  --color-success-soft:      #0C2018;
-  --color-warning:           #F2B84B;
-  --color-warning-soft:      #1E1A0D;
-  --color-error:             #F18480;
-  --color-error-soft:        #2A0F0F;
-  --color-info:              #6CB8F2;
-  --color-info-soft:         #0A1929;
+  --color-success:           #4CC585;
+  --color-success-soft:      rgba(76, 197, 133, 0.12);
+  --color-warning:           #E8B338;
+  --color-warning-soft:      rgba(232, 179, 56, 0.12);
+  --color-error:             #E85854;
+  --color-error-soft:        rgba(232, 88, 84, 0.12);
+  --color-info:              #4DA8EC;
+  --color-info-soft:         rgba(77, 168, 236, 0.12);
 
-  /* --- Navigation --- */
-  --color-nav-bg:            #0D0F12;
-  --color-nav-border:        #292D34;
-  --color-nav-text:          #B6BAC2;
-  --color-nav-text-active:   #F7F5EF;
+  /* --- Navigation Chrome --- */
+  --color-nav-bg:            rgba(9, 10, 12, 0.82);
+  --color-nav-border:        rgba(255, 255, 255, 0.07);
+  --color-nav-text:          #A3A7B0;
+  --color-nav-text-active:   #F4F4F6;
 
-  /* --- Shadows (Dark — rely on surface contrast + subtle borders) --- */
-  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.30);
-  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.40);
-  --shadow-lg:   0 16px 40px rgba(0, 0, 0, 0.50);
-  --shadow-xl:   0 24px 60px rgba(0, 0, 0, 0.60);
+  /* --- Shadows (Luminance + soft ambient drop) --- */
+  --shadow-xs:   0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-sm:   0 2px 6px rgba(0, 0, 0, 0.50);
+  --shadow-md:   0 6px 18px rgba(0, 0, 0, 0.60);
+  --shadow-lg:   0 16px 40px rgba(0, 0, 0, 0.70);
+  --shadow-xl:   0 28px 70px rgba(0, 0, 0, 0.80);
 
   /* --- Interactive overlay --- */
-  --color-overlay:           rgba(0, 0, 0, 0.70);
+  --color-overlay:           rgba(0, 0, 0, 0.75);
 
-  /* --- Logo: invert for white logo on dark backgrounds --- */
-  --logo-filter: invert(1) brightness(2);
+  --logo-filter: invert(1) brightness(1.8);
   --logo-opacity: 0.95;
 }
 

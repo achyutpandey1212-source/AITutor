@@ -218,12 +218,25 @@ export const UniversalPrimitiveRenderer: React.FC<UniversalPrimitiveRendererProp
           ))}
 
         {/* LAYER 3: Connectors between nodes */}
-        {connectors.map((connector) => {
+        {connectors.map((connector, cIdx) => {
           const fromPos = resolvedPositions.get(connector.fromNodeId);
           const toPos = resolvedPositions.get(connector.toNodeId);
 
           if (!fromPos || !toPos) {
             return null;
+          }
+
+          let connectorProgress = drawProgress;
+          let connectorOpacity = globalFade;
+
+          if (enterTransition === 'stagger_reveal') {
+            const startDelay = cIdx * 4 + 2;
+            connectorProgress = interpolate(frame, [startDelay, startDelay + 8], [0, 1], {
+              extrapolateRight: 'clamp',
+            });
+            connectorOpacity = interpolate(frame, [startDelay, startDelay + 6], [0, 1], {
+              extrapolateRight: 'clamp',
+            });
           }
 
           return (
@@ -234,8 +247,8 @@ export const UniversalPrimitiveRenderer: React.FC<UniversalPrimitiveRendererProp
               toNode={nodeMap.get(connector.toNodeId)}
               fromPosition={fromPos}
               toPosition={toPos}
-              drawProgress={drawProgress}
-              opacity={globalFade}
+              drawProgress={connectorProgress}
+              opacity={connectorOpacity}
             />
           );
         })}

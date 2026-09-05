@@ -211,7 +211,7 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
       {/* Workspace Sub-Header / Control Strip */}
       <header
         style={{
-          height: '52px',
+          height: '46px',
           borderBottom: '1px solid var(--color-border)',
           background: 'var(--color-surface)',
           display: 'flex',
@@ -224,7 +224,7 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
         }}
       >
         {/* Left: Back Link & Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
             type="button"
             onClick={() => onNavigate(backDestination)}
@@ -232,7 +232,7 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
               background: 'none',
               border: 'none',
               padding: 0,
-              fontSize: 'var(--text-body-sm)',
+              fontSize: '12px',
               fontWeight: 600,
               color: 'var(--color-text-secondary)',
               cursor: 'pointer',
@@ -251,7 +251,7 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
 
           <div
             style={{
-              height: '16px',
+              height: '14px',
               width: '1px',
               background: 'var(--color-border)',
             }}
@@ -259,7 +259,7 @@ export const LumoAIPage: React.FC<LumoAIPageProps> = ({
 
           <span
             style={{
-              fontSize: 'var(--text-body)',
+              fontSize: '13px',
               fontWeight: 700,
               letterSpacing: '-0.01em',
               color: 'var(--color-text-primary)',

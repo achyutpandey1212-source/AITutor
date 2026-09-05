@@ -29,8 +29,8 @@ export const VisualConnectorComponent: React.FC<VisualConnectorComponentProps> =
   const fromShape = fromNode?.shape || 'box';
   const toShape = toNode?.shape || 'box';
 
-  const startPt = getPerimeterIntersection(fromPosition, toPosition, fromShape, 2);
-  const endPt = getPerimeterIntersection(toPosition, fromPosition, toShape, 2);
+  const startPt = getPerimeterIntersection(fromPosition, toPosition, fromShape, 6);
+  const endPt = getPerimeterIntersection(toPosition, fromPosition, toShape, 6);
 
   // Apply draw progress for reveal animations
   const curEndX = startPt.x + (endPt.x - startPt.x) * drawProgress;

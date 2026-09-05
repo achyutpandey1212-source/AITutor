@@ -70,20 +70,20 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <div
       style={{
-        maxWidth: '680px',
+        maxWidth: '720px',
         margin: '0 auto',
-        padding: 'var(--space-8) var(--space-4)',
+        padding: 'var(--space-12) var(--space-4) var(--space-8) var(--space-4)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         textAlign: 'center',
       }}
     >
-      {/* Lumo Warm Logo Mark */}
+      {/* Precision Emblem */}
       <div
         style={{
-          width: '56px',
-          height: '56px',
+          width: '48px',
+          height: '48px',
           borderRadius: 'var(--radius-lg)',
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
@@ -97,33 +97,34 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <img
           src="/logo/Lumo_Logo.png"
           alt="Lumo"
-          style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+          style={{ width: '26px', height: '26px', objectFit: 'contain' }}
         />
       </div>
 
       <h2
         style={{
-          fontSize: 'var(--text-h2)',
+          fontSize: 'clamp(26px, 3.2vw, 36px)',
           fontWeight: 700,
-          letterSpacing: '-0.02em',
+          letterSpacing: '-0.03em',
           color: 'var(--color-text-primary)',
           margin: '0 0 var(--space-2) 0',
+          lineHeight: 1.15,
         }}
+        className="lumo-editorial-title"
       >
-        What are you learning today?
+        What shall we unpack today?
       </h2>
 
       <p
         style={{
           fontSize: 'var(--text-body)',
           color: 'var(--color-text-secondary)',
-          lineHeight: 1.5,
-          maxWidth: '480px',
+          lineHeight: 1.55,
+          maxWidth: '460px',
           margin: '0 0 var(--space-6) 0',
         }}
       >
-        Ask doubts, explore real-world analogies, or unpack your study notes.
-        Lumo adapts to your pacing.
+        Ask doubts, deconstruct difficult derivations, or cross-examine your study materials.
       </p>
 
       {/* Active Context Banner if set */}
@@ -135,14 +136,15 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             gap: '8px',
             padding: '6px 14px',
             borderRadius: 'var(--radius-pill)',
-            background: 'var(--color-surface-hover)',
+            background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
-            fontSize: 'var(--text-body-sm)',
+            fontSize: '12px',
             color: 'var(--color-text-secondary)',
             marginBottom: 'var(--space-6)',
+            boxShadow: 'var(--shadow-xs)',
           }}
         >
-          <span>Grounded in:</span>
+          <span style={{ color: 'var(--color-text-muted)' }}>Grounded in:</span>
           <strong style={{ color: 'var(--color-text-primary)' }}>{contextName}</strong>
           <button
             type="button"
@@ -152,7 +154,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
               border: 'none',
               color: 'var(--color-orange)',
               fontWeight: 600,
-              fontSize: '12px',
+              fontSize: '11px',
               cursor: 'pointer',
               padding: '0 4px',
             }}
@@ -166,10 +168,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
           gap: '12px',
           width: '100%',
           textAlign: 'left',
+          marginTop: 'var(--space-2)',
         }}
       >
         {starterPrompts.map((item, idx) => (
@@ -180,19 +183,19 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             style={{
               background: 'var(--color-surface)',
               border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              padding: '14px 16px',
+              borderRadius: 'var(--radius-lg)',
+              padding: '16px 18px',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
-              gap: '4px',
+              gap: '6px',
               textAlign: 'left',
               transition: 'all var(--motion-fast) var(--ease-standard)',
               boxShadow: 'var(--shadow-xs)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--color-orange)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.borderColor = 'var(--color-border-strong)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
               e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
             }}
             onMouseLeave={(e) => {
@@ -203,7 +206,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           >
             <span
               style={{
-                fontSize: 'var(--text-body-sm)',
+                fontSize: '14px',
                 fontWeight: 600,
                 color: 'var(--color-text-primary)',
               }}
@@ -214,7 +217,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
               style={{
                 fontSize: '12px',
                 color: 'var(--color-text-secondary)',
-                lineHeight: 1.4,
+                lineHeight: 1.45,
               }}
             >
               {item.desc}

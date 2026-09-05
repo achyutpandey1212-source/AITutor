@@ -189,112 +189,154 @@ export const RecentDocumentsSection: React.FC<RecentDocumentsSectionProps> = ({
             const isHovered = hoveredDocId === doc.id;
 
             return (
-              <div
-                key={doc.id}
-                onMouseEnter={() => setHoveredDocId(doc.id)}
-                onMouseLeave={() => setHoveredDocId(null)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: 'var(--space-3) 0',
-                  borderBottom: '1px solid var(--color-border-subtle)',
-                  transition: 'background var(--motion-fast) var(--ease-standard)',
-                  gap: 'var(--space-4)',
-                }}
-              >
-                {/* Document Information */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <span style={{ fontSize: '14px', color: 'var(--color-text-muted)' }}>📄</span>
-                    <span
-                      style={{
-                        fontSize: 'var(--text-body)',
-                        fontWeight: 600,
-                        color: 'var(--color-text-primary)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                      title={doc.filename}
-                    >
-                      {doc.filename}
-                    </span>
-                  </div>
+                <div
+                  key={doc.id}
+                  onMouseEnter={() => setHoveredDocId(doc.id)}
+                  onMouseLeave={() => setHoveredDocId(null)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid transparent',
+                    background: isHovered ? 'var(--color-surface)' : 'transparent',
+                    borderColor: isHovered ? 'var(--color-border)' : 'transparent',
+                    transition: 'all var(--motion-fast) var(--ease-standard)',
+                    gap: 'var(--space-4)',
+                    boxShadow: isHovered ? 'var(--shadow-xs)' : 'none',
+                  }}
+                >
+                  {/* Document Information */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '13px', opacity: 0.8 }}>📄</span>
+                      <span
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: 'var(--color-text-primary)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                        title={doc.filename}
+                      >
+                        {doc.filename}
+                      </span>
+                      {isReady && (
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            padding: '1px 6px',
+                            borderRadius: 'var(--radius-pill)',
+                            background: 'var(--color-success-soft)',
+                            color: 'var(--color-success)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                          }}
+                        >
+                          Indexed
+                        </span>
+                      )}
+                      {isProcessing && (
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            padding: '1px 6px',
+                            borderRadius: 'var(--radius-pill)',
+                            background: 'var(--color-warning-soft)',
+                            color: 'var(--color-warning)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                          }}
+                        >
+                          Parsing
+                        </span>
+                      )}
+                    </div>
 
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--space-2)',
-                      fontSize: '12px',
-                      color: 'var(--color-text-muted)',
-                      paddingLeft: '22px',
-                    }}
-                  >
-                    <span>{formatFileSize(doc.size)}</span>
-                    <span>·</span>
-                    <span>{doc.chunkCount > 0 ? `${doc.chunkCount} concepts indexed` : isProcessing ? 'Indexing...' : 'Pending'}</span>
-                    <span>·</span>
-                    <span>Added {formatRelativeDate(doc.createdAt)}</span>
-                    {isProcessing && (
-                      <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>· Processing</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
-                  {isHovered && (
-                    <button
-                      onClick={() => onDeleteDocument(doc.id, doc.filename)}
+                    <div
                       style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--color-text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
                         fontSize: '12px',
-                        cursor: 'pointer',
-                        padding: '4px',
+                        color: 'var(--color-text-muted)',
+                        paddingLeft: '21px',
                       }}
-                      title="Remove document"
-                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-error)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
                     >
-                      Remove
-                    </button>
-                  )}
+                      <span>{formatFileSize(doc.size)}</span>
+                      <span>·</span>
+                      <span>{doc.chunkCount > 0 ? `${doc.chunkCount} concepts` : 'Processing'}</span>
+                      <span>·</span>
+                      <span>Added {formatRelativeDate(doc.createdAt)}</span>
+                    </div>
+                  </div>
 
-                  <button
-                    onClick={() => isReady && onSelectDocument(doc)}
-                    disabled={!isReady}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: isReady ? 'var(--color-orange)' : 'var(--color-text-muted)',
-                      fontSize: 'var(--text-body-sm)',
-                      fontWeight: 600,
-                      cursor: isReady ? 'pointer' : 'default',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 8px',
-                      borderRadius: 'var(--radius-sm)',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (isReady) e.currentTarget.style.background = 'var(--color-surface-soft)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'none';
-                    }}
-                  >
-                    {isReady ? 'Learn with this →' : 'Processing…'}
-                  </button>
+                  {/* Actions */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                    {isHovered && (
+                      <button
+                        onClick={() => onDeleteDocument(doc.id, doc.filename)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--color-text-muted)',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          padding: '4px 6px',
+                          borderRadius: 'var(--radius-sm)',
+                          transition: 'color var(--motion-fast)',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-error)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                        title="Remove document"
+                      >
+                        Delete
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => onSelectDocument(doc)}
+                      disabled={!isReady}
+                      style={{
+                        background: isReady ? 'var(--color-surface-soft)' : 'transparent',
+                        border: '1px solid var(--color-border)',
+                        color: isReady ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: isReady ? 'pointer' : 'default',
+                        padding: '5px 12px',
+                        borderRadius: 'var(--radius-sm)',
+                        transition: 'all var(--motion-fast) var(--ease-standard)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (isReady) {
+                          e.currentTarget.style.borderColor = 'var(--color-orange)';
+                          e.currentTarget.style.color = 'var(--color-orange)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (isReady) {
+                          e.currentTarget.style.borderColor = 'var(--color-border)';
+                          e.currentTarget.style.color = 'var(--color-text-primary)';
+                        }
+                      }}
+                    >
+                      <span>Study &rarr;</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
+              );
+            })}
+          </div>
+        )}
+      </section>
   );
 };

@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "name": "Premium Software Starter",
+    "purpose": "Universal neutral-first token foundation for high-end SaaS/AI interfaces",
+    "status": "starter-not-brand-specific"
+  },
+  "color": {
+    "dark": {
+      "bg0": "#090A0B",
+      "bg1": "#0D0F11",
+      "bg2": "#121416",
+      "bg3": "#171A1D",
+      "line1": "#22262A",
+      "line2": "#191C20",
+      "text1": "#F5F5F3",
+      "text2": "#B1B5BA",
+      "text3": "#777D84",
+      "text4": "#555B62"
+    },
+    "light": {
+      "bg0": "#FAFAF8",
+      "bg1": "#F5F5F2",
+      "bg2": "#FFFFFF",
+      "line1": "#E4E4E0",
+      "text1": "#171717",
+      "text2": "#5B5B58",
+      "text3": "#8B8B86"
+    },
+    "semantic": {
+      "accent": "<PRODUCT_ACCENT>",
+      "success": "<PRODUCT_SUCCESS>",
+      "warning": "<PRODUCT_WARNING>",
+      "danger": "<PRODUCT_DANGER>",
+      "info": "<PRODUCT_INFO>"
+    }
+  },
+  "radius": {
+    "sm": "8px",
+    "md": "12px",
+    "lg": "16px",
+    "xl": "24px",
+    "pill": "9999px"
+  },
+  "spacing": {
+    "1": "4px",
+    "2": "8px",
+    "3": "12px",
+    "4": "16px",
+    "6": "24px",
+    "8": "32px",
+    "12": "48px",
+    "16": "64px",
+    "24": "96px",
+    "32": "128px"
+  },
+  "typography": {
+    "display": "clamp(3.25rem, 7vw, 7rem)",
+    "h1": "clamp(2.75rem, 5vw, 5.5rem)",
+    "h2": "clamp(2rem, 3.4vw, 3.75rem)",
+    "h3": "1.5rem",
+    "bodyLg": "1.125rem",
+    "body": "1rem",
+    "small": "0.875rem",
+    "micro": "0.75rem"
+  },
+  "layout": {
+    "contentMax": "1200px",
+    "wideMax": "1320px",
+    "gutter": "clamp(20px, 4vw, 48px)",
+    "sectionGap": "clamp(96px, 12vw, 180px)"
+  },
+  "motion": {
+    "micro": "150ms",
+    "ui": "240ms",
+    "reveal": "480ms",
+    "easeOut": "cubic-bezier(0.22, 1, 0.36, 1)",
+    "easeInOut": "cubic-bezier(0.65, 0, 0.35, 1)"
+  }
+}

@@ -105,8 +105,9 @@ export class VisualStrategyEngine {
       return 'WORKED_EXAMPLE';
     }
 
-    // Spatial relationships, ray geometry, reflection, or optical anatomy -> DIAGRAM
+    // Spatial/relational structure → DIAGRAM
     if (
+      /diagram|structure|relationship|component|organ|system|network|parts of|anatomy|architecture|connected to|made of|consists of/i.test(combined) ||
       /reflection|ray|mirror|lens|surface|incident ray|reflected ray|normal line/i.test(combined)
     ) {
       if (!recentStrategies.slice(-2).includes('DIAGRAM')) {
@@ -114,10 +115,11 @@ export class VisualStrategyEngine {
       }
     }
 
-    // Pure mathematical formula or equation definition -> FORMULA
+    // Pure mathematical formula or equation definition → FORMULA
     if (
-      /formula|snell's law|equation|mirror formula|lens formula|1\/f|sin\(i\)|refractive index formula/i.test(concept) ||
-      (text.includes('=') && /fraction|proportional|ratio|equation/i.test(text))
+      /formula|equation|law|theorem|rule|expression|derivation/i.test(concept) ||
+      (text.includes('=') && /fraction|proportional|ratio|equation|derivative|integral/i.test(text)) ||
+      /snell's law|mirror formula|lens formula|1\/f|sin\(i\)|refractive index/i.test(concept)
     ) {
       if (!recentStrategies.slice(-2).includes('FORMULA')) {
         return 'FORMULA';
@@ -256,13 +258,13 @@ export class VisualStrategyEngine {
 
       case 'PROCESS_ANIMATION': {
         const pa = ContentToVisualTransformer.transformToProcessAnimation({
-          title: `Dynamic Process: ${concept}`,
+          title: `Process: ${concept}`,
           stages: [
-            { stageNumber: 1, label: 'Incident Light', description: 'Light ray approaches boundary in medium 1' },
-            { stageNumber: 2, label: 'Boundary Interface', description: 'Ray encounters change in optical density' },
-            { stageNumber: 3, label: 'Speed Change & Bending', description: 'Ray bends towards/away from normal line' },
+            { stageNumber: 1, label: 'Initial State', description: `Beginning of the process for ${concept}` },
+            { stageNumber: 2, label: 'Transition', description: `Key change or transformation occurs` },
+            { stageNumber: 3, label: 'Final State', description: `Outcome or result of the process` },
           ],
-          animationType: 'ray_bend',
+          animationType: 'step',
         });
         return [
           {
@@ -296,11 +298,9 @@ export class VisualStrategyEngine {
       }
 
       case 'FORMULA': {
-        const formulaStr = /1\/f/i.test(text)
-          ? '1/f = 1/v + 1/u'
-          : /sin/i.test(text)
-          ? 'n_1 \\sin(\\theta_1) = n_2 \\sin(\\theta_2)'
-          : 'v = u + at';
+        // Extract formula-like content from text; Universal Visual Builder will refine this
+        const formulaMatch = text.match(/\b[A-Za-z_]\s*=\s*[^\n.]+/);
+        const formulaStr = formulaMatch ? formulaMatch[0].trim() : concept;
         return [
           {
             beatIndex: 0,
@@ -308,22 +308,11 @@ export class VisualStrategyEngine {
             data: {
               title: concept,
               formula: formulaStr,
-              formulaLabel: 'Fundamental Formula',
-              formulaExplanation: 'Mathematical relationship between key physical parameters.',
+              formulaLabel: 'Key Formula',
+              formulaExplanation: text.substring(0, 200),
             },
             durationHint: 6000,
             transitionIn: 'fade',
-          },
-          {
-            beatIndex: 1,
-            type: 'HIGHLIGHT',
-            data: {
-              title: concept,
-              heading: 'Sign Convention Rule',
-              text: 'Distances measured in direction of incident ray are positive; opposite are negative.',
-            },
-            durationHint: 5000,
-            transitionIn: 'pop',
           },
         ];
       }
@@ -335,23 +324,11 @@ export class VisualStrategyEngine {
             type: 'DIAGRAM',
             data: {
               title: concept,
-              diagramType: 'ray_geometry',
-              diagramData: { concept, hasNormal: true },
-              text: 'Visual geometry of incident, reflected, and boundary normals.',
+              diagramType: 'relational',
+              text: text.substring(0, 300),
             },
             durationHint: 6000,
             transitionIn: 'fade',
-          },
-          {
-            beatIndex: 1,
-            type: 'HIGHLIGHT',
-            data: {
-              title: concept,
-              heading: 'Governing Angle Condition',
-              text: 'Angle of incidence equals angle of reflection (θi = θr).',
-            },
-            durationHint: 5000,
-            transitionIn: 'pop',
           },
         ];
       }

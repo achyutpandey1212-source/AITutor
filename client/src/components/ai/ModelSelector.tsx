@@ -47,12 +47,12 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
           display: 'inline-flex',
           alignItems: 'center',
           gap: '6px',
-          padding: '6px 12px',
-          borderRadius: 'var(--radius-pill)',
+          padding: '4px 10px',
+          borderRadius: 'var(--radius-sm)',
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
           color: 'var(--color-text-primary)',
-          fontSize: 'var(--text-body-sm)',
+          fontSize: '12px',
           fontWeight: 600,
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.6 : 1,
@@ -62,7 +62,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
       >
         <span
           style={{
-            fontSize: '13px',
+            fontSize: '12px',
             color:
               currentOption.id === 'pro'
                 ? 'var(--color-orange)'
@@ -75,8 +75,8 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
         </span>
         <span>{currentOption.name}</span>
         <svg
-          width="12"
-          height="12"
+          width="10"
+          height="10"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

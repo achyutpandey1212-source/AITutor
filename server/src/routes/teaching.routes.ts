@@ -964,14 +964,12 @@ async function processTurnCore(params: {
   }
 
   if (!effectiveVisual) {
-    const isFormula = /\b(\d+\/[a-zA-Z]|\b[a-zA-Z]\s*=\s*|\\frac|sin\b|cos\b|snell|mirror|lens)\b/i.test(finalResponseText);
     effectiveVisual = {
-      type: isFormula ? 'FORMULA' : 'TEXT',
+      type: 'TEXT',
       data: {
-        title: sessionDoc.topic,
+        title: updatedState.currentConcept || sessionDoc.topic,
         heading: updatedState.currentConcept || sessionDoc.topic,
         text: caption,
-        formula: isFormula ? '1/f = 1/v + 1/u' : undefined,
       },
     };
   }

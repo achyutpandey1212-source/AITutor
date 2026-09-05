@@ -75,8 +75,8 @@ export const TextScene: React.FC<TextSceneProps> = ({
             background: 'rgba(30, 41, 59, 0.7)',
             border: '1px solid rgba(148, 163, 184, 0.2)',
             borderRadius: '12px',
-            padding: '1.25rem 1.5rem',
-            marginBottom: '1.25rem',
+            padding: '1.35rem 1.65rem',
+            marginBottom: '1.35rem',
             opacity: textOpacity,
             boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
           }}
@@ -84,8 +84,8 @@ export const TextScene: React.FC<TextSceneProps> = ({
           <p
             style={{
               color: '#e2e8f0',
-              fontSize: '1.15rem',
-              lineHeight: 1.6,
+              fontSize: '1.35rem',
+              lineHeight: 1.65,
               margin: 0,
               fontWeight: 500,
             }}
@@ -97,7 +97,7 @@ export const TextScene: React.FC<TextSceneProps> = ({
 
       {/* Key points / bullets */}
       {bullets && bullets.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           {bullets.map((bullet, idx) => {
             const bulletOpacity = interpolate(
               frame,
@@ -118,7 +118,7 @@ export const TextScene: React.FC<TextSceneProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '0.65rem',
+                  gap: '0.85rem',
                   opacity: bulletOpacity,
                   transform: `translateX(${bulletX}px)`,
                 }}
@@ -126,8 +126,8 @@ export const TextScene: React.FC<TextSceneProps> = ({
                 <span
                   style={{
                     color: '#38bdf8',
-                    fontSize: '1rem',
-                    lineHeight: '1.4rem',
+                    fontSize: '1.2rem',
+                    lineHeight: '1.65rem',
                     fontWeight: 800,
                   }}
                 >
@@ -135,9 +135,10 @@ export const TextScene: React.FC<TextSceneProps> = ({
                 </span>
                 <span
                   style={{
-                    color: '#cbd5e1',
-                    fontSize: '0.98rem',
-                    lineHeight: '1.4rem',
+                    color: '#e2e8f0',
+                    fontSize: '1.22rem',
+                    lineHeight: '1.65rem',
+                    fontWeight: 450,
                   }}
                 >
                   {bullet}

@@ -28,102 +28,124 @@ export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 'var(--space-4)',
+        gap: 'var(--space-3)',
         flexWrap: 'wrap',
-        padding: 'var(--space-2) 0',
+        padding: 'var(--space-1) 0',
       }}
       role="toolbar"
       aria-label="Quick learning actions"
     >
       <Button
         variant="primary"
-        size="md"
+        size="sm"
         onClick={onStartLearning}
         style={{
-          borderRadius: 'var(--radius-full)',
-          padding: '0 var(--space-6)',
-          height: '42px',
+          borderRadius: 'var(--radius-md)',
+          padding: '0 16px',
+          height: '36px',
+          fontSize: '13px',
+          fontWeight: 600,
+          gap: '6px',
         }}
       >
-        + Start new topic
+        <span>+</span>
+        <span>New Topic</span>
       </Button>
 
       {onAskLumo && (
         <Button
           variant="secondary"
-          size="md"
+          size="sm"
           onClick={onAskLumo}
           style={{
-            borderRadius: 'var(--radius-full)',
-            padding: '0 var(--space-5)',
-            height: '42px',
-            background: 'transparent',
+            borderRadius: 'var(--radius-md)',
+            padding: '0 14px',
+            height: '36px',
+            fontSize: '13px',
+            fontWeight: 500,
+            gap: '6px',
           }}
         >
-          ✦ Ask Lumo
+          <span style={{ color: 'var(--color-orange)' }}>✦</span>
+          <span>Ask Lumo AI</span>
         </Button>
       )}
 
       <Button
         variant="secondary"
-        size="md"
+        size="sm"
         onClick={onPractice}
         style={{
-          borderRadius: 'var(--radius-full)',
-          padding: '0 var(--space-5)',
-          height: '42px',
-          background: 'transparent',
+          borderRadius: 'var(--radius-md)',
+          padding: '0 14px',
+          height: '36px',
+          fontSize: '13px',
+          fontWeight: 500,
+          gap: '6px',
         }}
       >
-        Practice questions
+        <span>🎯</span>
+        <span>Practice Hub</span>
       </Button>
 
       <button
         onClick={onUploadMaterial}
         style={{
           background: 'transparent',
-          border: 'none',
+          border: '1px dashed var(--color-border)',
           color: 'var(--color-text-secondary)',
-          fontSize: 'var(--text-body-sm)',
-          fontWeight: 600,
+          fontSize: '13px',
+          fontWeight: 500,
           cursor: 'pointer',
-          padding: '8px 12px',
+          padding: '0 14px',
+          height: '36px',
           borderRadius: 'var(--radius-md)',
           display: 'inline-flex',
           alignItems: 'center',
           gap: '6px',
-          transition: 'color var(--motion-fast) var(--ease-standard)',
+          transition: 'all var(--motion-fast) var(--ease-standard)',
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text-primary)')}
-        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'var(--color-orange)';
+          e.currentTarget.style.color = 'var(--color-text-primary)';
+          e.currentTarget.style.background = 'var(--color-surface)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'var(--color-border)';
+          e.currentTarget.style.color = 'var(--color-text-secondary)';
+          e.currentTarget.style.background = 'transparent';
+        }}
       >
-        <span>+ Add study material</span>
+        <span>📄</span>
+        <span>Upload Notes</span>
       </button>
 
       {dueReviewsCount > 0 ? (
         <button
           onClick={onViewMistakes}
           style={{
-            background: 'var(--color-warning-soft)',
+            background: 'var(--color-surface)',
             border: '1px solid var(--color-warning)',
             color: 'var(--color-text-primary)',
-            fontSize: 'var(--text-caption)',
+            fontSize: '12px',
             fontWeight: 600,
             cursor: 'pointer',
-            padding: '6px 12px',
-            borderRadius: 'var(--radius-full)',
+            padding: '0 12px',
+            height: '36px',
+            borderRadius: 'var(--radius-md)',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
+            boxShadow: 'var(--shadow-xs)',
           }}
         >
-          <span>Review mistakes</span>
+          <span>Reviews due</span>
           <span
             style={{
               background: 'var(--color-warning)',
               color: '#FFFFFF',
               padding: '1px 6px',
-              borderRadius: 'var(--radius-full)',
+              borderRadius: 'var(--radius-pill)',
               fontSize: '11px',
               fontWeight: 700,
             }}
@@ -138,15 +160,20 @@ export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
             background: 'transparent',
             border: 'none',
             color: 'var(--color-text-muted)',
-            fontSize: 'var(--text-body-sm)',
+            fontSize: '12px',
+            fontWeight: 500,
             cursor: 'pointer',
-            padding: '8px 12px',
-            transition: 'color var(--motion-fast) var(--ease-standard)',
+            padding: '0 8px',
+            height: '36px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'color var(--motion-fast)',
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
           onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
         >
-          Mistakes log
+          <span>Review notebook</span>
         </button>
       )}
     </div>

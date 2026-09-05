@@ -196,68 +196,111 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       style={{
         minHeight: 'calc(100vh - 64px)',
         background: 'var(--color-background)',
-        paddingTop: 'var(--space-10)',
+        paddingTop: 'var(--space-12)',
         paddingBottom: 'var(--space-24)',
+        position: 'relative',
+        overflow: 'hidden',
       }}
+      className="lumo-radial-substrate"
     >
-      <div className="lumo-container" style={{ maxWidth: '960px' }}>
+      <div className="lumo-container" style={{ maxWidth: '1040px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
           {/* ========================================================= */}
-          {/* 1. PERSONAL LEARNING HOME HERO                            */}
-          {/* Strong typography, intentional whitespace, zero clutter.  */}
+          {/* 1. EDITORIAL LEARNING HOME HERO                            */}
+          {/* High-contrast type hierarchy, atmospheric calm, proof     */}
           {/* ========================================================= */}
           <section
-            aria-label="Personal learning home"
+            aria-label="Personal learning workspace"
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 'var(--space-2)',
+              gap: 'var(--space-3)',
+              position: 'relative',
+              zIndex: 1,
             }}
           >
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'var(--color-text-muted)',
-              }}
-            >
-              {firstName ? `${firstName}'s Learning Space` : 'Your Learning Space'}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: 'var(--color-orange)',
+                  boxShadow: '0 0 8px var(--color-orange)',
+                }}
+              />
+              <span
+                className="lumo-eyebrow"
+              >
+                {firstName ? `${firstName}’s Workspace` : 'Workspace'}
+              </span>
+            </div>
 
-            <h1
+            <div
               style={{
-                fontSize: 'clamp(36px, 4.5vw, 54px)',
-                fontWeight: 800,
-                color: 'var(--color-text-primary)',
-                letterSpacing: '-0.035em',
-                lineHeight: 1.08,
-                margin: 0,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-end',
+                flexWrap: 'wrap',
+                gap: 'var(--space-4)',
               }}
             >
-              Keep learning.
-            </h1>
+              <div>
+                <h1
+                  style={{
+                    fontSize: 'clamp(38px, 4.8vw, 56px)',
+                    fontWeight: 700,
+                    color: 'var(--color-text-primary)',
+                    letterSpacing: '-0.035em',
+                    lineHeight: 1.05,
+                    margin: 0,
+                  }}
+                  className="lumo-editorial-title"
+                >
+                  Forward motion.
+                </h1>
 
-            <p
-              style={{
-                fontSize: 'var(--text-body-lg)',
-                color: 'var(--color-text-secondary)',
-                lineHeight: 1.5,
-                margin: 0,
-                marginTop: '4px',
-                maxWidth: '560px',
-              }}
-            >
-              {sessions.length > 0
-                ? 'Lumo remembers where you left off. Continue your visual lesson or explore a new concept.'
-                : 'Select a topic or bring study material to start your first visual lesson.'}
-            </p>
+                <p
+                  style={{
+                    fontSize: 'var(--text-body-lg)',
+                    color: 'var(--color-text-secondary)',
+                    lineHeight: 1.55,
+                    margin: 0,
+                    marginTop: '8px',
+                    maxWidth: '540px',
+                  }}
+                >
+                  {sessions.length > 0
+                    ? 'Resume your visual session or launch a targeted concept inquiry with AI guidance.'
+                    : 'Choose a discipline or upload reference material to generate your first interactive lesson.'}
+                </p>
+              </div>
+
+              {/* Linear-style Quick Stat Capsule */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '8px 14px',
+                  borderRadius: 'var(--radius-pill)',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '12px',
+                  color: 'var(--color-text-muted)',
+                  boxShadow: 'var(--shadow-xs)',
+                }}
+              >
+                <span>Active: <strong style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{sessions.length}</strong> {sessions.length === 1 ? 'lesson' : 'lessons'}</span>
+                <span style={{ color: 'var(--color-border)' }}>|</span>
+                <span>Sources: <strong style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{documents.length}</strong></span>
+              </div>
+            </div>
           </section>
 
           {/* ========================================================= */}
-          {/* 2. SPACED REVIEWS WHISPER (if due)                        */}
-          {/* Quiet, refined text alert rather than a loud card banner  */}
+          {/* 2. SPACED REVIEWS COMMAND STRIP (Linear-grade alert)      */}
           {/* ========================================================= */}
           {dueReviews.length > 0 && !reviewsLoading && (
             <div
@@ -265,32 +308,46 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: 'var(--space-3) var(--space-4)',
-                background: 'var(--color-warning-soft)',
+                padding: '10px 16px',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderLeft: '3px solid var(--color-warning)',
                 borderRadius: 'var(--radius-md)',
-                fontSize: 'var(--text-body-sm)',
+                fontSize: '13px',
                 gap: 'var(--space-3)',
-                flexWrap: 'wrap',
+                boxShadow: 'var(--shadow-xs)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <span style={{ color: 'var(--color-warning)', fontWeight: 700 }}>●</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span
+                  style={{
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: 'var(--color-warning)',
+                    display: 'inline-block',
+                  }}
+                />
                 <span style={{ color: 'var(--color-text-primary)' }}>
-                  You have <strong>{dueReviews.length} concept review{dueReviews.length > 1 ? 's' : ''}</strong> scheduled for spaced practice.
+                  <strong>{dueReviews.length} concept review{dueReviews.length > 1 ? 's' : ''}</strong> scheduled for spaced retention.
                 </span>
               </div>
 
               <button
                 onClick={() => onNavigate('/mistakes')}
                 style={{
-                  background: 'none',
+                  background: 'transparent',
                   border: 'none',
                   color: 'var(--color-warning)',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  fontSize: 'var(--text-caption)',
-                  padding: 0,
+                  fontSize: '12px',
+                  padding: '4px 8px',
+                  borderRadius: 'var(--radius-sm)',
+                  transition: 'background var(--motion-fast)',
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
               >
                 Practice now &rarr;
               </button>

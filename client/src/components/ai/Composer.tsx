@@ -56,7 +56,7 @@ export const Composer: React.FC<ComposerProps> = ({
       style={{
         padding: '0 var(--space-4) var(--space-4) var(--space-4)',
         background: 'transparent',
-        maxWidth: '768px',
+        maxWidth: '800px',
         width: '100%',
         margin: '0 auto',
       }}
@@ -65,16 +65,15 @@ export const Composer: React.FC<ComposerProps> = ({
         style={{
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-xl, 20px)',
-          padding: '10px 14px',
+          borderRadius: 'var(--radius-xl)',
+          padding: '12px 16px',
           boxShadow: 'var(--shadow-md)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
-          transition: 'border-color var(--motion-fast) var(--ease-standard)',
-        }}
-        onFocus={() => {
-          // Focus glow handled by CSS or active state
+          gap: '10px',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          transition: 'all var(--motion-fast) var(--ease-standard)',
         }}
       >
         <textarea
@@ -91,11 +90,11 @@ export const Composer: React.FC<ComposerProps> = ({
             border: 'none',
             outline: 'none',
             resize: 'none',
-            fontSize: 'var(--text-body)',
+            fontSize: '14px',
             fontFamily: 'inherit',
             color: 'var(--color-text-primary)',
             lineHeight: 1.5,
-            padding: '4px 2px',
+            padding: '2px 0',
             maxHeight: '160px',
             overflowY: 'auto',
           }}
@@ -106,17 +105,17 @@ export const Composer: React.FC<ComposerProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingTop: '4px',
-            borderTop: '1px solid var(--color-border-subtle, rgba(0,0,0,0.04))',
+            paddingTop: '6px',
+            borderTop: '1px solid var(--color-border-subtle)',
           }}
         >
           {/* Attachment / Context trigger */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               type="button"
               onClick={onOpenContextModal}
               style={{
-                background: hasAttachedContext ? 'var(--color-surface-hover)' : 'transparent',
+                background: hasAttachedContext ? 'var(--color-orange-soft)' : 'transparent',
                 border: `1px solid ${hasAttachedContext ? 'var(--color-orange)' : 'var(--color-border)'}`,
                 borderRadius: 'var(--radius-pill)',
                 padding: '4px 10px',
@@ -138,16 +137,26 @@ export const Composer: React.FC<ComposerProps> = ({
             </button>
           </div>
 
-          {/* Action buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Action buttons + Keyboard hint */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                color: 'var(--color-text-muted)',
+                fontWeight: 500,
+              }}
+            >
+              Enter ↵
+            </span>
+
             {isGenerating ? (
               <button
                 type="button"
                 onClick={onCancelGeneration}
                 style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: 'var(--radius-sm)',
                   background: 'var(--color-surface-hover)',
                   border: '1px solid var(--color-border)',
                   color: 'var(--color-text-primary)',
@@ -157,15 +166,14 @@ export const Composer: React.FC<ComposerProps> = ({
                   justifyContent: 'center',
                   transition: 'all var(--motion-fast) var(--ease-standard)',
                 }}
-                title="Stop generating"
+                title="Stop formulating"
               >
-                {/* Square stop icon */}
                 <div
                   style={{
-                    width: '10px',
-                    height: '10px',
+                    width: '9px',
+                    height: '9px',
                     background: 'var(--color-text-primary)',
-                    borderRadius: '2px',
+                    borderRadius: '1px',
                   }}
                 />
               </button>
@@ -175,23 +183,23 @@ export const Composer: React.FC<ComposerProps> = ({
                 onClick={() => handleSubmit()}
                 disabled={!input.trim()}
                 style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: input.trim() ? 'var(--color-orange)' : 'var(--color-surface-hover)',
-                  border: 'none',
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: input.trim() ? 'var(--color-orange)' : 'var(--color-surface-soft)',
+                  border: '1px solid',
+                  borderColor: input.trim() ? 'var(--color-orange)' : 'var(--color-border)',
                   color: input.trim() ? '#ffffff' : 'var(--color-text-muted)',
                   cursor: input.trim() ? 'pointer' : 'not-allowed',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   transition: 'all var(--motion-fast) var(--ease-standard)',
-                  boxShadow: input.trim() ? '0 2px 8px rgba(255, 90, 54, 0.35)' : 'none',
+                  boxShadow: input.trim() ? '0 2px 8px rgba(232, 89, 46, 0.3)' : 'none',
                 }}
-                title="Send message (Enter)"
+                title="Send inquiry"
               >
-                {/* Arrow up icon */}
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="19" x2="12" y2="5" />
                   <polyline points="5 12 12 5 19 12" />
                 </svg>
@@ -208,10 +216,10 @@ export const Composer: React.FC<ComposerProps> = ({
           marginTop: '6px',
           fontSize: '11px',
           color: 'var(--color-text-muted)',
-          letterSpacing: '-0.01em',
+          letterSpacing: '0.01em',
         }}
       >
-        Lumo adapts explanations to your pace · Press Enter to send, Shift+Enter for newline
+        Lumo adapts explanations to your pace · Shift+Enter for newline
       </div>
     </div>
   );

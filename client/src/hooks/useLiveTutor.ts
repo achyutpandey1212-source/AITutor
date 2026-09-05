@@ -56,8 +56,8 @@ export interface UseLiveTutorProps {
 
 export function useLiveTutor({
   idToken,
-  defaultTopic = "Newton's Laws",
-  defaultSubject = "Physics",
+  defaultTopic = '',
+  defaultSubject = 'General',
   defaultDocumentId,
   defaultDocumentTitle,
   language = 'english',
@@ -299,6 +299,9 @@ export function useLiveTutor({
 
       setTutorState('THINKING');
       setError(null);
+      // Immediately clear speech transcript so it disappears from screen upon sending to AI
+      setInterimTranscript('');
+      setFinalTranscript('');
       // Pause microphone capture during active backend network call
       speechToTextService.pauseCapture();
 
@@ -732,7 +735,8 @@ export function useLiveTutor({
       if (tutorState === 'SPEAKING') {
         textToSpeechService.cancel();
       }
-      setFinalTranscript(msg);
+      setInterimTranscript('');
+      setFinalTranscript('');
       await submitTurn(msg);
     },
     [submitTurn, tutorState]

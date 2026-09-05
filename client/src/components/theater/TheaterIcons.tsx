@@ -386,3 +386,36 @@ export const IconMinimize: React.FC<IconProps> = ({ size = 16, style }) => (
     <line x1="3" y1="21" x2="10" y2="14" />
   </svg>
 );
+
+export const IconPlus: React.FC<IconProps> = ({ size = 16, style }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+  >
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
+export const IconMinus: React.FC<IconProps> = ({ size = 16, style }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+  >
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);

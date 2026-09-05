@@ -6,7 +6,7 @@ import { TutorPresence } from './TutorPresence';
 import type { CameraFramingState } from '../Avatar/types';
 import { StageSubtitlePill } from './StageSubtitlePill';
 import type { ConceptStep } from '../TheaterProgress/LessonProgress';
-import { IconRefresh, IconMaximize, IconMinimize } from '../TheaterIcons';
+import { IconRefresh, IconMaximize, IconMinimize, IconPlus, IconMinus } from '../TheaterIcons';
 
 export interface TheaterStageProps {
   visualState: TutorVisualState;
@@ -68,6 +68,24 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
   const visualTag = visualState.visualType
     ? visualState.visualType.replace(/_/g, ' ')
     : 'DYNAMIC SIMULATION';
+
+  // Miko avatar zoom factor: 0.75x to 1.35x (default 1.0)
+  const [mikoZoom, setMikoZoom] = React.useState<number>(1.0);
+
+  const handleZoomIn = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMikoZoom((prev) => Math.min(1.35, Math.round((prev + 0.1) * 100) / 100));
+  };
+
+  const handleZoomOut = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMikoZoom((prev) => Math.max(0.75, Math.round((prev - 0.1) * 100) / 100));
+  };
+
+  const handleResetZoom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMikoZoom(1.0);
+  };
 
   return (
     <div
@@ -269,7 +287,111 @@ export const TheaterStage: React.FC<TheaterStageProps> = ({
           isListening={isListening}
           isThinking={isThinking}
           framing={framing}
+          zoom={mikoZoom}
         />
+      </div>
+
+      {/* Miko 3D Zoom Controls (Right Edge Floating Widget) */}
+      <div
+        id="miko-zoom-controls"
+        style={{
+          position: 'absolute',
+          right: '1.25rem',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '0.35rem',
+          background: 'var(--theater-surface, #141518)',
+          border: '1px solid var(--theater-border-medium, rgba(0, 0, 0, 0.15))',
+          borderRadius: 'var(--theater-radius-pill, 9999px)',
+          padding: '0.45rem 0.35rem',
+          boxShadow: 'var(--theater-shadow-dock, 0 4px 16px rgba(0, 0, 0, 0.15))',
+          backdropFilter: 'blur(10px)',
+          userSelect: 'none',
+        }}
+      >
+        <button
+          onClick={handleZoomIn}
+          disabled={mikoZoom >= 1.35}
+          title="Zoom in on Miko (+)"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: mikoZoom >= 1.35 ? 'var(--theater-text-muted, #8C8C90)' : 'var(--theater-text-primary, #121314)',
+            cursor: mikoZoom >= 1.35 ? 'default' : 'pointer',
+            padding: '0.25rem',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: mikoZoom >= 1.35 ? 0.35 : 1,
+            transition: 'background var(--theater-transition-fast), color var(--theater-transition-fast)',
+          }}
+          onMouseEnter={(e) => {
+            if (mikoZoom < 1.35) e.currentTarget.style.background = 'var(--theater-surface-hover, rgba(0,0,0,0.06))';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
+        >
+          <IconPlus size={14} />
+        </button>
+
+        <button
+          onClick={handleResetZoom}
+          title={`Zoom: ${Math.round(mikoZoom * 100)}% (Click to Reset)`}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--theater-text-muted, #8C8C90)',
+            cursor: 'pointer',
+            fontSize: '0.62rem',
+            fontWeight: 600,
+            fontFamily: 'var(--theater-font-mono, monospace)',
+            padding: '0.15rem 0.2rem',
+            borderRadius: '4px',
+            lineHeight: 1,
+            transition: 'color var(--theater-transition-fast)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--theater-text-primary, #121314)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--theater-text-muted, #8C8C90)';
+          }}
+        >
+          {Math.round(mikoZoom * 100)}%
+        </button>
+
+        <button
+          onClick={handleZoomOut}
+          disabled={mikoZoom <= 0.75}
+          title="Zoom out on Miko (-)"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: mikoZoom <= 0.75 ? 'var(--theater-text-muted, #8C8C90)' : 'var(--theater-text-primary, #121314)',
+            cursor: mikoZoom <= 0.75 ? 'default' : 'pointer',
+            padding: '0.25rem',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: mikoZoom <= 0.75 ? 0.35 : 1,
+            transition: 'background var(--theater-transition-fast), color var(--theater-transition-fast)',
+          }}
+          onMouseEnter={(e) => {
+            if (mikoZoom > 0.75) e.currentTarget.style.background = 'var(--theater-surface-hover, rgba(0,0,0,0.06))';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
+        >
+          <IconMinus size={14} />
+        </button>
       </div>
 
       {/* 5. ACTIVE ASSESSMENT STAGE (when quiz is active) */}
