@@ -8,12 +8,28 @@ export interface DocumentsPageProps {
 
 export const DocumentsPage: React.FC<DocumentsPageProps> = ({ idToken, onNavigate }) => {
   return (
-    <div style={{ maxWidth: '800px', margin: '1.5rem auto', padding: '1rem', fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h1 style={{ fontSize: '1.75rem', margin: 0, color: '#0f172a' }}>Study Knowledge & Documents</h1>
+    <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 var(--space-6)', fontFamily: 'var(--font-family-base)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', margin: '0 0 4px', color: 'var(--color-text-primary)', fontWeight: 700, letterSpacing: '-0.025em' }}>
+            Study Knowledge & Documents
+          </h1>
+          <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-text-muted)' }}>
+            Manage source materials, syllabus PDFs, and personalized notes indexed for your tutor.
+          </p>
+        </div>
         <button
           onClick={() => onNavigate('/dashboard')}
-          style={{ padding: '0.4rem 0.8rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
+          style={{
+            padding: '6px 14px',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            cursor: 'pointer',
+            fontSize: '13px',
+            color: 'var(--color-text-secondary)',
+            fontWeight: 500,
+          }}
         >
           &larr; Dashboard
         </button>

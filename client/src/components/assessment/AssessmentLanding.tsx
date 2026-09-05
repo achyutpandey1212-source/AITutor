@@ -42,14 +42,6 @@ const POPULAR_SUBJECTS = [
   'Economics',
 ];
 
-const TOPIC_SUGGESTIONS: Record<string, string[]> = {
-  Physics: ["Snell's Law & Refraction", "Newton's Laws of Motion", 'Thermodynamics & Carnot Engine', 'Electromagnetic Induction'],
-  Mathematics: ['Linear Equations in One Variable', 'Calculus: Derivatives & Chain Rule', 'Quadratic Equations', 'Matrices & Determinants'],
-  Chemistry: ['Chemical Bonding & Molecular Structure', 'Equilibrium & Le Chatelier Principle', 'Organic Reaction Mechanisms', 'Electrochemistry'],
-  Biology: ['Photosynthesis: Light & Dark Reactions', 'DNA Replication & Transcription', 'Human Circulatory System', 'Genetics & Mendelian Inheritance'],
-  'Computer Science': ['Time Complexity & Big-O Notation', 'Binary Search Trees & Traversal', 'Dynamic Programming Fundamentals', 'Relational Database Normalization'],
-};
-
 export const AssessmentLanding: React.FC<AssessmentLandingProps> = ({
   idToken,
   onStartSession,
@@ -63,8 +55,8 @@ export const AssessmentLanding: React.FC<AssessmentLandingProps> = ({
   const [mode, setMode] = useState<'practice' | 'mock' | 'quiz'>('practice');
   const [subject, setSubject] = useState<string>('Physics');
   const [customSubject, setCustomSubject] = useState<string>('');
-  const [topic, setTopic] = useState<string>("Snell's Law & Refraction");
-  const [grade, setGrade] = useState<string>('Class 11');
+  const [topic, setTopic] = useState<string>('');
+  const [grade, setGrade] = useState<string>('');
   const [difficulty, setDifficulty] = useState<'auto' | 'easy' | 'medium' | 'hard'>('auto');
   const [questionType, setQuestionType] = useState<
     'auto' | 'MCQ' | 'SHORT_ANSWER' | 'LONG_ANSWER' | 'NUMERICAL' | 'IMAGE_SOLUTION'
@@ -608,9 +600,6 @@ export const AssessmentLanding: React.FC<AssessmentLandingProps> = ({
                       type="button"
                       onClick={() => {
                         setSubject(sub);
-                        if (TOPIC_SUGGESTIONS[sub]) {
-                          setTopic(TOPIC_SUGGESTIONS[sub][0]);
-                        }
                       }}
                       style={{
                         padding: '6px 14px',
@@ -691,7 +680,7 @@ export const AssessmentLanding: React.FC<AssessmentLandingProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Snell's Law & Total Internal Reflection"
+                  placeholder="e.g. Photosynthesis, Quadratic Equations, Supply & Demand"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   required
@@ -706,26 +695,6 @@ export const AssessmentLanding: React.FC<AssessmentLandingProps> = ({
                     boxSizing: 'border-box',
                   }}
                 />
-                {/* Topic quick suggestions */}
-                {TOPIC_SUGGESTIONS[subject] && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                    {TOPIC_SUGGESTIONS[subject].map((sugg) => (
-                      <span
-                        key={sugg}
-                        onClick={() => setTopic(sugg)}
-                        style={{
-                          fontSize: '11px',
-                          color: 'var(--color-text-muted)',
-                          cursor: 'pointer',
-                          textDecoration: 'underline',
-                          marginRight: '6px',
-                        }}
-                      >
-                        {sugg}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div>

@@ -24,8 +24,8 @@ export const PracticePage: React.FC<PracticePageProps> = ({
   const [view, setView] = useState<PracticeView>('landing');
   const [activeConfig, setActiveConfig] = useState<AssessmentConfig>({
     mode: 'practice',
-    subject: 'Physics',
-    topic: "Snell's Law & Refraction",
+    subject: '',
+    topic: '',
     difficulty: 'auto',
     questionType: 'auto',
     marks: 'auto',

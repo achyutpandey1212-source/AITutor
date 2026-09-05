@@ -1,20 +1,16 @@
 import React, { useState } from 'react';
-import { CinematicVideo } from '../ui/CinematicVideo';
 
 export const SubjectShowcase: React.FC = () => {
   const [activeSubject, setActiveSubject] = useState<'physics' | 'biology' | 'chemistry' | 'math' | 'astronomy' | 'code'>('physics');
-  const [viewMode, setViewMode] = useState<'cinematic' | 'diagram'>('cinematic');
 
   const subjects = [
-    { id: 'physics',   name: 'Physics',     symbol: '⚡', color: 'var(--color-sky)', hasVideo: true, videoSrc: '/videos/physics.mp4', poster: '/videos/posters/physics.jpg' },
-    { id: 'biology',   name: 'Biology',     symbol: '🌱', color: 'var(--color-mint)', hasVideo: true, videoSrc: '/videos/biology.mp4', poster: '/videos/posters/biology.jpg' },
-    { id: 'chemistry', name: 'Chemistry',   symbol: '⚗️', color: 'var(--color-orange)', hasVideo: false },
-    { id: 'math',      name: 'Mathematics', symbol: '∑',  color: '#D99527', hasVideo: false },
-    { id: 'astronomy', name: 'Astronomy',   symbol: '🪐', color: 'var(--color-sky)', hasVideo: true, videoSrc: '/videos/astronomy.mp4', poster: '/videos/posters/astronomy.jpg' },
-    { id: 'code',      name: 'Programming', symbol: '</>', color: 'var(--color-coral)', hasVideo: false },
+    { id: 'physics',   name: 'Physics',     symbol: '⚡', color: 'var(--color-sky)' },
+    { id: 'biology',   name: 'Biology',     symbol: '🌱', color: 'var(--color-mint)' },
+    { id: 'chemistry', name: 'Chemistry',   symbol: '⚗️', color: 'var(--color-orange)' },
+    { id: 'math',      name: 'Mathematics', symbol: '∑',  color: 'var(--color-orange)' },
+    { id: 'astronomy', name: 'Astronomy',   symbol: '🪐', color: 'var(--color-sky)' },
+    { id: 'code',      name: 'Programming', symbol: '</>', color: 'var(--color-coral)' },
   ] as const;
-
-  const currentSub = subjects.find((s) => s.id === activeSubject);
 
   return (
     <section
@@ -230,11 +226,11 @@ export const SubjectShowcase: React.FC = () => {
           )}
         </div>
 
-        {/* Right: Subject Interactive Vector Graphic OR Cinematic Render */}
+        {/* Right: Subject Interactive Vector Graphic */}
         <div
           style={{
             background: 'var(--color-surface-soft)',
-            padding: currentSub?.hasVideo && viewMode === 'cinematic' ? '0' : 'var(--space-8)',
+            padding: 'var(--space-8)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -243,99 +239,6 @@ export const SubjectShowcase: React.FC = () => {
             overflow: 'hidden',
           }}
         >
-          {/* Top-Right Toggle if video is available */}
-          {currentSub?.hasVideo && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '12px',
-                right: '12px',
-                zIndex: 2,
-                display: 'inline-flex',
-                background: 'rgba(21, 24, 29, 0.85)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-full)',
-                padding: '2px',
-                gap: '2px',
-              }}
-            >
-              <button
-                onClick={() => setViewMode('cinematic')}
-                style={{
-                  border: 'none',
-                  background: viewMode === 'cinematic' ? 'var(--color-orange)' : 'transparent',
-                  color: viewMode === 'cinematic' ? '#FFFFFF' : 'var(--color-text-muted)',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '3px 10px',
-                  borderRadius: 'var(--radius-full)',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'all var(--motion-fast) var(--ease-standard)',
-                }}
-              >
-                <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#FFFFFF' }} />
-                Cinematic
-              </button>
-              <button
-                onClick={() => setViewMode('diagram')}
-                style={{
-                  border: 'none',
-                  background: viewMode === 'diagram' ? 'var(--color-orange)' : 'transparent',
-                  color: viewMode === 'diagram' ? '#FFFFFF' : 'var(--color-text-muted)',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '3px 10px',
-                  borderRadius: 'var(--radius-full)',
-                  cursor: 'pointer',
-                  transition: 'all var(--motion-fast) var(--ease-standard)',
-                }}
-              >
-                Diagram
-              </button>
-            </div>
-          )}
-
-          {/* Render Cinematic Video when active and supported */}
-          {currentSub?.hasVideo && viewMode === 'cinematic' ? (
-            <div style={{ width: '100%', height: '100%', position: 'relative', minHeight: '340px' }}>
-              <CinematicVideo
-                src={currentSub.videoSrc}
-                poster={currentSub.poster}
-                aspectRatio="16 / 10"
-                style={{ width: '100%', height: '100%', minHeight: '340px' }}
-                objectFit="cover"
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '12px',
-                  left: '16px',
-                  right: '16px',
-                  padding: '6px 14px',
-                  background: 'rgba(13, 15, 18, 0.75)',
-                  backdropFilter: 'blur(8px)',
-                  borderRadius: 'var(--radius-sm)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <span style={{ fontSize: '12px', color: '#F7F5EF', fontWeight: 600 }}>
-                  {activeSubject === 'physics' && 'Simulating Friction & Rotational Dynamics'}
-                  {activeSubject === 'biology' && 'Simulating Phospholipid Bilayer & Molecular Motion'}
-                  {activeSubject === 'astronomy' && 'Simulating Planetary Atmospheric Flow & Orbital Curvature'}
-                </span>
-                <span style={{ fontSize: '11px', color: 'var(--color-orange)', fontWeight: 700 }}>
-                  Live Visual
-                </span>
-              </div>
-            </div>
-          ) : (
-            <>
           {activeSubject === 'physics' && (
             <svg viewBox="0 0 360 200" style={{ width: '100%', height: 'auto', maxHeight: '220px' }}>
               {/* Collision Track */}
@@ -455,8 +358,6 @@ export const SubjectShowcase: React.FC = () => {
                 Call Stack Unwinding · Call Depth: 3
               </div>
             </div>
-          )}
-            </>
           )}
         </div>
       </div>

@@ -34,31 +34,43 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
   }, [idToken]);
 
   return (
-    <div style={{ maxWidth: '680px', margin: '1.5rem auto', padding: '1rem', fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.75rem', margin: 0, color: '#0f172a' }}>My Mistakes & Due Reviews</h1>
+    <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 var(--space-6)', fontFamily: 'var(--font-family-base)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', margin: '0 0 4px', color: 'var(--color-text-primary)', fontWeight: 700, letterSpacing: '-0.025em' }}>
+            My Mistakes & Spaced Repetition
+          </h1>
+          <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-text-muted)' }}>
+            Missed questions are scheduled for spaced repetition review (3 days, then 7 days) until mastered.
+          </p>
+        </div>
         <button
           onClick={() => onNavigate('/dashboard')}
-          style={{ padding: '0.4rem 0.8rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
+          style={{
+            padding: '6px 14px',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            cursor: 'pointer',
+            fontSize: '13px',
+            color: 'var(--color-text-secondary)',
+            fontWeight: 500,
+          }}
         >
           &larr; Dashboard
         </button>
       </div>
 
-      <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-        Missed questions are scheduled for spaced repetition review (3 days, then 7 days) until mastered.
-      </p>
-
       {loading ? (
-        <p style={{ color: '#64748b' }}>Loading mistake tracker...</p>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>Loading mistake tracker...</p>
       ) : (
         <div>
-          <h3 style={{ fontSize: '1.1rem', color: '#1e293b', marginBottom: '0.75rem' }}>
+          <h3 style={{ fontSize: '1.05rem', color: 'var(--color-text-primary)', fontWeight: 600, marginBottom: '0.85rem' }}>
             Due for Review ({dueReviews.length})
           </h3>
 
           {dueReviews.length === 0 ? (
-            <div style={{ padding: '1.5rem', textAlign: 'center', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', color: '#166534', marginBottom: '2rem' }}>
+            <div style={{ padding: '1.5rem', textAlign: 'center', background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.25)', borderRadius: 'var(--radius-lg)', color: '#4ade80', marginBottom: '2rem', fontSize: '14px' }}>
               🎉 No questions due for review right now!
             </div>
           ) : (
@@ -67,10 +79,10 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
                 <div
                   key={item.id}
                   style={{
-                    padding: '1rem',
-                    background: '#fffbeb',
-                    border: '1px solid #fed7aa',
-                    borderRadius: '8px',
+                    padding: '1.1rem 1.25rem',
+                    background: 'rgba(234, 88, 12, 0.06)',
+                    border: '1px solid rgba(234, 88, 12, 0.25)',
+                    borderRadius: 'var(--radius-lg)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -79,10 +91,10 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
                   }}
                 >
                   <div style={{ flex: 1, minWidth: '240px' }}>
-                    <div style={{ fontSize: '0.8rem', color: '#9a3412', fontWeight: 600, marginBottom: '0.2rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#fb923c', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
                       {item.subject} • {item.concept} (Attempt #{item.attemptCount})
                     </div>
-                    <div style={{ fontWeight: 600, color: '#1e293b' }}>
+                    <div style={{ fontWeight: 500, color: 'var(--color-text-primary)', fontSize: '14px' }}>
                       {item.question?.question || `Question ID: ${item.questionId}`}
                     </div>
                   </div>
@@ -91,10 +103,10 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
                     onClick={() => onNavigate(`/practice?questionId=${item.questionId}`)}
                     style={{
                       padding: '0.45rem 1rem',
-                      background: '#ea580c',
+                      background: 'var(--color-primary)',
                       color: '#ffffff',
                       border: 'none',
-                      borderRadius: '6px',
+                      borderRadius: 'var(--radius-md)',
                       fontWeight: 600,
                       cursor: 'pointer',
                       fontSize: '0.85rem',
@@ -109,7 +121,7 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
 
           {allWrong.length > 0 && (
             <div>
-              <h3 style={{ fontSize: '1.1rem', color: '#1e293b', marginBottom: '0.75rem' }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--color-text-primary)', fontWeight: 600, marginBottom: '0.85rem' }}>
                 All Tracked Mistakes ({allWrong.length})
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -117,10 +129,10 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
                   <div
                     key={item.id}
                     style={{
-                      padding: '0.75rem 1rem',
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '6px',
+                      padding: '0.85rem 1.15rem',
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)',
                       fontSize: '0.85rem',
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -130,11 +142,11 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: 600, color: '#334155' }}>
+                      <div style={{ fontWeight: 500, color: 'var(--color-text-primary)' }}>
                         {item.question?.question || `${item.subject} • ${item.concept}`}
                       </div>
-                      <div style={{ color: '#64748b', marginTop: '0.2rem' }}>
-                        Status: <strong>{item.reviewStatus}</strong> | Attempted: {item.attemptCount} time{item.attemptCount === 1 ? '' : 's'}
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: '12px', marginTop: '0.25rem' }}>
+                        Status: <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>{item.reviewStatus}</span> | Attempted: {item.attemptCount} time{item.attemptCount === 1 ? '' : 's'}
                         {item.nextReviewAt && ` | Scheduled: ${new Date(item.nextReviewAt).toLocaleDateString()}`}
                       </div>
                     </div>
@@ -142,17 +154,17 @@ export const MistakesPage: React.FC<MistakesPageProps> = ({ idToken, onNavigate 
                     <button
                       onClick={() => onNavigate(`/practice?questionId=${item.questionId}`)}
                       style={{
-                        padding: '0.35rem 0.75rem',
-                        background: '#2563eb',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontWeight: 600,
+                        padding: '0.35rem 0.8rem',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        color: 'var(--color-text-primary)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)',
+                        fontWeight: 500,
                         cursor: 'pointer',
                         fontSize: '0.8rem',
                       }}
                     >
-                      Review Now
+                      Review
                     </button>
                   </div>
                 ))}

@@ -37,61 +37,89 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({ idToken, onNavigat
   };
 
   return (
-    <div style={{ maxWidth: '680px', margin: '1.5rem auto', padding: '1rem', fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.75rem', margin: 0, color: '#0f172a' }}>Saved Questions</h1>
+    <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 var(--space-6)', fontFamily: 'var(--font-family-base)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', margin: '0 0 4px', color: 'var(--color-text-primary)', fontWeight: 700, letterSpacing: '-0.025em' }}>
+            Saved Questions
+          </h1>
+          <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-text-muted)' }}>
+            Questions you flagged during practice sessions for quick recall.
+          </p>
+        </div>
         <button
           onClick={() => onNavigate('/dashboard')}
-          style={{ padding: '0.4rem 0.8rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
+          style={{
+            padding: '6px 14px',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            cursor: 'pointer',
+            fontSize: '13px',
+            color: 'var(--color-text-secondary)',
+            fontWeight: 500,
+            transition: 'all 0.15s ease',
+          }}
         >
           &larr; Dashboard
         </button>
       </div>
 
       {loading ? (
-        <p style={{ color: '#64748b' }}>Loading saved questions...</p>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>Loading saved questions...</p>
       ) : bookmarks.length === 0 ? (
-        <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#64748b' }}>
+        <div
+          style={{
+            padding: '3rem 2rem',
+            textAlign: 'center',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-lg)',
+            color: 'var(--color-text-muted)',
+            fontSize: '14px',
+          }}
+        >
           No saved questions yet. When practicing, click <strong>Save Question</strong> to review it later!
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {bookmarks.map((bmk) => (
             <div
               key={bmk.id}
               style={{
-                padding: '1rem',
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
+                padding: '16px 20px',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: '1rem',
+                gap: '16px',
                 flexWrap: 'wrap',
+                boxShadow: 'var(--shadow-xs)',
               }}
             >
               <div style={{ flex: 1, minWidth: '240px' }}>
-                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--color-orange)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   {bmk.question?.subject || 'Subject'} • {bmk.question?.concept} • {bmk.question?.difficulty?.toUpperCase()}
                 </div>
-                <div style={{ fontWeight: 600, color: '#1e293b' }}>
+                <div style={{ fontWeight: 600, color: 'var(--color-text-primary)', fontSize: '14.5px', lineHeight: 1.45 }}>
                   {bmk.question?.question || `Question ID: ${bmk.questionId}`}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   onClick={() => onNavigate(`/practice?questionId=${bmk.questionId}`)}
                   style={{
-                    padding: '0.4rem 0.8rem',
-                    background: '#2563eb',
-                    color: '#ffffff',
+                    padding: '6px 14px',
+                    background: 'var(--color-orange)',
+                    color: '#FFFFFF',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: 'var(--radius-md)',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    fontSize: '0.8rem',
+                    fontSize: '12.5px',
                   }}
                 >
                   Practice This Question
@@ -99,14 +127,14 @@ export const BookmarksPage: React.FC<BookmarksPageProps> = ({ idToken, onNavigat
                 <button
                   onClick={() => handleRemove(bmk.questionId)}
                   style={{
-                    padding: '0.4rem 0.8rem',
-                    background: '#fee2e2',
-                    color: '#991b1b',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontWeight: 600,
+                    padding: '6px 12px',
+                    background: 'var(--color-surface-soft)',
+                    color: 'var(--color-text-muted)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    fontWeight: 500,
                     cursor: 'pointer',
-                    fontSize: '0.8rem',
+                    fontSize: '12.5px',
                   }}
                 >
                   Remove

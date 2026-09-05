@@ -336,7 +336,7 @@ export const TeachingLoop: React.FC = () => {
                       Newton's 3rd Law & Conservation of Momentum
                     </div>
                   </div>
-                  <div style={{ padding: '12px 16px', background: 'var(--color-orange-soft)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,90,54,0.3)' }}>
+                  <div style={{ padding: '12px 16px', background: 'var(--color-orange-soft)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-orange-border-30)' }}>
                     <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-orange)', marginBottom: '2px' }}>
                       Teaching Strategy
                     </div>
@@ -391,7 +391,7 @@ export const TeachingLoop: React.FC = () => {
                     padding: '16px',
                     borderRadius: 'var(--radius-lg)',
                     background: 'var(--color-orange-soft)',
-                    border: '1px solid rgba(255, 90, 54, 0.25)',
+                    border: '1px solid var(--color-orange-border-25)',
                     marginBottom: '14px',
                   }}
                 >
@@ -479,7 +479,7 @@ export const TeachingLoop: React.FC = () => {
                     padding: '10px 14px',
                     borderRadius: 'var(--radius-md)',
                     background: 'var(--color-orange-soft)',
-                    border: '1px solid rgba(255, 90, 54, 0.2)',
+                    border: '1px solid var(--color-orange-border-20)',
                     fontSize: '12px',
                     color: 'var(--color-orange)',
                     fontWeight: 600,

@@ -119,9 +119,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, [mobileOpen]);
 
   const landingLinks = [
-    { href: '/#learn',       label: 'Learn' },
-    { href: '/#how',         label: 'How it works' },
-    { href: '/#subjects',    label: 'Subjects' },
+    { href: '/#product',        label: 'Product' },
+    { href: '/#how',            label: 'How it works' },
+    { href: '/#for-students',   label: 'For students' },
+    { href: '/#institutions',   label: 'For institutions' },
+    { href: '/#resources',      label: 'Resources' },
+    { href: '/#pricing',        label: 'Pricing' },
   ];
 
   const appLinks = [
@@ -280,11 +283,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </>
               ) : (
                 <>
-                  <Button variant="ghost" size="sm" onClick={() => onNavigate('/signin')}>
-                    Sign in
+                  <Button variant="ghost" size="sm" onClick={() => onNavigate('/signin')} style={{ color: 'var(--color-text-secondary)', fontSize: '13px', fontWeight: 500 }}>
+                    Log in
                   </Button>
-                  <Button variant="primary" size="sm" onClick={() => onNavigate('/signup')}>
-                    Start Learning
+                  <Button
+                    variant="pill-white"
+                    size="sm"
+                    onClick={() => onNavigate('/signup')}
+                    style={{ fontSize: '13px', padding: '0 16px', height: '36px' }}
+                  >
+                    <span>Start learning</span>
+                    <span style={{ fontSize: '14px', marginLeft: '2px' }}>↗</span>
                   </Button>
                 </>
               )}

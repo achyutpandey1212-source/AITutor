@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/Button';
-import { CinematicVideo } from '../ui/CinematicVideo';
 
 interface MaterialSectionProps {
   onStart: () => void;
@@ -185,7 +184,7 @@ export const MaterialSection: React.FC<MaterialSectionProps> = ({ onStart }) => 
             );
           })}
 
-          {/* Live Document Digitization & RAG Transformation Preview */}
+          {/* Physical Books to Vector Ingestion Graphic */}
           <div
             style={{
               marginTop: 'auto',
@@ -197,39 +196,30 @@ export const MaterialSection: React.FC<MaterialSectionProps> = ({ onStart }) => 
               flexDirection: 'column',
             }}
           >
-            <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', overflow: 'hidden' }}>
-              <CinematicVideo
-                src="/videos/rag.mp4"
-                poster="/videos/posters/rag.jpg"
-                aspectRatio="16 / 9"
-                style={{ width: '100%', height: '100%' }}
-                objectFit="cover"
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(to top, rgba(13, 15, 18, 0.85) 0%, transparent 60%)',
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  padding: '10px 14px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span
-                    style={{
-                      width: '6px',
-                      height: '6px',
-                      borderRadius: '50%',
-                      background: 'var(--color-mint)',
-                      animation: 'lumo-pulse 1.6s infinite',
-                    }}
-                  />
-                  <span style={{ fontSize: '11px', color: '#F7F5EF', fontWeight: 600 }}>
-                    Physical Books & Notes → Semantic Vector Space
-                  </span>
-                </div>
-              </div>
+            <div style={{ position: 'relative', width: '100%', padding: '24px 20px', background: 'var(--color-surface-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg viewBox="0 0 340 100" style={{ width: '100%', height: 'auto', maxHeight: '110px' }}>
+                <rect x="20" y="20" width="70" height="60" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth="1.5" />
+                <path d="M 35 38 L 75 38 M 35 48 L 75 48 M 35 58 L 60 58" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" />
+                <text x="55" y="74" textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--color-text-secondary)">PDF / Notes</text>
+
+                <line x1="105" y1="50" x2="145" y2="50" stroke="var(--color-orange)" strokeWidth="2" strokeDasharray="3 3" />
+                <polygon points="143 47, 150 50, 143 53" fill="var(--color-orange)" />
+
+                <circle cx="180" cy="50" r="24" fill="var(--color-surface)" stroke="var(--color-orange)" strokeWidth="2" />
+                <text x="180" y="47" textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--color-orange)">Embedding</text>
+                <text x="180" y="58" textAnchor="middle" fontSize="8" fontWeight="600" fill="var(--color-text-muted)">1536-dim</text>
+
+                <line x1="215" y1="50" x2="255" y2="50" stroke="var(--color-mint)" strokeWidth="2" strokeDasharray="3 3" />
+                <polygon points="253 47, 260 50, 253 53" fill="var(--color-mint)" />
+
+                <rect x="260" y="20" width="65" height="60" rx="4" fill="var(--color-mint-soft)" stroke="var(--color-mint)" strokeWidth="1.5" />
+                <circle cx="280" cy="40" r="3" fill="var(--color-mint)" />
+                <circle cx="305" cy="48" r="3" fill="var(--color-mint)" />
+                <circle cx="290" cy="62" r="3" fill="var(--color-mint)" />
+                <line x1="280" y1="40" x2="305" y2="48" stroke="var(--color-mint)" strokeWidth="1" opacity="0.6" />
+                <line x1="305" y1="48" x2="290" y2="62" stroke="var(--color-mint)" strokeWidth="1" opacity="0.6" />
+                <text x="292.5" y="74" textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--color-mint)">Vector DB</text>
+              </svg>
             </div>
 
             <div

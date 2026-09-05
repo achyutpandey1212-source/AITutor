@@ -72,11 +72,13 @@ export const LogoWordmark: React.FC<LogoWordmarkProps> = ({
       <Logo height={height} />
       <span
         style={{
-          fontSize: `${Math.round(height * 0.6)}px`,
+          fontSize: `${Math.round(height * 0.52)}px`,
           fontWeight: 700,
-          letterSpacing: '-0.025em',
+          letterSpacing: '0.28em',
+          textTransform: 'uppercase',
           color: 'var(--color-text-primary)',
           lineHeight: 1,
+          paddingLeft: '2px',
           transition: 'color var(--motion-standard) var(--ease-standard)',
         }}
       >

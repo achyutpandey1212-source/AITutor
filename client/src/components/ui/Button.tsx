@@ -6,7 +6,7 @@ import React from 'react';
 // Sizes: sm | md | lg
 // ---------------------------------------------------------------
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive' | 'pill-white' | 'pill-dark';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -23,6 +23,22 @@ const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
     background: 'var(--color-orange)',
     color: '#FFFFFF',
     border: '1px solid transparent',
+  },
+  'pill-white': {
+    background: '#FFFFFF',
+    color: '#0D0E11',
+    border: '1px solid rgba(255, 255, 255, 0.9)',
+    borderRadius: 'var(--radius-full)',
+    fontWeight: 600,
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+  },
+  'pill-dark': {
+    background: 'rgba(255, 255, 255, 0.05)',
+    color: '#F4F4F6',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: 'var(--radius-full)',
+    fontWeight: 500,
+    backdropFilter: 'blur(8px)',
   },
   secondary: {
     background: 'var(--color-surface)',
@@ -112,6 +128,17 @@ export const Button: React.FC<ButtonProps> = ({
     // Icon-only override
     ...(icon ? { padding: '0', width: sizeStyles[size].height } : {}),
     // Hover states
+    ...(hovered && !isDisabled && variant === 'pill-white' ? {
+      background: '#F0F0F2',
+      transform: 'translateY(-1px)',
+      boxShadow: '0 4px 12px rgba(255, 255, 255, 0.15)',
+    } : {}),
+    ...(hovered && !isDisabled && variant === 'pill-dark' ? {
+      background: 'rgba(255, 255, 255, 0.10)',
+      borderColor: 'rgba(255, 255, 255, 0.24)',
+      color: '#FFFFFF',
+      transform: 'translateY(-1px)',
+    } : {}),
     ...(hovered && !isDisabled && variant === 'primary' ? {
       background: 'var(--color-orange-hover)',
       transform: 'translateY(-1px)',

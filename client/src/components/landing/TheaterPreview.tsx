@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/Button';
-import { CinematicVideo } from '../ui/CinematicVideo';
 
 interface TheaterPreviewProps {
   onEnterTheater: () => void;
@@ -9,7 +8,6 @@ interface TheaterPreviewProps {
 export const TheaterPreview: React.FC<TheaterPreviewProps> = ({ onEnterTheater }) => {
   const [showQuestion, setShowQuestion] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [stageMode, setStageMode] = useState<'cinematic' | 'whiteboard'>('cinematic');
 
   return (
     <section
@@ -91,62 +89,14 @@ export const TheaterPreview: React.FC<TheaterPreviewProps> = ({ onEnterTheater }
             <span style={{ color: 'var(--color-orange)', fontWeight: 700 }}>Deriving Orbital Velocity</span>
           </div>
 
-          {/* Session Badges & Stage Mode Switch */}
+          {/* Session Badges */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                display: 'inline-flex',
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-full)',
-                padding: '2px',
-                gap: '2px',
-              }}
-            >
-              <button
-                onClick={() => setStageMode('cinematic')}
-                style={{
-                  border: 'none',
-                  background: stageMode === 'cinematic' ? 'var(--color-orange-soft)' : 'transparent',
-                  color: stageMode === 'cinematic' ? 'var(--color-orange)' : 'var(--color-text-muted)',
-                  fontSize: '11px',
-                  fontWeight: stageMode === 'cinematic' ? 700 : 500,
-                  padding: '3px 10px',
-                  borderRadius: 'var(--radius-full)',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'all var(--motion-fast) var(--ease-standard)',
-                }}
-              >
-                <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--color-orange)' }} />
-                Auditorium Cinema
-              </button>
-              <button
-                onClick={() => setStageMode('whiteboard')}
-                style={{
-                  border: 'none',
-                  background: stageMode === 'whiteboard' ? 'var(--color-orange-soft)' : 'transparent',
-                  color: stageMode === 'whiteboard' ? 'var(--color-orange)' : 'var(--color-text-muted)',
-                  fontSize: '11px',
-                  fontWeight: stageMode === 'whiteboard' ? 700 : 500,
-                  padding: '3px 10px',
-                  borderRadius: 'var(--radius-full)',
-                  cursor: 'pointer',
-                  transition: 'all var(--motion-fast) var(--ease-standard)',
-                }}
-              >
-                Whiteboard
-              </button>
-            </div>
-
             <div
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '4px 10px',
+                padding: '4px 12px',
                 background: 'var(--color-mint-soft)',
                 borderRadius: 'var(--radius-full)',
                 color: 'var(--color-mint)',
@@ -164,56 +114,16 @@ export const TheaterPreview: React.FC<TheaterPreviewProps> = ({ onEnterTheater }
         <div
           style={{
             position: 'relative',
-            background: stageMode === 'cinematic' ? '#000000' : 'var(--color-background)',
-            minHeight: '460px',
+            background: 'var(--color-background)',
+            minHeight: '420px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: stageMode === 'cinematic' ? '0' : 'var(--space-8)',
+            padding: 'var(--space-8)',
             overflow: 'hidden',
           }}
         >
-          {stageMode === 'cinematic' ? (
-            <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '460px' }}>
-              <CinematicVideo
-                src="/videos/theater.mp4"
-                poster="/videos/posters/theater.jpg"
-                aspectRatio="16 / 9"
-                style={{ width: '100%', height: '100%', minHeight: '460px' }}
-                objectFit="cover"
-              />
-              {/* Subtle Atmospheric Stage Shadow Vignette */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 40%, rgba(0, 0, 0, 0.4) 100%)',
-                  pointerEvents: 'none',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '16px',
-                  left: '20px',
-                  padding: '6px 14px',
-                  background: 'rgba(21, 24, 29, 0.75)',
-                  backdropFilter: 'blur(8px)',
-                  borderRadius: 'var(--radius-full)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-orange)', animation: 'lumo-pulse 1.5s infinite' }} />
-                <span style={{ fontSize: '11px', color: '#F7F5EF', fontWeight: 600 }}>
-                  Live Lecture Theater · Molecular Resonance & Stereochemistry
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div style={{ width: '100%', maxWidth: '640px', textAlign: 'center' }}>
+          <div style={{ width: '100%', maxWidth: '640px', textAlign: 'center' }}>
             <svg viewBox="0 0 460 260" style={{ width: '100%', height: 'auto', maxHeight: '300px' }}>
               <defs>
                 <radialGradient id="earth-glow" cx="50%" cy="50%" r="50%">
@@ -265,7 +175,6 @@ export const TheaterPreview: React.FC<TheaterPreviewProps> = ({ onEnterTheater }
               </text>
             </svg>
           </div>
-          )}
 
           {/* Interactive Question Transformation Toggle */}
           {showQuestion && (

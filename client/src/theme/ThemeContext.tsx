@@ -32,11 +32,12 @@ function getInitialTheme(): Theme {
   } catch {
     // localStorage may be unavailable
   }
-  // Fall back to system preference
+  // Fall back to system preference or dark by default (Linear aesthetic)
   if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    return prefersLight ? 'light' : 'dark';
   }
-  return 'light';
+  return 'dark';
 }
 
 function applyTheme(theme: Theme) {

@@ -43,11 +43,9 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ onStart }) => {
       </p>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-        <Button variant="primary" size="lg" onClick={onStart}>
-          <span>Start Learning</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
+        <Button variant="pill-white" size="lg" onClick={onStart} style={{ height: '48px', padding: '0 28px', fontSize: '15px' }}>
+          <span>Start learning</span>
+          <span style={{ fontSize: '15px', marginLeft: '4px' }}>↗</span>
         </Button>
       </div>
 
