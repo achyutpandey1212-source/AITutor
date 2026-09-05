@@ -3,7 +3,6 @@ import { useTheme } from '../../theme/ThemeContext';
 import {
   IconExit,
   IconNotes,
-  IconMaterials,
   IconTranscript,
   IconSettings,
   IconSun,
@@ -12,6 +11,8 @@ import {
   IconChevronRight,
 } from './TheaterIcons';
 
+export type ActiveSurface = 'none' | 'ask_lumo' | 'notes' | 'transcript' | 'settings';
+
 export interface TheaterHeaderProps {
   subject?: string;
   topic?: string;
@@ -19,9 +20,9 @@ export interface TheaterHeaderProps {
   conceptProgressText?: string;
   conceptProgressPercent?: number;
   documentTitle?: string;
+  activeSurface?: ActiveSurface;
   onExit: () => void;
   onOpenNotes?: () => void;
-  onOpenMaterials?: () => void;
   onOpenTranscript?: () => void;
   onOpenSettings: () => void;
   onOpenDoubtSolver?: () => void;
@@ -35,9 +36,9 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
   conceptProgressText = '2 of 5 concepts',
   conceptProgressPercent,
   documentTitle,
+  activeSurface = 'none',
   onExit,
   onOpenNotes,
-  onOpenMaterials,
   onOpenTranscript,
   onOpenSettings,
   onOpenDoubtSolver,
@@ -163,6 +164,26 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
             transition: 'opacity var(--theater-transition-fast)',
           }}
         >
+          {documentTitle && (
+            <>
+              <span
+                style={{
+                  color: 'var(--theater-text-muted)',
+                  fontWeight: 450,
+                  maxWidth: '120px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+                title={`Document: ${documentTitle}`}
+              >
+                {documentTitle}
+              </span>
+              <span style={{ color: 'var(--theater-text-faint)', display: 'inline-flex', alignItems: 'center' }}>
+                <IconChevronRight size={10} />
+              </span>
+            </>
+          )}
           <span style={{ color: 'var(--theater-text-muted)', fontWeight: 450 }}>{subject}</span>
           <span style={{ color: 'var(--theater-text-faint)', display: 'inline-flex', alignItems: 'center' }}>
             <IconChevronRight size={10} />
@@ -213,57 +234,42 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
                 e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
               }}
               title="Ask Lumo a private question"
+              aria-pressed={activeSurface === 'ask_lumo'}
             >
               <IconSparkles size={12} />
               <span>Ask Lumo</span>
             </button>
           )}
 
-          {/* Notes */}
-          <button
-            onClick={onOpenNotes}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--theater-text-muted)',
-              cursor: 'pointer',
-              padding: '0.35rem',
-              borderRadius: 'var(--theater-radius-xs)',
-              transition: 'color var(--theater-transition-fast)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--theater-text-muted)')}
-            title="Session Notes & Key Takeaways"
-            aria-label="Notes"
-          >
-            <IconNotes size={14} />
-          </button>
-
-          {/* Materials */}
-          <button
-            onClick={onOpenMaterials}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'transparent',
-              border: 'none',
-              color: documentTitle ? 'var(--theater-text-primary)' : 'var(--theater-text-muted)',
-              cursor: 'pointer',
-              padding: '0.35rem',
-              borderRadius: 'var(--theater-radius-xs)',
-              transition: 'color var(--theater-transition-fast)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = documentTitle ? 'var(--theater-text-primary)' : 'var(--theater-text-muted)')}
-            title={documentTitle ? `Attached: ${documentTitle}` : 'Attached Study Materials'}
-            aria-label="Materials"
-          >
-            <IconMaterials size={14} />
-          </button>
+          {/* Notes / Timeline */}
+          {onOpenNotes && (
+            <button
+              onClick={onOpenNotes}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: activeSurface === 'notes' ? 'var(--theater-surface-elevated)' : 'transparent',
+                border: activeSurface === 'notes' ? '1px solid var(--theater-border-strong)' : '1px solid transparent',
+                color: activeSurface === 'notes' ? 'var(--theater-text-primary)' : 'var(--theater-text-muted)',
+                cursor: 'pointer',
+                padding: '0.35rem',
+                borderRadius: 'var(--theater-radius-xs)',
+                transition: 'all var(--theater-transition-fast)',
+              }}
+              onMouseEnter={(e) => {
+                if (activeSurface !== 'notes') e.currentTarget.style.color = 'var(--theater-text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                if (activeSurface !== 'notes') e.currentTarget.style.color = 'var(--theater-text-muted)';
+              }}
+              title="Session Timeline & Replay Navigation"
+              aria-label="Timeline"
+              aria-pressed={activeSurface === 'notes'}
+            >
+              <IconNotes size={14} />
+            </button>
+          )}
 
           {/* Transcript */}
           {onOpenTranscript && (
@@ -273,18 +279,23 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--theater-text-muted)',
+                background: activeSurface === 'transcript' ? 'var(--theater-surface-elevated)' : 'transparent',
+                border: activeSurface === 'transcript' ? '1px solid var(--theater-border-strong)' : '1px solid transparent',
+                color: activeSurface === 'transcript' ? 'var(--theater-text-primary)' : 'var(--theater-text-muted)',
                 cursor: 'pointer',
                 padding: '0.35rem',
                 borderRadius: 'var(--theater-radius-xs)',
-                transition: 'color var(--theater-transition-fast)',
+                transition: 'all var(--theater-transition-fast)',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--theater-text-muted)')}
-              title="Full Dialogue Transcript"
+              onMouseEnter={(e) => {
+                if (activeSurface !== 'transcript') e.currentTarget.style.color = 'var(--theater-text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                if (activeSurface !== 'transcript') e.currentTarget.style.color = 'var(--theater-text-muted)';
+              }}
+              title="Conversation History"
               aria-label="Transcript"
+              aria-pressed={activeSurface === 'transcript'}
             >
               <IconTranscript size={14} />
             </button>
@@ -298,7 +309,7 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               background: 'transparent',
-              border: 'none',
+              border: '1px solid transparent',
               color: 'var(--theater-text-muted)',
               cursor: 'pointer',
               padding: '0.35rem',
@@ -320,18 +331,23 @@ export const TheaterHeader: React.FC<TheaterHeaderProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--theater-text-muted)',
+              background: activeSurface === 'settings' ? 'var(--theater-surface-elevated)' : 'transparent',
+              border: activeSurface === 'settings' ? '1px solid var(--theater-border-strong)' : '1px solid transparent',
+              color: activeSurface === 'settings' ? 'var(--theater-text-primary)' : 'var(--theater-text-muted)',
               cursor: 'pointer',
               padding: '0.35rem',
               borderRadius: 'var(--theater-radius-xs)',
-              transition: 'color var(--theater-transition-fast)',
+              transition: 'all var(--theater-transition-fast)',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--theater-text-muted)')}
-            title="Classroom Settings"
+            onMouseEnter={(e) => {
+              if (activeSurface !== 'settings') e.currentTarget.style.color = 'var(--theater-text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              if (activeSurface !== 'settings') e.currentTarget.style.color = 'var(--theater-text-muted)';
+            }}
+            title="Classroom Preferences"
             aria-label="Settings"
+            aria-pressed={activeSurface === 'settings'}
           >
             <IconSettings size={14} />
           </button>

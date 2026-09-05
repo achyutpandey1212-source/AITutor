@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { textToSpeechService } from '../../../services/tts.service';
 import { speechToTextService } from '../../../services/stt.service';
 import { IconSettings, IconPause } from '../TheaterIcons';
@@ -35,8 +35,40 @@ export const TheaterSettingsSheet: React.FC<TheaterSettingsSheetProps> = ({
       setVoices(vList);
       setSpeed(textToSpeechService.getRate());
       setSelectedVoiceURI(textToSpeechService.getVoiceURI());
+    } else {
+      textToSpeechService.stopPreview();
+      setPreviewing(false);
     }
   }, [isOpen]);
+
+  // Clean up any preview on unmount
+  useEffect(() => {
+    return () => {
+      textToSpeechService.stopPreview();
+    };
+  }, []);
+
+  // Filter voices intelligently based on active language
+  const availableVoices = useMemo(() => {
+    if (voices.length === 0) return [];
+    if (selectedLanguage === 'hindi') {
+      const hindi = voices.filter((v) => v.lang.toLowerCase().startsWith('hi'));
+      if (hindi.length > 0) return hindi;
+      const indian = voices.filter((v) => v.lang.toLowerCase().includes('in'));
+      return indian.length > 0 ? indian : voices.filter((v) => v.lang.toLowerCase().startsWith('en'));
+    }
+    if (selectedLanguage === 'hinglish') {
+      const relevant = voices.filter(
+        (v) =>
+          v.lang.toLowerCase().startsWith('hi') ||
+          v.lang.toLowerCase().includes('in') ||
+          v.lang.toLowerCase().startsWith('en')
+      );
+      return relevant.length > 0 ? relevant : voices;
+    }
+    const english = voices.filter((v) => v.lang.toLowerCase().startsWith('en'));
+    return english.length > 0 ? english : voices;
+  }, [voices, selectedLanguage]);
 
   if (!isOpen) return null;
 
@@ -46,11 +78,17 @@ export const TheaterSettingsSheet: React.FC<TheaterSettingsSheetProps> = ({
   };
 
   const handleVoiceChange = (uri: string) => {
-    setSelectedVoiceURI(uri);
-    textToSpeechService.setVoiceURI(uri);
+    setSelectedVoiceURI(uri || null);
+    textToSpeechService.setVoiceURI(uri || null);
   };
 
-  const handlePreviewVoice = () => {
+  const handleTogglePreviewVoice = (voiceUri?: string) => {
+    if (previewing) {
+      textToSpeechService.stopPreview();
+      setPreviewing(false);
+      return;
+    }
+
     setPreviewing(true);
     const greeting =
       selectedLanguage === 'hindi'
@@ -58,412 +96,499 @@ export const TheaterSettingsSheet: React.FC<TheaterSettingsSheetProps> = ({
         : selectedLanguage === 'hinglish'
         ? 'Hello! Main Lumo hoon, aapka personal AI tutor.'
         : 'Hello! I am Lumo, your personal AI tutor.';
-    textToSpeechService.previewVoice(greeting);
-    setTimeout(() => setPreviewing(false), 2500);
+
+    textToSpeechService.previewVoice(
+      greeting,
+      voiceUri || selectedVoiceURI || undefined,
+      () => setPreviewing(false),
+      () => setPreviewing(false)
+    );
   };
 
   return (
-    <aside
-      aria-label="Classroom Settings"
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Session Preferences"
       style={{
         position: 'fixed',
-        top: 0,
-        right: 0,
-        width: 'min(380px, 92vw)',
-        height: '100vh',
-        background: 'var(--theater-surface)',
-        borderLeft: '1px solid var(--theater-border-medium)',
-        boxShadow: 'var(--theater-shadow-stage)',
-        zIndex: 50,
+        inset: 0,
+        zIndex: 49,
         display: 'flex',
-        flexDirection: 'column',
-        animation: 'theaterSlideInRight 0.25s var(--theater-ease)',
-        color: 'var(--theater-text-primary)',
-        fontFamily: 'var(--theater-font-sans)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1.25rem',
+        background: 'rgba(0, 0, 0, 0.32)',
+        backdropFilter: 'blur(3px)',
+        animation: 'theaterOverlayFadeIn 0.2s ease',
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          textToSpeechService.stopPreview();
+          onClose();
+        }
       }}
     >
-      {/* Header */}
       <div
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid var(--theater-border-subtle)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <IconSettings size={18} style={{ color: 'var(--theater-text-primary)' }} />
-          <div>
-            <h3 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 600, color: 'var(--theater-text-primary)' }}>
-              Classroom Settings
-            </h3>
-            <span style={{ fontSize: '0.72rem', color: 'var(--theater-text-muted)' }}>
-              Voice, language, narration & session controls
-            </span>
-          </div>
-        </div>
-
-        <button
-          onClick={onClose}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--theater-border-subtle)',
-            borderRadius: 'var(--theater-radius-sm)',
-            width: '28px',
-            height: '28px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--theater-text-muted)',
-            cursor: 'pointer',
-            fontSize: '0.82rem',
-            transition: 'all var(--theater-transition-fast)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = 'var(--theater-text-primary)';
-            e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--theater-text-muted)';
-            e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
-          }}
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* Content */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '1.25rem 1.5rem',
+          width: 'min(490px, 94vw)',
+          maxHeight: 'min(680px, 86vh)',
+          background: 'var(--theater-surface)',
+          borderRadius: 'var(--theater-radius-xl)',
+          border: '1px solid var(--theater-border-medium)',
+          boxShadow: 'var(--theater-shadow-stage)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.6rem',
+          overflow: 'hidden',
+          fontFamily: 'var(--theater-font-sans)',
+          color: 'var(--theater-text-primary)',
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* 1. Teaching Language */}
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              color: 'var(--theater-text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              marginBottom: '0.5rem',
-            }}
-          >
-            Teaching Language
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-            {(['english', 'hindi', 'hinglish'] as const).map((lang) => {
-              const isActive = selectedLanguage === lang;
-              return (
-                <button
-                  key={lang}
-                  onClick={() => onSelectLanguage(lang)}
-                  style={{
-                    padding: '0.5rem 0.4rem',
-                    borderRadius: 'var(--theater-radius-sm)',
-                    border: isActive
-                      ? '1px solid var(--theater-accent)'
-                      : '1px solid var(--theater-border-subtle)',
-                    background: isActive
-                      ? 'var(--theater-accent)'
-                      : 'var(--theater-surface-elevated)',
-                    color: isActive ? 'var(--theater-accent-contrast)' : 'var(--theater-text-secondary)',
-                    fontSize: '0.8rem',
-                    fontWeight: isActive ? 600 : 450,
-                    textTransform: 'capitalize',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--theater-font-sans)',
-                    transition: 'all var(--theater-transition-fast)',
-                  }}
-                >
-                  {lang}
-                </button>
-              );
-            })}
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '1rem 1.35rem',
+            borderBottom: '1px solid var(--theater-border-subtle)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <IconSettings size={16} style={{ color: 'var(--theater-text-primary)' }} />
+            <div>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
+                  letterSpacing: '-0.01em',
+                  color: 'var(--theater-text-primary)',
+                }}
+              >
+                Session Preferences
+              </h3>
+              <span style={{ fontSize: '0.72rem', color: 'var(--theater-text-muted)' }}>
+                Language, tutor voice, speed & session controls
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* 2. Narration Speed */}
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              color: 'var(--theater-text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              marginBottom: '0.5rem',
-            }}
-          >
-            Narration Speed
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem' }}>
-            {[0.75, 1.0, 1.25, 1.5].map((s) => {
-              const isActive = speed === s;
-              return (
-                <button
-                  key={s}
-                  onClick={() => handleSpeedChange(s)}
-                  style={{
-                    padding: '0.45rem 0.2rem',
-                    borderRadius: 'var(--theater-radius-sm)',
-                    border: isActive
-                      ? '1px solid var(--theater-accent)'
-                      : '1px solid var(--theater-border-subtle)',
-                    background: isActive
-                      ? 'var(--theater-accent)'
-                      : 'var(--theater-surface-elevated)',
-                    color: isActive ? 'var(--theater-accent-contrast)' : 'var(--theater-text-secondary)',
-                    fontSize: '0.78rem',
-                    fontWeight: isActive ? 600 : 450,
-                    cursor: 'pointer',
-                    fontFamily: 'var(--theater-font-sans)',
-                    transition: 'all var(--theater-transition-fast)',
-                  }}
-                >
-                  {s}x
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 3. Captions & Subtitles */}
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              color: 'var(--theater-text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              marginBottom: '0.5rem',
-            }}
-          >
-            Subtitles & Captions
-          </label>
           <button
-            onClick={onToggleCaptions}
+            onClick={() => {
+              textToSpeechService.stopPreview();
+              onClose();
+            }}
+            title="Close preferences (Esc)"
             style={{
-              width: '100%',
-              padding: '0.65rem 0.85rem',
-              borderRadius: 'var(--theater-radius-md)',
-              border: captionsEnabled
-                ? '1px solid var(--theater-accent)'
-                : '1px solid var(--theater-border-subtle)',
-              background: captionsEnabled
-                ? 'var(--theater-accent)'
-                : 'var(--theater-surface-elevated)',
-              color: captionsEnabled ? 'var(--theater-accent-contrast)' : 'var(--theater-text-secondary)',
-              fontSize: '0.8rem',
-              fontWeight: 500,
+              background: 'transparent',
+              border: '1px solid var(--theater-border-subtle)',
+              borderRadius: 'var(--theater-radius-sm)',
+              width: '28px',
+              height: '28px',
               display: 'flex',
-              justifyContent: 'space-between',
               alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--theater-text-muted)',
               cursor: 'pointer',
-              fontFamily: 'var(--theater-font-sans)',
+              fontSize: '0.82rem',
               transition: 'all var(--theater-transition-fast)',
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--theater-text-primary)';
+              e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--theater-text-muted)';
+              e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
+            }}
           >
-            <span>Live Subtitles on Stage</span>
-            <span style={{ fontWeight: 600 }}>{captionsEnabled ? 'ON' : 'OFF'}</span>
+            ✕
           </button>
         </div>
 
-        {/* 4. Tutor Voice Selection & Audio */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <label
+        {/* Scrollable Body */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '1.25rem 1.35rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.35rem',
+          }}
+        >
+          {/* 1. Teaching Language */}
+          <div>
+            <div
               style={{
-                fontSize: '0.7rem',
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                color: 'var(--theater-text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Teaching Language
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '0.45rem',
+                background: 'var(--theater-surface-sunken)',
+                padding: '3px',
+                borderRadius: 'var(--theater-radius-md)',
+                border: '1px solid var(--theater-border-subtle)',
+              }}
+            >
+              {(
+                [
+                  { id: 'english', label: 'English' },
+                  { id: 'hinglish', label: 'Hinglish' },
+                  { id: 'hindi', label: 'Hindi' },
+                ] as const
+              ).map((lang) => {
+                const isActive = selectedLanguage === lang.id;
+                return (
+                  <button
+                    key={lang.id}
+                    onClick={() => onSelectLanguage(lang.id)}
+                    style={{
+                      padding: '0.45rem 0.6rem',
+                      borderRadius: 'var(--theater-radius-sm)',
+                      border: 'none',
+                      background: isActive ? 'var(--theater-accent)' : 'transparent',
+                      color: isActive ? 'var(--theater-accent-contrast)' : 'var(--theater-text-secondary)',
+                      fontSize: '0.78rem',
+                      fontWeight: isActive ? 600 : 500,
+                      cursor: 'pointer',
+                      fontFamily: 'var(--theater-font-sans)',
+                      transition: 'all var(--theater-transition-fast)',
+                    }}
+                  >
+                    {lang.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. Tutor Voice & Audio Preview */}
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '0.68rem',
+                  fontWeight: 600,
+                  color: 'var(--theater-text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                Tutor Voice
+              </div>
+              <button
+                onClick={() => handleTogglePreviewVoice()}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  background: previewing ? 'var(--theater-accent)' : 'var(--theater-surface-elevated)',
+                  color: previewing ? 'var(--theater-accent-contrast)' : 'var(--theater-text-primary)',
+                  border: '1px solid var(--theater-border-medium)',
+                  borderRadius: 'var(--theater-radius-xs)',
+                  fontSize: '0.72rem',
+                  fontWeight: 550,
+                  padding: '0.22rem 0.55rem',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--theater-font-sans)',
+                  transition: 'all var(--theater-transition-fast)',
+                }}
+              >
+                <span>{previewing ? '■ Stop Audio' : '▶ Test Voice'}</span>
+              </button>
+            </div>
+
+            {availableVoices.length > 0 ? (
+              <select
+                value={selectedVoiceURI || ''}
+                onChange={(e) => handleVoiceChange(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'var(--theater-surface-sunken)',
+                  color: 'var(--theater-text-primary)',
+                  border: '1px solid var(--theater-border-subtle)',
+                  borderRadius: 'var(--theater-radius-md)',
+                  padding: '0.55rem 0.75rem',
+                  fontSize: '0.78rem',
+                  outline: 'none',
+                  fontFamily: 'var(--theater-font-sans)',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">System Default ({selectedLanguage})</option>
+                {availableVoices.map((v) => (
+                  <option key={v.voiceURI} value={v.voiceURI}>
+                    {v.name} ({v.lang})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div
+                style={{
+                  fontSize: '0.76rem',
+                  color: 'var(--theater-text-muted)',
+                  background: 'var(--theater-surface-sunken)',
+                  padding: '0.55rem 0.75rem',
+                  borderRadius: 'var(--theater-radius-md)',
+                  border: '1px solid var(--theater-border-subtle)',
+                }}
+              >
+                Browser default synthesized voice active
+              </div>
+            )}
+
+            {/* Mic Diagnostic */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                marginTop: '0.5rem',
+                fontSize: '0.71rem',
+                color: 'var(--theater-text-muted)',
+              }}
+            >
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: speechToTextService.isSupported()
+                    ? 'var(--theater-accent)'
+                    : 'var(--theater-text-muted)',
+                }}
+              />
+              <span>
+                {speechToTextService.isSupported()
+                  ? 'Microphone: Speech recognition ready'
+                  : 'Microphone: Not supported in this browser'}
+              </span>
+            </div>
+          </div>
+
+          {/* 3. Narration Speed */}
+          <div>
+            <div
+              style={{
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                color: 'var(--theater-text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Narration Speed
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '0.4rem',
+                background: 'var(--theater-surface-sunken)',
+                padding: '3px',
+                borderRadius: 'var(--theater-radius-md)',
+                border: '1px solid var(--theater-border-subtle)',
+              }}
+            >
+              {[0.75, 1.0, 1.25, 1.5].map((s) => {
+                const isActive = speed === s;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => handleSpeedChange(s)}
+                    style={{
+                      padding: '0.42rem 0.2rem',
+                      borderRadius: 'var(--theater-radius-sm)',
+                      border: 'none',
+                      background: isActive ? 'var(--theater-accent)' : 'transparent',
+                      color: isActive ? 'var(--theater-accent-contrast)' : 'var(--theater-text-secondary)',
+                      fontSize: '0.78rem',
+                      fontWeight: isActive ? 600 : 500,
+                      cursor: 'pointer',
+                      fontFamily: 'var(--theater-font-sans)',
+                      transition: 'all var(--theater-transition-fast)',
+                    }}
+                  >
+                    {s}×
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 4. Subtitles & Captions */}
+          <div>
+            <div
+              style={{
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                color: 'var(--theater-text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Subtitles & Captions
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.7rem 0.85rem',
+                background: 'var(--theater-surface-sunken)',
+                borderRadius: 'var(--theater-radius-md)',
+                border: '1px solid var(--theater-border-subtle)',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 500, color: 'var(--theater-text-primary)' }}>
+                  Live Subtitles on Stage
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--theater-text-muted)', marginTop: '0.1rem' }}>
+                  Display synchronized speech subtitles during lesson narration
+                </div>
+              </div>
+              <button
+                onClick={onToggleCaptions}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0.3rem 0.75rem',
+                  borderRadius: 'var(--theater-radius-sm)',
+                  border: captionsEnabled
+                    ? '1px solid var(--theater-accent)'
+                    : '1px solid var(--theater-border-medium)',
+                  background: captionsEnabled ? 'var(--theater-accent)' : 'var(--theater-surface-elevated)',
+                  color: captionsEnabled ? 'var(--theater-accent-contrast)' : 'var(--theater-text-muted)',
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--theater-font-sans)',
+                  transition: 'all var(--theater-transition-fast)',
+                }}
+              >
+                {captionsEnabled ? 'ON' : 'OFF'}
+              </button>
+            </div>
+          </div>
+
+          {/* 5. Session Management Controls */}
+          <div
+            style={{
+              borderTop: '1px solid var(--theater-border-subtle)',
+              paddingTop: '1.15rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '0.68rem',
                 fontWeight: 600,
                 color: 'var(--theater-text-muted)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.04em',
               }}
             >
-              Tutor Voice
-            </label>
-            <button
-              onClick={handlePreviewVoice}
-              disabled={previewing}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--theater-text-primary)',
-                fontSize: '0.75rem',
-                fontWeight: 500,
-                cursor: previewing ? 'default' : 'pointer',
-                padding: '0.1rem 0.3rem',
-                opacity: previewing ? 0.6 : 1,
-              }}
-            >
-              {previewing ? '▶ Playing...' : '▶ Test Voice'}
-            </button>
-          </div>
-
-          {voices.length > 0 ? (
-            <select
-              value={selectedVoiceURI || ''}
-              onChange={(e) => handleVoiceChange(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'var(--theater-surface-sunken)',
-                color: 'var(--theater-text-primary)',
-                border: '1px solid var(--theater-border-subtle)',
-                borderRadius: 'var(--theater-radius-sm)',
-                padding: '0.5rem 0.6rem',
-                fontSize: '0.78rem',
-                outline: 'none',
-                fontFamily: 'var(--theater-font-sans)',
-              }}
-            >
-              <option value="">Default ({selectedLanguage})</option>
-              {voices.map((v) => (
-                <option key={v.voiceURI} value={v.voiceURI}>
-                  {v.name} ({v.lang})
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div style={{ fontSize: '0.75rem', color: 'var(--theater-text-muted)' }}>
-              Standard browser voice active
+              Session Management
             </div>
-          )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.72rem', color: 'var(--theater-text-muted)' }}>
-            <span>Microphone:</span>
-            <span style={{ color: 'var(--theater-text-primary)' }}>
-              {speechToTextService.isSupported() ? '● Ready (Browser STT)' : '● Not supported'}
-            </span>
-          </div>
-        </div>
-
-        {/* 5. Session Controls */}
-        <div
-          style={{
-            borderTop: '1px solid var(--theater-border-subtle)',
-            paddingTop: '1.25rem',
-            marginTop: 'auto',
-          }}
-        >
-          <label
-            style={{
-              display: 'block',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              color: 'var(--theater-text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              marginBottom: '0.75rem',
-            }}
-          >
-            Session Management
-          </label>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {/* PAUSE */}
-            {onPauseSession && (
-              <div
-                style={{
-                  background: 'var(--theater-surface-elevated)',
-                  border: '1px solid var(--theater-border-subtle)',
-                  borderRadius: 'var(--theater-radius-md)',
-                  padding: '0.75rem 0.95rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.35rem',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--theater-text-primary)' }}>
-                    Pause Lesson
-                  </span>
-                  <button
-                    onClick={() => {
-                      onPauseSession();
-                      onClose();
-                    }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.3rem',
-                      background: 'var(--theater-surface)',
-                      border: '1px solid var(--theater-border-medium)',
-                      borderRadius: 'var(--theater-radius-xs)',
-                      color: 'var(--theater-text-primary)',
-                      fontSize: '0.75rem',
-                      fontWeight: 550,
-                      padding: '0.3rem 0.75rem',
-                      cursor: 'pointer',
-                      fontFamily: 'var(--theater-font-sans)',
-                      transition: 'all var(--theater-transition-fast)',
-                    }}
-                  >
-                    <IconPause size={11} />
-                    <span>Pause</span>
-                  </button>
-                </div>
-                <span style={{ fontSize: '0.7rem', color: 'var(--theater-text-muted)', lineHeight: 1.4 }}>
-                  Temporarily steps away. Speech and visual progression pause while preserving full learning state.
-                </span>
-              </div>
-            )}
-
-            {/* END */}
-            <div
-              style={{
-                background: 'var(--theater-surface-elevated)',
-                border: '1px solid var(--theater-border-subtle)',
-                borderRadius: 'var(--theater-radius-md)',
-                padding: '0.75rem 0.95rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.35rem',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--theater-text-primary)' }}>
-                  End Session
-                </span>
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              {onPauseSession && (
                 <button
                   onClick={() => {
-                    onEndSession();
+                    textToSpeechService.stopPreview();
+                    onPauseSession();
                     onClose();
                   }}
                   style={{
-                    background: 'var(--theater-surface-sunken)',
+                    flex: 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    padding: '0.55rem 0.8rem',
+                    background: 'var(--theater-surface-elevated)',
                     border: '1px solid var(--theater-border-medium)',
-                    borderRadius: 'var(--theater-radius-xs)',
+                    borderRadius: 'var(--theater-radius-md)',
                     color: 'var(--theater-text-primary)',
-                    fontSize: '0.75rem',
+                    fontSize: '0.78rem',
                     fontWeight: 550,
-                    padding: '0.3rem 0.75rem',
                     cursor: 'pointer',
                     fontFamily: 'var(--theater-font-sans)',
                     transition: 'all var(--theater-transition-fast)',
                   }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
+                  }}
                 >
-                  End & Review
+                  <IconPause size={12} />
+                  <span>Pause Lesson</span>
                 </button>
-              </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--theater-text-muted)', lineHeight: 1.4 }}>
-                Finishes lesson and generates your end-of-session mastery summary.
-              </span>
+              )}
+
+              <button
+                onClick={() => {
+                  textToSpeechService.stopPreview();
+                  onEndSession();
+                  onClose();
+                }}
+                style={{
+                  flex: 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0.55rem 0.8rem',
+                  background: 'var(--theater-surface-sunken)',
+                  border: '1px solid var(--theater-border-medium)',
+                  borderRadius: 'var(--theater-radius-md)',
+                  color: 'var(--theater-text-primary)',
+                  fontSize: '0.78rem',
+                  fontWeight: 550,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--theater-font-sans)',
+                  transition: 'all var(--theater-transition-fast)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
+                }}
+              >
+                <span>End & Review</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
-    </aside>
+    </div>
   );
 };

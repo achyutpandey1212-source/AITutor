@@ -16,6 +16,9 @@ import { AnalyticsPage } from './components/pages/AnalyticsPage';
 import { DocumentsPage } from './components/pages/DocumentsPage';
 import { LumoAIPage } from './components/pages/LumoAIPage';
 
+// Standalone Avatar Lab (lazy-loaded for isolated bundle size)
+const AvatarLabPage = React.lazy(() => import('./components/avatarLab/AvatarLabPage'));
+
 // Lumo Navigation Shell
 import { Navbar } from './components/navigation/Navbar';
 
@@ -23,7 +26,7 @@ import { Navbar } from './components/navigation/Navbar';
 // Pages where the Navbar should NOT appear
 // (e.g. Theater full-screen, auth pages with their own layout)
 // ---------------------------------------------------------------
-const NAV_HIDDEN_PATHS = new Set(['/signin', '/signup', '/tutor']);
+const NAV_HIDDEN_PATHS = new Set(['/signin', '/signup', '/tutor', '/avatar-lab']);
 
 // ---------------------------------------------------------------
 // Lumo loading screen
@@ -231,6 +234,13 @@ export const App: React.FC = () => {
             initialPrompt={queryParams.get('prompt') || queryParams.get('doubt') || undefined}
             from={queryParams.get('from') || undefined}
           />
+        );
+
+      case '/avatar-lab':
+        return (
+          <React.Suspense fallback={<LoadingScreen />}>
+            <AvatarLabPage onNavigate={navigate} />
+          </React.Suspense>
         );
 
       default:

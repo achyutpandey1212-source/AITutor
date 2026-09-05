@@ -34,7 +34,7 @@ export class TextToSpeechService {
     return this.rate;
   }
 
-  public setVoiceURI(uri: string): void {
+  public setVoiceURI(uri: string | null): void {
     this.selectedVoiceURI = uri;
   }
 
@@ -47,15 +47,46 @@ export class TextToSpeechService {
     return this.voices;
   }
 
-  public previewVoice(text: string = "Hello! I am Lumo, your personal AI tutor."): void {
+  public stopPreview(): void {
     if (!this.synth) return;
-    this.cancel();
+    this.synth.cancel();
+  }
+
+  public previewVoice(
+    text: string = "Hello! I am Lumo, your personal AI tutor.",
+    voiceURI?: string,
+    onEnd?: () => void,
+    onError?: () => void
+  ): void {
+    if (!this.synth) {
+      onError?.();
+      return;
+    }
+
+    // Cancel current speech preview
+    this.synth.cancel();
+
+    const targetURI = voiceURI || this.selectedVoiceURI;
+    const targetVoice = targetURI
+      ? this.voices.find((item) => item.voiceURI === targetURI)
+      : this.voices[0];
+
     const utterance = new SpeechSynthesisUtterance(text);
-    if (this.selectedVoiceURI) {
-      const v = this.voices.find((item) => item.voiceURI === this.selectedVoiceURI);
-      if (v) utterance.voice = v;
+    if (targetVoice) {
+      utterance.voice = targetVoice;
+      utterance.lang = targetVoice.lang;
     }
     utterance.rate = this.rate;
+
+    utterance.onend = () => {
+      onEnd?.();
+    };
+
+    utterance.onerror = () => {
+      onEnd?.();
+      onError?.();
+    };
+
     this.synth.speak(utterance);
   }
 

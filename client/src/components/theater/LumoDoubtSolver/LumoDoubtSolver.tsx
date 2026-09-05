@@ -343,74 +343,133 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '1rem 1.15rem',
+            padding: '0.9rem 1.15rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.85rem',
+            gap: '1rem',
           }}
         >
-          {messages.map((m) => {
-            const isStudent = m.sender === 'student';
-            return (
+          {messages.length === 1 && messages[0].id === 'welcome' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
               <div
-                key={m.id}
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: isStudent ? 'flex-end' : 'flex-start',
+                  fontSize: '0.85rem',
+                  color: 'var(--theater-text-secondary)',
+                  lineHeight: 1.5,
+                  fontFamily: 'var(--theater-font-sans)',
                 }}
               >
+                What are you stuck on in <span style={{ color: 'var(--theater-text-primary)', fontWeight: 550 }}>{concept}</span>?
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {[
+                  `Can you clarify the core principle of ${concept}?`,
+                  `Give an intuitive real-world analogy`,
+                  `What is the most common mistake students make here?`,
+                ].map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setInputQuery(suggestion);
+                      inputRef.current?.focus();
+                    }}
+                    style={{
+                      background: 'var(--theater-surface-elevated)',
+                      border: '1px solid var(--theater-border-subtle)',
+                      borderRadius: 'var(--theater-radius-sm)',
+                      padding: '0.35rem 0.65rem',
+                      fontSize: '0.74rem',
+                      color: 'var(--theater-text-secondary)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontFamily: 'var(--theater-font-sans)',
+                      transition: 'all var(--theater-transition-fast)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--theater-text-primary)';
+                      e.currentTarget.style.borderColor = 'var(--theater-border-medium)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                      e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
+                    }}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            messages.map((m) => {
+              const isStudent = m.sender === 'student';
+              return (
                 <div
+                  key={m.id}
                   style={{
-                    maxWidth: '85%',
-                    padding: '0.65rem 0.95rem',
-                    borderRadius: isStudent ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                    background: isStudent
-                      ? 'var(--theater-surface-elevated)'
-                      : 'var(--theater-surface-sunken)',
-                    border: isStudent
-                      ? '1px solid var(--theater-border-medium)'
-                      : '1px solid var(--theater-border-subtle)',
-                    color: 'var(--theater-text-primary)',
-                    fontSize: '0.82rem',
-                    lineHeight: 1.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.2rem',
+                    paddingBottom: '0.4rem',
+                    borderBottom: '1px solid var(--theater-border-subtle)',
                   }}
                 >
-                  {!isStudent && (
-                    <div
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.3rem',
-                        marginBottom: '0.3rem',
                         fontSize: '0.68rem',
                         fontWeight: 600,
-                        color: 'var(--theater-text-muted)',
+                        letterSpacing: '0.04em',
+                        textTransform: 'uppercase',
+                        color: isStudent ? 'var(--theater-text-muted)' : 'var(--theater-text-primary)',
                       }}
                     >
-                      <span>✦ Lumo</span>
+                      {isStudent ? 'You' : `Lumo${m.tier ? ` · ${m.tier}` : ''}`}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--theater-text-faint)' }}>{m.timestamp}</span>
+                      {!isStudent && (
+                        <button
+                          onClick={() => navigator.clipboard.writeText(m.text)}
+                          title="Copy explanation"
+                          aria-label="Copy explanation"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--theater-text-muted)',
+                            cursor: 'pointer',
+                            fontSize: '0.68rem',
+                            padding: '0.1rem 0.25rem',
+                            borderRadius: 'var(--theater-radius-xs)',
+                            transition: 'color var(--theater-transition-fast)',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--theater-text-primary)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--theater-text-muted)')}
+                        >
+                          Copy
+                        </button>
+                      )}
                     </div>
-                  )}
-                  {m.text}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '0.82rem',
+                      color: isStudent ? 'var(--theater-text-secondary)' : 'var(--theater-text-primary)',
+                      lineHeight: 1.55,
+                      fontFamily: 'var(--theater-font-sans)',
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {m.text}
+                  </div>
                 </div>
-                <span
-                  style={{
-                    fontSize: '0.65rem',
-                    color: 'var(--theater-text-faint)',
-                    marginTop: '0.2rem',
-                    padding: '0 0.3rem',
-                  }}
-                >
-                  {m.timestamp}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
 
           {isLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--theater-text-muted)', fontSize: '0.78rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: 'var(--theater-text-muted)', fontSize: '0.78rem' }}>
               <IconSparkles size={13} style={{ color: 'var(--theater-text-muted)' }} />
-              <span>Lumo is reflecting on your question...</span>
+              <span>Thinking...</span>
             </div>
           )}
 
@@ -420,12 +479,12 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
         {/* Input Bar */}
         <div
           style={{
-            padding: '0.75rem 1rem',
+            padding: '0.65rem 1rem',
             borderTop: '1px solid var(--theater-border-subtle)',
             background: 'var(--theater-surface-elevated)',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '0.45rem',
           }}
         >
           <input
@@ -434,68 +493,67 @@ export const LumoDoubtSolver: React.FC<LumoDoubtSolverProps> = ({
             value={inputQuery}
             onChange={(e) => setInputQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask your teacher something privately..."
+            placeholder="Ask anything about this concept..."
             disabled={isLoading}
             style={{
               flex: 1,
               background: 'var(--theater-surface-sunken)',
               border: '1px solid var(--theater-border-subtle)',
               borderRadius: 'var(--theater-radius-sm)',
-              padding: '0.5rem 0.85rem',
+              padding: '0.45rem 0.8rem',
               color: 'var(--theater-text-primary)',
-              fontSize: '0.82rem',
+              fontSize: '0.8rem',
               outline: 'none',
               fontFamily: 'var(--theater-font-sans)',
             }}
           />
 
-          {/* Voice Mic Toggle */}
           {speechToTextService.isSupported() && (
             <button
               onClick={handleToggleVoiceInput}
+              disabled={isLoading}
               style={{
-                background: isListeningMic ? 'var(--theater-accent)' : 'transparent',
-                border: isListeningMic
-                  ? '1px solid var(--theater-accent)'
-                  : '1px solid var(--theater-border-subtle)',
+                background: isListeningMic ? 'var(--theater-surface-active)' : 'transparent',
+                border: isListeningMic ? '1px solid var(--theater-text-primary)' : '1px solid var(--theater-border-subtle)',
+                color: 'var(--theater-text-primary)',
                 borderRadius: 'var(--theater-radius-sm)',
                 width: '32px',
                 height: '32px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: isListeningMic ? 'var(--theater-accent-contrast)' : 'var(--theater-text-muted)',
                 cursor: 'pointer',
+                flexShrink: 0,
                 transition: 'all var(--theater-transition-fast)',
               }}
-              title={isListeningMic ? 'Listening... click to stop' : 'Speak your doubt'}
+              title={isListeningMic ? 'Listening to speech...' : 'Speak doubt'}
+              aria-label="Voice input"
             >
-              <IconMic size={15} />
+              <IconMic size={14} />
             </button>
           )}
 
-          {/* Submit Arrow */}
           <button
             onClick={handleSend}
             disabled={isLoading || !inputQuery.trim()}
             style={{
-              background: inputQuery.trim() ? 'var(--theater-accent)' : 'transparent',
-              color: inputQuery.trim() ? 'var(--theater-accent-contrast)' : 'var(--theater-text-faint)',
-              border: inputQuery.trim() ? '1px solid var(--theater-accent)' : '1px solid var(--theater-border-subtle)',
+              background: inputQuery.trim() ? 'var(--theater-text-primary)' : 'var(--theater-surface-sunken)',
+              color: inputQuery.trim() ? 'var(--theater-bg)' : 'var(--theater-text-faint)',
+              border: 'none',
               borderRadius: 'var(--theater-radius-sm)',
               width: '32px',
               height: '32px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: isLoading || !inputQuery.trim() ? 'default' : 'pointer',
-              fontWeight: 600,
-              fontSize: '0.95rem',
+              cursor: inputQuery.trim() && !isLoading ? 'pointer' : 'default',
+              flexShrink: 0,
               transition: 'all var(--theater-transition-fast)',
             }}
-            title="Submit doubt"
+            title="Send doubt"
+            aria-label="Send doubt"
           >
-            <IconArrowRight size={14} />
+            <IconArrowRight size={13} />
           </button>
         </div>
       </aside>

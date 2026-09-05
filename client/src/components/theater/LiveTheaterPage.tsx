@@ -2,12 +2,11 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Document as KnowledgeDoc, TeachingSession, AssessmentSubmission } from '@ai-tutor/shared';
 import { useLiveTutor, mapVoiceToAvatarState } from '../../hooks/useLiveTutor';
 import { liveTutorApiClient } from '../../services/api.service';
-import { TheaterHeader } from './TheaterHeader';
+import { TheaterHeader, type ActiveSurface } from './TheaterHeader';
 import { TheaterStage } from './TheaterStage/TheaterStage';
 import { TheaterDock } from './TheaterDock/TheaterDock';
 import { MilestonesDrawer } from './TheaterDrawers/MilestonesDrawer';
 import { TranscriptDrawer } from './TheaterDrawers/TranscriptDrawer';
-import { StudyMaterialDrawer } from './TheaterDrawers/StudyMaterialDrawer';
 import { TheaterSettingsSheet } from './TheaterDrawers/TheaterSettingsSheet';
 import { LumoDoubtSolver } from './LumoDoubtSolver/LumoDoubtSolver';
 import { LaunchpadModal } from './Modals/LaunchpadModal';
@@ -51,13 +50,9 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
   const [userDocs, setUserDocs] = useState<KnowledgeDoc[]>([]);
   const [pastSessions, setPastSessions] = useState<TeachingSession[]>([]);
 
-  // Drawer & Modal States
-  const [isMilestonesOpen, setIsMilestonesOpen] = useState(false);
-  const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
-  const [isDocumentOpen, setIsDocumentOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // Surface & Modal States (single active surface for mutual exclusivity)
+  const [activeSurface, setActiveSurface] = useState<ActiveSurface>('none');
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
-  const [isDoubtSolverOpen, setIsDoubtSolverOpen] = useState(false);
 
   // Pause & Replay States
   const [isPaused, setIsPaused] = useState(false);
@@ -168,7 +163,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
   // Pause Session Handler
   const handlePauseSession = async () => {
     setIsPaused(true);
-    closeAllDrawers();
+    closeActiveSurface();
     await pauseSession();
   };
 
@@ -214,13 +209,9 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
     await submitTypedMessage(feedbackMsg);
   };
 
-  // Close all drawers
-  const closeAllDrawers = () => {
-    setIsMilestonesOpen(false);
-    setIsTranscriptOpen(false);
-    setIsDocumentOpen(false);
-    setIsSettingsOpen(false);
-    setIsDoubtSolverOpen(false);
+  // Close active surface
+  const closeActiveSurface = () => {
+    setActiveSurface('none');
   };
 
   // Derive dynamic pedagogical concept steps from session blueprint or concept history
@@ -302,17 +293,11 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
         activeEl instanceof HTMLTextAreaElement ||
         activeEl?.getAttribute('contenteditable') === 'true';
 
-      // Esc: Close any active drawer or exit Focus Mode
+      // Esc: Close any active surface or exit Focus Mode
       if (e.key === 'Escape') {
-        if (
-          isMilestonesOpen ||
-          isTranscriptOpen ||
-          isDocumentOpen ||
-          isSettingsOpen ||
-          isDoubtSolverOpen
-        ) {
+        if (activeSurface !== 'none') {
           e.preventDefault();
-          closeAllDrawers();
+          closeActiveSurface();
           return;
         }
         if (isFocusMode) {
@@ -346,11 +331,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
-    isMilestonesOpen,
-    isTranscriptOpen,
-    isDocumentOpen,
-    isSettingsOpen,
-    isDoubtSolverOpen,
+    activeSurface,
     isFocusMode,
     isSessionActive,
     isSpeaking,
@@ -395,31 +376,12 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
         conceptProgressPercent={conceptProgressPercent}
         documentTitle={activeDocTitle}
         isFocusMode={isFocusMode}
+        activeSurface={activeSurface}
         onExit={() => onNavigate('/dashboard')}
-        onOpenDoubtSolver={() => {
-          closeAllDrawers();
-          setIsDoubtSolverOpen(true);
-        }}
-        onOpenNotes={() => {
-          closeAllDrawers();
-          setIsMilestonesOpen(true);
-        }}
-        onOpenMaterials={
-          activeDocTitle
-            ? () => {
-                closeAllDrawers();
-                setIsDocumentOpen(true);
-              }
-            : undefined
-        }
-        onOpenTranscript={() => {
-          closeAllDrawers();
-          setIsTranscriptOpen(true);
-        }}
-        onOpenSettings={() => {
-          closeAllDrawers();
-          setIsSettingsOpen(true);
-        }}
+        onOpenDoubtSolver={() => setActiveSurface((prev) => (prev === 'ask_lumo' ? 'none' : 'ask_lumo'))}
+        onOpenNotes={() => setActiveSurface((prev) => (prev === 'notes' ? 'none' : 'notes'))}
+        onOpenTranscript={() => setActiveSurface((prev) => (prev === 'transcript' ? 'none' : 'transcript'))}
+        onOpenSettings={() => setActiveSurface((prev) => (prev === 'settings' ? 'none' : 'settings'))}
       />
 
       {/* 3. Paused Session Notification Banner */}
@@ -598,10 +560,7 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
           onRequestHint={requestAssessmentHint}
           onGiveUpAssessment={giveUpAssessment}
           onResumeLive={() => setIsReplaying(false)}
-          onOpenDoubtSolver={() => {
-            closeAllDrawers();
-            setIsDoubtSolverOpen(true);
-          }}
+          onOpenDoubtSolver={() => setActiveSurface((prev) => (prev === 'ask_lumo' ? 'none' : 'ask_lumo'))}
           onSendMessage={submitTypedMessage}
           isLoading={isLoading}
           isSttSupported={isSttSupported}
@@ -610,34 +569,26 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
         />
       )}
 
-      {/* 7. Milestones Drawer */}
+      {/* 7. Session Timeline & Replay Navigation Workspace */}
       <MilestonesDrawer
         sessionId={session?.id}
-        isOpen={isMilestonesOpen}
-        onClose={() => setIsMilestonesOpen(false)}
+        isOpen={activeSurface === 'notes'}
+        onClose={closeActiveSurface}
         onReplaySegment={handleReplaySegment}
         idToken={idToken}
       />
 
-      {/* 8. Transcript Drawer */}
+      {/* 8. Conversation History Workspace */}
       <TranscriptDrawer
         conversationHistory={sessionContext?.conversationHistory}
-        isOpen={isTranscriptOpen}
-        onClose={() => setIsTranscriptOpen(false)}
+        isOpen={activeSurface === 'transcript'}
+        onClose={closeActiveSurface}
       />
 
-      {/* 9. Study Material Drawer */}
-      <StudyMaterialDrawer
-        documentTitle={activeDocTitle}
-        documentId={session?.documentId || selectedDocumentId}
-        isOpen={isDocumentOpen}
-        onClose={() => setIsDocumentOpen(false)}
-      />
-
-      {/* 10. Settings Sheet */}
+      {/* 9. Session Preferences Modal */}
       <TheaterSettingsSheet
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        isOpen={activeSurface === 'settings'}
+        onClose={closeActiveSurface}
         selectedLanguage={selectedLanguage}
         onSelectLanguage={setSelectedLanguage}
         captionsEnabled={captionsEnabled}
@@ -646,10 +597,10 @@ export const LiveTheaterPage: React.FC<LiveTheaterPageProps> = ({
         onEndSession={handleEndSession}
       />
 
-      {/* 11. Contextual Doubt Solver Modal/Drawer */}
+      {/* 10. Ask Lumo Doubt Solver Workspace */}
       <LumoDoubtSolver
-        isOpen={isDoubtSolverOpen}
-        onClose={() => setIsDoubtSolverOpen(false)}
+        isOpen={activeSurface === 'ask_lumo'}
+        onClose={closeActiveSurface}
         subject={activeSubject}
         topic={activeTopic}
         concept={activeConceptTitle}

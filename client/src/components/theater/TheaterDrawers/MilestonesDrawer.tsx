@@ -8,6 +8,7 @@ export interface MilestonesDrawerProps {
   onClose: () => void;
   onReplaySegment: (segmentId: string) => void;
   idToken?: string;
+  activeConcept?: string;
 }
 
 export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
@@ -16,6 +17,7 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
   onClose,
   onReplaySegment,
   idToken,
+  activeConcept,
 }) => {
   const [memory, setMemory] = useState<SessionMemory | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
           setMemory(data.data);
         }
       })
-      .catch((err) => console.warn('[MilestonesDrawer] Failed to load memory:', err))
+      .catch((err) => console.warn('[MilestonesTimeline] Failed to load memory:', err))
       .finally(() => {
         if (mounted) setLoading(false);
       });
@@ -50,204 +52,295 @@ export const MilestonesDrawer: React.FC<MilestonesDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <aside
-      aria-label="Session Milestones"
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Session Timeline and Replay Navigation"
       style={{
         position: 'fixed',
-        top: 0,
-        right: 0,
-        width: 'min(380px, 90vw)',
-        height: '100vh',
-        background: 'var(--theater-surface)',
-        borderLeft: '1px solid var(--theater-border-medium)',
-        boxShadow: 'var(--theater-shadow-stage)',
+        inset: 0,
         zIndex: 50,
         display: 'flex',
-        flexDirection: 'column',
-        animation: 'theaterSlideInRight 0.25s var(--theater-ease)',
-        color: 'var(--theater-text-primary)',
-        fontFamily: 'var(--theater-font-sans)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1.25rem',
+        background: 'rgba(0, 0, 0, 0.32)',
+        backdropFilter: 'blur(3px)',
+        animation: 'theaterOverlayFadeIn 0.2s ease',
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
       }}
     >
-      {/* Header */}
       <div
         style={{
+          width: 'min(680px, 94vw)',
+          maxHeight: 'min(660px, 84vh)',
+          background: 'var(--theater-surface)',
+          borderRadius: 'var(--theater-radius-xl)',
+          border: '1px solid var(--theater-border-medium)',
+          boxShadow: 'var(--theater-shadow-stage)',
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid var(--theater-border-subtle)',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          fontFamily: 'var(--theater-font-sans)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <IconNotes size={18} style={{ color: 'var(--theater-text-primary)' }} />
-          <div>
-            <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: 'var(--theater-text-primary)' }}>
-              Session Milestones
-            </h3>
-            <span style={{ fontSize: '0.75rem', color: 'var(--theater-text-muted)' }}>
-              Concepts mastered & replay history
-            </span>
-          </div>
-        </div>
-
-        <button
-          onClick={onClose}
+        {/* Workspace Header */}
+        <div
           style={{
-            background: 'transparent',
-            border: '1px solid var(--theater-border-subtle)',
-            borderRadius: 'var(--theater-radius-sm)',
-            width: '28px',
-            height: '28px',
             display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--theater-text-muted)',
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-            transition: 'all var(--theater-transition-fast)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = 'var(--theater-text-primary)';
-            e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--theater-text-muted)';
-            e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
+            padding: '1rem 1.35rem',
+            borderBottom: '1px solid var(--theater-border-subtle)',
           }}
         >
-          ✕
-        </button>
-      </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem' }}>
-        {loading ? (
-          <div style={{ color: 'var(--theater-text-muted)', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
-            Loading milestones...
-          </div>
-        ) : !memory || memory.segments.length === 0 ? (
-          <div style={{ color: 'var(--theater-text-muted)', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
-            <p>No teaching segments recorded yet.</p>
-            <p style={{ fontSize: '0.78rem', color: 'var(--theater-text-faint)' }}>
-              As Lumo teaches concepts, your progress and replay points will appear here.
-            </p>
-          </div>
-        ) : (
-          <div>
-            <div style={{ marginBottom: '1.25rem' }}>
-              <span
-                style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 600,
-                  color: 'var(--theater-text-secondary)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                Concepts Covered ({memory.conceptsCovered.length})
-              </span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
-                {memory.conceptsCovered.map((c, i) => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <IconNotes size={16} style={{ color: 'var(--theater-text-primary)' }} />
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: 'var(--theater-text-primary)' }}>
+                  Session Timeline
+                </h3>
+                {memory?.conceptsCovered && memory.conceptsCovered.length > 0 && (
                   <span
-                    key={i}
                     style={{
-                      fontSize: '0.75rem',
+                      fontSize: '0.68rem',
+                      color: 'var(--theater-text-secondary)',
                       background: 'var(--theater-surface-elevated)',
-                      padding: '0.25rem 0.65rem',
-                      borderRadius: 'var(--theater-radius-sm)',
-                      color: 'var(--theater-text-primary)',
                       border: '1px solid var(--theater-border-subtle)',
-                      fontWeight: 500,
+                      padding: '0.1rem 0.45rem',
+                      borderRadius: 'var(--theater-radius-xs)',
+                      fontWeight: 550,
                     }}
                   >
-                    ✓ {c}
+                    {memory.conceptsCovered.length} mastered
                   </span>
-                ))}
+                )}
               </div>
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--theater-border-subtle)', paddingTop: '1rem' }}>
-              <span
-                style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 600,
-                  color: 'var(--theater-text-muted)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                Timeline & Replay Points
+              <span style={{ fontSize: '0.72rem', color: 'var(--theater-text-muted)' }}>
+                Chronological moments & replay points
               </span>
+            </div>
+          </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginTop: '0.75rem' }}>
-                {memory.segments.map((seg: ReplaySegment) => {
-                  const time = new Date(seg.createdAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  });
+          <button
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--theater-border-subtle)',
+              borderRadius: 'var(--theater-radius-xs)',
+              width: '26px',
+              height: '26px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--theater-text-muted)',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              transition: 'all var(--theater-transition-fast)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--theater-text-primary)';
+              e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--theater-text-muted)';
+              e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
+            }}
+            title="Close timeline (Esc)"
+            aria-label="Close timeline"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Timeline Content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem' }}>
+          {loading ? (
+            <div style={{ color: 'var(--theater-text-muted)', fontSize: '0.82rem', textAlign: 'center', padding: '3rem 1rem' }}>
+              Loading session timeline...
+            </div>
+          ) : !memory || memory.segments.length === 0 ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                padding: '3rem 1.5rem',
+                color: 'var(--theater-text-muted)',
+              }}
+            >
+              <div style={{ fontSize: '0.88rem', fontWeight: 550, color: 'var(--theater-text-primary)', marginBottom: '0.4rem' }}>
+                Timeline will unfold here
+              </div>
+              <p style={{ margin: 0, fontSize: '0.78rem', maxWidth: '380px', lineHeight: 1.5, color: 'var(--theater-text-muted)' }}>
+                As Lumo guides you through concepts, diagrams, and explanations, chronological milestone markers will be recorded here for instant replay.
+              </p>
+            </div>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              {/* Continuous vertical hairline timeline line */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '12px',
+                  bottom: '24px',
+                  left: '60px',
+                  width: '1px',
+                  background: 'var(--theater-border-subtle)',
+                  zIndex: 1,
+                }}
+              />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {memory.segments.map((seg: ReplaySegment, idx) => {
+                  const date = new Date(seg.createdAt);
+                  const timeLabel = !isNaN(date.getTime())
+                    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : `0${idx}:00`;
+                  const isCurrent = activeConcept && (seg.concept === activeConcept || seg.title === activeConcept);
 
                   return (
                     <div
                       key={seg.segmentId}
                       style={{
-                        padding: '0.85rem',
-                        background: 'var(--theater-surface-sunken)',
-                        borderRadius: 'var(--theater-radius-md)',
-                        border: '1px solid var(--theater-border-subtle)',
                         display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.4rem',
+                        alignItems: 'flex-start',
+                        gap: '1rem',
+                        position: 'relative',
+                        zIndex: 2,
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--theater-text-muted)', fontWeight: 550 }}>{time}</span>
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onReplaySegment(seg.segmentId);
-                          }}
-                          style={{
-                            background: 'var(--theater-surface-elevated)',
-                            border: '1px solid var(--theater-border-subtle)',
-                            color: 'var(--theater-text-secondary)',
-                            borderRadius: 'var(--theater-radius-xs)',
-                            padding: '0.2rem 0.55rem',
-                            fontSize: '0.72rem',
-                            fontWeight: 550,
-                            cursor: 'pointer',
-                            transition: 'all var(--theater-transition-fast)',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = 'var(--theater-text-primary)';
-                            e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = 'var(--theater-text-secondary)';
-                            e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
-                          }}
-                        >
-                          ↻ Replay
-                        </button>
-                      </div>
+                      {/* Left: Timestamp */}
+                      <span
+                        style={{
+                          width: '46px',
+                          fontSize: '0.72rem',
+                          fontFamily: 'monospace',
+                          color: 'var(--theater-text-muted)',
+                          textAlign: 'right',
+                          paddingTop: '0.2rem',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {timeLabel}
+                      </span>
 
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--theater-text-primary)' }}>
-                        {seg.title || seg.concept}
-                      </div>
+                      {/* Center Node Indicator */}
+                      <div
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: isCurrent ? 'var(--theater-text-primary)' : 'var(--theater-surface-elevated)',
+                          border: isCurrent ? '2px solid var(--theater-bg)' : '2px solid var(--theater-border-strong)',
+                          marginTop: '0.28rem',
+                          flexShrink: 0,
+                          boxShadow: isCurrent ? '0 0 0 2px var(--theater-text-primary)' : 'none',
+                        }}
+                      />
 
-                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--theater-text-muted)', lineHeight: 1.4 }}>
-                        {seg.displayText.length > 90
-                          ? `${seg.displayText.slice(0, 90)}...`
-                          : seg.displayText}
-                      </p>
+                      {/* Right: Milestone Card */}
+                      <div
+                        style={{
+                          flex: 1,
+                          padding: '0.75rem 1rem',
+                          background: isCurrent
+                            ? 'var(--theater-surface-elevated)'
+                            : 'var(--theater-surface-sunken)',
+                          borderRadius: 'var(--theater-radius-md)',
+                          border: isCurrent
+                            ? '1px solid var(--theater-border-strong)'
+                            : '1px solid var(--theater-border-subtle)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.35rem',
+                          transition: 'all var(--theater-transition-fast)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--theater-text-primary)' }}>
+                              {seg.title || seg.concept}
+                            </span>
+                            {isCurrent && (
+                              <span
+                                style={{
+                                  fontSize: '0.65rem',
+                                  color: 'var(--theater-text-secondary)',
+                                  background: 'var(--theater-surface)',
+                                  border: '1px solid var(--theater-border-subtle)',
+                                  borderRadius: 'var(--theater-radius-xs)',
+                                  padding: '0.05rem 0.35rem',
+                                  fontWeight: 500,
+                                }}
+                              >
+                                Active Moment
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              onClose();
+                              onReplaySegment(seg.segmentId);
+                            }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              background: 'var(--theater-surface)',
+                              border: '1px solid var(--theater-border-subtle)',
+                              color: 'var(--theater-text-secondary)',
+                              borderRadius: 'var(--theater-radius-xs)',
+                              padding: '0.2rem 0.55rem',
+                              fontSize: '0.72rem',
+                              fontWeight: 550,
+                              cursor: 'pointer',
+                              fontFamily: 'var(--theater-font-sans)',
+                              transition: 'all var(--theater-transition-fast)',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = 'var(--theater-text-primary)';
+                              e.currentTarget.style.borderColor = 'var(--theater-border-strong)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = 'var(--theater-text-secondary)';
+                              e.currentTarget.style.borderColor = 'var(--theater-border-subtle)';
+                            }}
+                            title="Replay this teaching moment"
+                          >
+                            <span>↻ Replay</span>
+                          </button>
+                        </div>
+
+                        {seg.displayText && (
+                          <p
+                            style={{
+                              margin: 0,
+                              fontSize: '0.78rem',
+                              color: 'var(--theater-text-muted)',
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            {seg.displayText.length > 130
+                              ? `${seg.displayText.slice(0, 130)}...`
+                              : seg.displayText}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </aside>
+    </div>
   );
 };

@@ -11,15 +11,18 @@
   },
   "dependencies": {
     "@ai-tutor/shared": "*",
+    "@pixiv/three-vrm": "^3.5.5",
     "@remotion/player": "^4.0.520",
     "firebase": "^11.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "remotion": "^4.0.520"
+    "remotion": "^4.0.520",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.7.3",
     "vite": "^6.0.7"
