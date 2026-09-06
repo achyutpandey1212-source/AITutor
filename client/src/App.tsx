@@ -33,36 +33,66 @@ const NAV_HIDDEN_PATHS = new Set(['/signin', '/signup', '/avatar-lab']);
 // ---------------------------------------------------------------
 // Lumo loading screen
 // ---------------------------------------------------------------
-const LoadingScreen: React.FC = () => (
-  <div
-    style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'var(--color-background)',
-      gap: '16px',
-    }}
-  >
-    <Logo
-      height={64}
+const LoadingScreen: React.FC = () => {
+  const [showReassurance, setShowReassurance] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowReassurance(true);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
       style={{
-        opacity: 0.25,
-        animation: 'lumo-pulse 1.6s ease-in-out infinite',
-      }}
-    />
-    <span
-      style={{
-        fontSize: 'var(--text-body-sm)',
-        color: 'var(--color-text-muted)',
-        fontWeight: 500,
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--color-background)',
+        gap: '16px',
+        padding: '0 24px',
+        boxSizing: 'border-box',
       }}
     >
-      Loading…
-    </span>
-  </div>
-);
+      <Logo
+        height={64}
+        style={{
+          opacity: 0.25,
+          animation: 'lumo-pulse 1.6s ease-in-out infinite',
+        }}
+      />
+      <span
+        style={{
+          fontSize: 'var(--text-body-sm)',
+          color: 'var(--color-text-muted)',
+          fontWeight: 500,
+        }}
+      >
+        Loading…
+      </span>
+
+      <p
+        style={{
+          margin: '8px 0 0 0',
+          maxWidth: '420px',
+          textAlign: 'center',
+          fontSize: 'var(--text-caption, 12px)',
+          lineHeight: '1.6',
+          color: 'var(--color-text-muted)',
+          opacity: showReassurance ? 1 : 0,
+          transition: 'opacity 750ms cubic-bezier(0.16, 1, 0.3, 1)',
+          pointerEvents: showReassurance ? 'auto' : 'none',
+        }}
+      >
+        Taking a little longer? Don't worry — Lumo is preparing a few powerful AI tools in the background. Give it a moment, and we'll be ready to learn.
+      </p>
+    </div>
+  );
+};
 
 // ---------------------------------------------------------------
 // App
